@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<robot name="four_wheel_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- Materials -->
+    <material name="blue">
+        <color rgba="0.0 0.5 0.8 1.0" />
+    </material>
+    <material name="dark_gray">
+        <color rgba="0.2 0.2 0.2 1.0" />
+    </material>
+    <material name="silver">
+        <color rgba="0.75 0.75 0.75 1.0" />
+    </material>
+    <material name="red">
+        <color rgba="0.8 0.1 0.1 1.0" />
+    </material>
+
+    <!-- Constants -->
+    <xacro:property name="M_PI" value="3.1415926535897931" />
+
+    <!-- Dimensions (meters) -->
+    <xacro:property name="chassis_length" value="1.4" />
+    <xacro:property name="chassis_width" value="1.0" />
+    <xacro:property name="chassis_depth" value="0.23" />
+    <xacro:property name="chassis_bottom_height" value="0.6" />
+    <xacro:property name="wheelbase" value="0.97" />
+    <xacro:property name="track_width" value="0.84" />
+    <xacro:property name="wheel_radius" value="0.215" />
+    <xacro:property name="wheel_thickness" value="0.2" />
+
+    <!-- Chassis centre (z = bottom + depth/2) -->
+    <xacro:property name="chassis_center_z" value="${chassis_bottom_height + chassis_depth/2}" />
+
+    <!-- Wheel positions -->
+    <xacro:property name="front_x" value="${wheelbase/2}" />
+    <xacro:property name="rear_x" value="${-wheelbase/2}" />
+    <xacro:property name="left_y" value="${-track_width/2}" />
+    <xacro:property name="right_y" value="${track_width/2}" />
+    <xacro:property name="wheel_z" value="${wheel_radius}" />
+
+    <!-- =========================== -->
+    <!-- Base Link (ground level)    -->
+    <!-- =========================== -->
+    <link name="base_link" />
+
+    <!-- =========================== -->
+    <!-- Chassis                      -->
+    <!-- =========================== -->
+    <link name="chassis">
+        <visual>
+            <geometry>
+                <box size="${chassis_length} ${chassis_width} ${chassis_depth}" />
+            </geometry>
+            <origin xyz="0 0 ${chassis_center_z}" rpy="0 0 0" />
+            <material name="blue" />
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${chassis_length} ${chassis_width} ${chassis_depth}" />
+            </geometry>
+            <origin xyz="0 0 ${chassis_center_z}" rpy="0 0 0" />
+        </collision>
+        <inertial>
+            <mass value="10.0" />
+            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+        </inertial>
+    </link>
+
+    <joint name="chassis_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="chassis" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+
+    <!-- =========================== -->
+    <!-- Wheels (revolute joints)     -->
+    <!-- =========================== -->
+    <!-- Macro for a wheel -->
+    <xacro:macro name="wheel" params="name side x y">
+        <link name="${name}_link">
+            <visual>
+                <geometry>
+                    <cylinder radius="${wheel_radius}" length="${wheel_thickness}" />
+                </geometry>
+                <origin xyz="0 0 0" rpy="${M_PI/2} 0 0" /> <!-- rotate Z -> Y -->
+                <material name="dark_gray" />
+            </visual>
+            <collision>
+                <geometry>
+                    <cylinder radius="${wheel_radius}" length="${wheel_thickness}" />
+                </geometry>
+                <origin xyz="0 0 0" rpy="${M_PI/2} 0 0" />
+            </collision>
+            <inertial>
+                <mass value="1.0" />
+                <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+            </inertial>
+        </link>
+
+        <joint name="${name}_joint" type="revolute">
+            <parent link="base_link" />
+            <child link="${name}_link" />
+            <origin xyz="${x} ${y} ${wheel_z}" rpy="0 0 0" />
+            <axis xyz="0 1 0" /> <!-- rotation around Y -->
+            <limit effort="100" velocity="10" lower="-1e308" upper="1e308" />
+            <dynamics damping="0.1" friction="0.1" />
+        </joint>
+    </xacro:macro>
+
+    <xacro:wheel name="front_left" side="left" x="${front_x}" y="${left_y}" />
+    <xacro:wheel name="front_right" side="right" x="${front_x}" y="${right_y}" />
+    <xacro:wheel name="rear_left" side="left" x="${rear_x}" y="${left_y}" />
+    <xacro:wheel name="rear_right" side="right" x="${rear_x}" y="${right_y}" />
+
+    <!-- =========================== -->
+    <!-- Camera & LiDAR (front centre, 0.83 m high) -->
+    <!-- =========================== -->
+    <link name="camera_link">
+        <visual>
+            <geometry>
+                <box size="0.1 0.1 0.07" />
+            </geometry>
+            <origin xyz="0 0 0" />
+            <material name="silver" />
+        </visual>
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+    </link>
+
+    <link name="lidar_link">
+        <visual>
+            <geometry>
+                <cylinder radius="0.07" length="0.05" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <material name="silver" />
+        </visual>
+        <inertial>
+            <mass value="0.2" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+    </link>
+
+    <!-- Place camera and lidar at front centre, top of chassis (z = chassis_bottom_height +
+    chassis_depth) -->
+    <xacro:property name="sensor_z" value="${chassis_bottom_height + chassis_depth}" /> <!-- = 0.83 m -->
+
+    <joint name="camera_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="camera_link" />
+        <origin xyz="${chassis_length/2} 0 ${sensor_z}" rpy="0 0 0" />
+    </joint>
+
+    <joint name="lidar_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="lidar_link" />
+        <origin xyz="${chassis_length/2} 0 ${sensor_z}" rpy="0 0 0" />
+    </joint>
+
+    <!-- Optional: base_footprint for ground referencing -->
+    <link name="base_footprint" />
+
+    <joint name="base_footprint_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="base_footprint" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+
+</robot>
