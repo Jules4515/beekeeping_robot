@@ -74,9 +74,15 @@ def generate_launch_description():
     camera = IncludeLaunchDescription(
      PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('bee_mobile'), 'launch', 'camera.launch.py')
-     )
-     
-)
+        ) 
+    )
+
+    odometry = Node(
+        package='bee_mobile',
+        executable='odometry_node',
+        name='odometry_node',
+        output='screen',
+    )
 
     return LaunchDescription([
         # micro_ros_agent,
@@ -85,6 +91,7 @@ def generate_launch_description():
         four_ws_controller, # kinematics + mode‑specific PID
         lidar,
         slam,
-        # camera,
+        camera,
+        odometry,
         # pid_tuner,          # remove this line if you prefer to start it manually
     ])

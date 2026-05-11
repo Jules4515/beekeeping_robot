@@ -1,0 +1,24 @@
+image_width: 640
+image_height: 480
+camera_name: default_cam
+# Distortion parameters
+distortion_model: "plumb_bob"
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.0, 0.0, 0.0, 0.0, 0.0]
+# Intrinsic camera matrix (K)
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [460.0, 0.0, 320.0, 0.0, 460.0, 240.0, 0.0, 0.0, 1.0]
+# Rectification matrix (R)
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+# Projection matrix (P)
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [460.0, 0.0, 320.0, 0.0, 0.0, 460.0, 240.0, 0.0, 0.0, 0.0, 1.0, 0.0]
