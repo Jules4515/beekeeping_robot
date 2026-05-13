@@ -16,11 +16,11 @@ class JoystickModeNode(Node):
 
         # Parameters
         self.declare_parameter('speed_axis', 1)          # left stick vertical
-        self.declare_parameter('steer_axis', 0)          # left stick horizontal
+        self.declare_parameter('steer_axis', 4)          # left stick horizontal
         self.declare_parameter('rotate_axis', 3)         # right stick horizontal
         self.declare_parameter('deadband', 0.1)
-        self.declare_parameter('max_linear', 7.5)        # m/s
-        self.declare_parameter('max_angular', 10.0)      # rad/s
+        self.declare_parameter('max_linear', 10.0)        # m/s #7.5
+        self.declare_parameter('max_angular', 10.0)      # rad/s # 10.0
 
         # Button indices (Xbox 360: A=0, B=1, X=2, Y=3)
         self.declare_parameter('btn_opposite', 2)        # X

@@ -4,10 +4,10 @@
     <xacro:property name="pkg" value="package://bee_mobile/meshes" />
 
     <!-- Position of the steering joint in the chassis frame of reference -->
-    <xacro:property name="front_x" value="0.5790" />
-    <xacro:property name="rear_x"  value="-0.5790" />
-    <xacro:property name="left_y"  value="-0.7661" />
-    <xacro:property name="right_y" value="0.1939" />
+    <xacro:property name="left_y" value="0.5790" />
+    <xacro:property name="right_y"  value="-0.5790" />
+    <xacro:property name="front_x"  value="0.7661" />
+    <xacro:property name="rear_x" value="-0.1939" />
 
     <!-- Materials -->
     <material name="black">
@@ -20,28 +20,20 @@
     <!-- Base Footprint - Virtual link representing the robot's 2D ground projection -->
     <link name="base_footprint"/>
 
-    <joint name="base_footprint_joint" type="fixed">
-        <parent link="base_footprint"/>
-        <child link="base_link"/>
-        <origin xyz="0 0 0.8"/>
-    </joint>
-
-    <link name="base_link" />
-
     <!-- Chassis -->
     <link name="chassis">
         <visual>
             <geometry>
                 <mesh filename="${pkg}/chassis.STL" />
             </geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry>
                 <mesh filename="${pkg}/chassis.STL" />
             </geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
         </collision>
         <inertial>
             <origin xyz="0.0079 -0.2513 -0.0925" rpy="0 0 0" />
@@ -49,13 +41,12 @@
             <inertia ixx="0.994429" ixy="0.000042" ixz="0.000001" iyy="0.520087" iyz="-0.001576" izz="1.481228" />
         </inertial>
     </link>
-
-    <joint name="chassis_joint" type="fixed">
-        <parent link="base_link" />
-        <child link="chassis" />
-        <origin xyz="0 0 0" rpy="0 0 0" />
+    
+    <joint name="base_footprint_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="chassis"/>
+        <origin xyz="0 0 0.8"/>
     </joint>
-
     
     <!-- ======= Wheel macro =======-->
     <!-- name : front_left / front_right / rear_left / rear_right    -->
@@ -63,7 +54,7 @@
     <!-- steering_com_x/z : Center Of Mass position of the steering_link in its own frame of reference -->
     <!-- wheel_joint_x : Position of the wheel_joint in the steering_link frame of reference -->
     <!-- wheel_axis : Axis of the wheel_joint (-1 or 1) -->
-    <xacro:macro name="wheel" params="name steering_joint_x steering_joint_y steering_link_com_x steering_link_com_z wheel_joint_x wheel_axis">
+    <xacro:macro name="wheel" params="name steering_joint_x steering_joint_y steering_link_com_y steering_link_com_z wheel_joint_x wheel_axis">
 
         <!-- Steering link -->
         <link name="${name}_steering_link">
@@ -71,17 +62,17 @@
                 <geometry>
                     <mesh filename="${pkg}/${name}_steering_link.STL" />
                 </geometry>
-                <origin xyz="0 0 0" rpy="0 0 0" />
+                <origin xyz="0 0 0" rpy="0 0 1.5708" />
                 <material name="white" />
             </visual>
             <collision>
                 <geometry>
                     <mesh filename="${pkg}/${name}_steering_link.STL" />
                 </geometry>
-                <origin xyz="0 0 0" rpy="0 0 0" />
+                <origin xyz="0 0 0" rpy="0 0 1.5708" />
             </collision>
             <inertial>
-                <origin xyz="${steering_link_com_x} 0 ${steering_link_com_z}" rpy="0 0 0" />
+                <origin xyz="0 ${steering_link_com_y} ${steering_link_com_z}" rpy="0 0 0" />
                 <mass value="0.88" />
                 <inertia ixx="0.002778" ixy="0.000001" ixz="0.000001" iyy="0.003568" iyz="0.000001" izz="0.001445" />
             </inertial>
@@ -103,14 +94,14 @@
                 <geometry>
                     <mesh filename="${pkg}/${name}_link.STL" />
                 </geometry>
-                <origin xyz="0 0 0" rpy="0 0 0" />
-                <material name="black" />
+                <origin xyz="0 0 0" rpy="0 0 1.5708" />
+                <material name="white" />
             </visual>
             <collision>
                 <geometry>
                     <mesh filename="${pkg}/${name}_link.STL" />
                 </geometry>
-                <origin xyz="0 0 0" rpy="0 0 0" />
+                <origin xyz="0 0 0" rpy="0 0 1.5708" />
             </collision>
             <inertial>
                 <origin xyz="0 0 0" rpy="0 0 0" />
@@ -123,25 +114,24 @@
         <joint name="${name}_wheel_joint" type="continuous">
             <parent link="${name}_steering_link" />
             <child link="${name}_link" />
-            <origin xyz="${wheel_joint_x} 0 -0.3505" rpy="0 0 0" />
-            <axis xyz="${wheel_axis} 0 0" />
+            <origin xyz="0 ${wheel_joint_x} -0.3505" rpy="0 0 0" />
+            <axis xyz="0 ${wheel_axis} 0" />
             <dynamics damping="0.1" friction="0.1" />
         </joint>
 
     </xacro:macro>
     <!-- Wheels -->
-    <xacro:wheel name="front_left" steering_joint_x="${front_x}" steering_joint_y="${left_y}" steering_link_com_x="0.0858"
-                 steering_link_com_z="-0.1461" wheel_joint_x="-0.0687" wheel_axis="-1" />
+    <xacro:wheel name="front_left" steering_joint_x="${front_x}" steering_joint_y="${left_y}" steering_link_com_y="0.0858"
+                 steering_link_com_z="-0.1461" wheel_joint_x="-0.0687" wheel_axis="1" />
 
-    <xacro:wheel name="rear_left" steering_joint_x="${front_x}" steering_joint_y="${right_y}" steering_link_com_x="0.0858"
-                 steering_link_com_z="-0.1461" wheel_joint_x="-0.0687" wheel_axis="-1" />
+    <xacro:wheel name="front_right" steering_joint_x="${front_x}" steering_joint_y="${right_y}" steering_link_com_y="0.0858"
+                 steering_link_com_z="-0.1461" wheel_joint_x="0.0687" wheel_axis="-1" />
 
-    <xacro:wheel name="front_right" steering_joint_x="${rear_x}" steering_joint_y="${left_y}" steering_link_com_x="-0.0858"
-                 steering_link_com_z="-0.1461" wheel_joint_x="0.0687" wheel_axis="1" />
+    <xacro:wheel name="rear_left" steering_joint_x="${rear_x}" steering_joint_y="${left_y}" steering_link_com_y="-0.0858"
+                 steering_link_com_z="-0.1461" wheel_joint_x="-0.0687" wheel_axis="1" />
 
-    <xacro:wheel name="rear_right" steering_joint_x="${rear_x}" steering_joint_y="${right_y}" steering_link_com_x="-0.0858"
-                 steering_link_com_z="-0.1461" wheel_joint_x="0.0687" wheel_axis="1" />
-
+    <xacro:wheel name="rear_right" steering_joint_x="${rear_x}" steering_joint_y="${right_y}" steering_link_com_y="-0.0858"
+                 steering_link_com_z="-0.1461" wheel_joint_x="0.0687" wheel_axis="-1" />
 
     <!-- === Arm ===-->
 
@@ -149,24 +139,24 @@
     <link name="robot_arm_base_steering_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_base_steering_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/robot_arm_base_steering_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="0 0.01577 0.0510" rpy="0 0 0" />
+            <origin xyz="0 0.01577 0.0510" rpy="0 0 1.5708" />
             <mass value="1.539" />
             <inertia ixx="0.00203" ixy="0.0" ixz="0.0" iyy="0.00238" iyz="0.0" izz="0.00328" />
         </inertial>
     </link>
 
     <joint name="robot_arm_base_steering" type="prismatic">
-        <parent link="base_link" />
+        <parent link="chassis" />
         <child link="robot_arm_base_steering_link" />
-        <origin xyz="-0.186481 -0.233073 0.029" rpy="0 0 0" />
-        <axis xyz="1 0 0" />
+        <origin xyz="0.233073 -0.186481 0.029" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
         <limit lower="-0.1" upper="0.38" effort="30" velocity="0.5" />
     </joint>
 
@@ -174,14 +164,14 @@
     <link name="robot_arm_steering_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_steering_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/robot_arm_steering_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="-0.01159 0.02348 0.55969" rpy="0 0 0" />
+            <origin xyz="-0.01159 0.02348 0.55969" rpy="0 0 1.5708" />
             <mass value="4.440" />
             <inertia ixx="0.32071" ixy="0.0" ixz="0.0" iyy="0.32258" iyz="-0.00202" izz="0.00540" />
         </inertial>
@@ -190,7 +180,7 @@
     <joint name="robot_arm_steering_joint" type="continuous">
         <parent link="robot_arm_base_steering_link" />
         <child link="robot_arm_steering_link" />
-        <origin xyz="-0.026715 0.000282 0.072" rpy="0 0 0" />
+        <origin xyz="-0.000282 -0.026715 0.072" rpy="0 0 0" />
         <axis xyz="0 0 -1" />
     </joint>
 
@@ -198,14 +188,14 @@
     <link name="robot_arm_up_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_up_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/robot_arm_up_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="-0.00475 -0.06999 -0.00710" rpy="0 0 0" />
+            <origin xyz="-0.00475 -0.06999 -0.00710" rpy="0 0 1.5708" />
             <mass value="1.962" />
             <inertia ixx="0.00593" ixy="0.0" ixz="0.0" iyy="0.00313" iyz="0.0" izz="0.00495" />
         </inertial>
@@ -214,7 +204,7 @@
     <joint name="robot_arm_up_joint" type="prismatic">
         <parent link="robot_arm_steering_link" />
         <child link="robot_arm_up_link" />
-        <origin xyz="-0.003162 -0.028282 0.172176" rpy="0 0 0" />
+        <origin xyz="0.028282 -0.003162 0.172176" rpy="0 0 0" />
         <axis xyz="0 0 1" />
         <limit lower="-0.05" upper="1.0" effort="30" velocity="0.5" />
     </joint>
@@ -223,14 +213,14 @@
     <link name="robot_arm_front_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_front_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/robot_arm_front_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="-0.02583 -0.03370 0.02627" rpy="0 0 0" />
+            <origin xyz="-0.02583 -0.03370 0.02627" rpy="0 0 1.5708" />
             <mass value="3.609" />
             <inertia ixx="0.08333" ixy="0.0" ixz="0.0" iyy="0.04121" iyz="-0.00130" izz="0.04505" />
         </inertial>
@@ -239,8 +229,8 @@
     <joint name="robot_arm_front_joint" type="prismatic">
         <parent link="robot_arm_up_link" />
         <child link="robot_arm_front_link" />
-        <origin xyz="0.026377 -0.349803 -0.086735" rpy="0 0 0" />
-        <axis xyz="0 -1 0" />
+        <origin xyz="0.349803 0.026377 -0.086735" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
         <limit lower="0" upper="0.1" effort="30" velocity="0.5" />
     </joint>
 
@@ -248,14 +238,14 @@
     <link name="robot_arm_down_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_down_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/robot_arm_down_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="0.00138 0.0 -0.00984" rpy="0 0 0" />
+            <origin xyz="0.00138 0.0 -0.00984" rpy="0 0 1.5708" />
             <mass value="0.924" />
             <inertia ixx="0.00553" ixy="0.0" ixz="0.0" iyy="0.00446" iyz="0.0" izz="0.00137" />
         </inertial>
@@ -264,7 +254,7 @@
     <joint name="robot_arm_down_joint" type="prismatic">
         <parent link="robot_arm_front_link" />
         <child link="robot_arm_down_link" />
-        <origin xyz="-0.049 -0.029197 -0.027801" rpy="0 0 0" />
+        <origin xyz="0.029197 -0.049 -0.027801" rpy="0 0 0" />
         <axis xyz="0 0 1" />
         <limit lower="-0.3" upper="0" effort="30" velocity="0.5" />
     </joint>
@@ -273,14 +263,14 @@
     <link name="robot_hand_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_hand_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/robot_hand_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="-0.01395 -0.00114 0.01216" rpy="0 0 0" />
+            <origin xyz="-0.01395 -0.00114 0.01216" rpy="0 0 1.5708" />
             <mass value="0.245" />
             <inertia ixx="0.00206" ixy="0.0" ixz="0.0" iyy="0.000230" iyz="0.0" izz="0.00227" />
         </inertial>
@@ -289,7 +279,7 @@
     <joint name="robot_hand_joint" type="continuous">
         <parent link="robot_arm_down_link" />
         <child link="robot_hand_link" />
-        <origin xyz="-0.010319 0 -0.244140" rpy="0 0 0" />
+        <origin xyz="0 -0.010319 -0.244140" rpy="0 0 0" />
         <axis xyz="0 0 1" />
     </joint>
 
@@ -297,48 +287,46 @@
     <link name="finger_1_link">
         <visual>
             <geometry><mesh filename="${pkg}/finger_1_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/finger_1_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="0 0.0015 0" rpy="0 0 0" />
-            <mass value="0.00142" />
-            <inertia ixx="3.0e-7" ixy="0.0" ixz="0.0" iyy="3.5e-7" iyz="0.0" izz="4.8e-8" />
+            <mass value="0.1"/>
+            <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
         </inertial>
     </link>
 
     <joint name="finger_1_joint" type="continuous">
         <parent link="robot_hand_link" />
         <child link="finger_1_link" />
-        <origin xyz="-0.042813 -0.233796 0.014167" rpy="0 0 0" />
-        <axis xyz="0 -1 0" />
+        <origin xyz="0.233796 -0.042813 0.014167" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
     </joint>
 
     <!-- Finger 2 -->
     <link name="finger_2_link">
         <visual>
             <geometry><mesh filename="${pkg}/finger_2_link.STL" /></geometry>
-            <origin xyz="0 0 0" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry><mesh filename="${pkg}/finger_2_link.STL" /></geometry>
         </collision>
         <inertial>
-            <origin xyz="0.000723 -0.01025 -0.01093" rpy="0 0 0" />
-            <mass value="0.00145" />
-            <inertia ixx="3.0e-7" ixy="0.0" ixz="0.0" iyy="3.5e-7" iyz="0.0" izz="4.8e-8" />
+            <mass value="0.1"/>
+            <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
         </inertial>
     </link>
 
     <joint name="finger_2_joint" type="continuous">
         <parent link="robot_hand_link" />
         <child link="finger_2_link" />
-        <origin xyz="-0.016681 0.239546 0.025" rpy="0 0 0" />
-        <axis xyz="0 1 0" />
+        <origin xyz="-0.239546 -0.016681 0.025" rpy="0 0 0" />
+        <axis xyz="-1 0 0" />
     </joint>
 
 
@@ -358,9 +346,9 @@
     </link>
     
     <joint name="camera_joint" type="fixed">
-        <parent link="base_link" />
+        <parent link="chassis" />
         <child link="default_cam" />
-        <origin xyz="0 -0.975 0.03" rpy="0 0 0" />
+        <origin xyz="0.975 0 0.03" rpy="0 0 0" />
     </joint>
 
     <!-- Lidar -->
@@ -377,9 +365,9 @@
     </link>
 
     <joint name="lidar_joint" type="fixed">
-        <parent link="base_link" />
+        <parent link="chassis" />
         <child link="laser_frame" />
-        <origin xyz="0 -0.975 0.09" rpy="0 0 1.545" />
+        <origin xyz="0.975 0 0.09" rpy="0 0 3.06" />
     </joint>
 
 </robot>

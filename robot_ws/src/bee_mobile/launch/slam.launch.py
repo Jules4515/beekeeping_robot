@@ -36,7 +36,7 @@ def generate_launch_description():
     # Après 5 secondes, active le node (commence à publier sur /map)
     # Équivalent de : ros2 lifecycle set /slam_toolbox activate
     activate = TimerAction(
-        period=5.0,
+        period=10.0,
         actions=[ExecuteProcess(
             cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'activate'],
             output='screen'
