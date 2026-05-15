@@ -16,7 +16,7 @@ class FourWSController(Node):
 
         # ---------- Robot geometry ----------
         self.declare_parameter('wheel_diameter_m', 0.43)
-        self.declare_parameter('max_speed_kmh', 10.0)
+        self.declare_parameter('max_speed_kmh', 100.0)
         self.declare_parameter('max_steering_deg', 120.0)
         self.declare_parameter('wheel_base_m', 0.96)
         self.declare_parameter('wheel_separation_m', 0.83)

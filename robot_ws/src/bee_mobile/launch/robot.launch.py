@@ -87,7 +87,7 @@ def generate_launch_description():
     return LaunchDescription([
         # micro_ros_agent,
         joy_node,           # raw joystick driver
-        joystick_node,      # translates /joy → /cmd_vel + /mode_select
+        # joystick_node,      # translates /joy → /cmd_vel + /mode_select
         four_ws_controller, # kinematics + mode‑specific PID
         lidar,
         slam,
