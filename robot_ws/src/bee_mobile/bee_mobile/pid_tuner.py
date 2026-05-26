@@ -25,7 +25,7 @@ class PIDTuner(Node):
         # [Kp_d, Ki_d, Kd_d, Off_d,   Kp_s, Ki_s, Kd_s, Off_s]
         self.default_pid = [
             10.0, 3.2, 0.2, 0.0,    # Drive: Kp, Ki, Kd, Offset (stable)
-            4.0, 1.0, 0.5, 120.0      # Steer: Kp lower (0.2) to reduce 45° oscillation
+            4.0, 0.5, 0.5, 120.0      # Steer: Kp lower (0.2) to reduce 45° oscillation
         ]
         self.publish_to_all(self.default_pid)
 
