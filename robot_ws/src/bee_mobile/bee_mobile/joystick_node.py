@@ -8,8 +8,8 @@ from std_msgs.msg import Int32
 class JoystickModeNode(Node):
     """
     Reads a joystick (Xbox 360) and publishes:
-      - /cmd_vel (Twist)   → linear.x, linear.y, angular.z
-      - /mode_select (Int32) → 1=Opposite, 2=Crab, 3=Zero turn, 4=Straight
+        - /cmd_vel (Twist)   → linear.x (m/s), linear.y (ratio), angular.z (rad/s)
+        - /mode_select (Int32) → 1=Opposite, 2=Crab, 3=Zero turn, 4=Straight
     """
     def __init__(self):
         super().__init__('joystick_mode_node')
@@ -19,8 +19,10 @@ class JoystickModeNode(Node):
         self.declare_parameter('steer_axis', 4)          # left stick horizontal
         self.declare_parameter('rotate_axis', 3)         # right stick horizontal
         self.declare_parameter('deadband', 0.1)
-        self.declare_parameter('max_linear', 2.5)        # m/s #2.5 5.0 10.0 20.0
-        self.declare_parameter('max_angular', 1.0)      # rad/s # 10.0
+
+        # Global maximums
+        self.declare_parameter('max_linear_speed_ms', 0.34)       # m/s
+        self.declare_parameter('max_angular_speed_rads', 0.53)      # rad/s
 
         # Button indices (Xbox 360: A=0, B=1, X=2, Y=3)
         self.declare_parameter('btn_opposite', 2)        # X
@@ -32,8 +34,10 @@ class JoystickModeNode(Node):
         self.steer_axis = self.get_parameter('steer_axis').value
         self.rotate_axis = self.get_parameter('rotate_axis').value
         self.deadband = self.get_parameter('deadband').value
-        self.max_lin = self.get_parameter('max_linear').value
-        self.max_ang = self.get_parameter('max_angular').value
+
+        self.max_linear_speed_ms = self.get_parameter('max_linear_speed_ms').value
+        self.max_angular_speed_rads = self.get_parameter('max_angular_speed_rads').value
+
         self.btn_opp = self.get_parameter('btn_opposite').value
         self.btn_crab = self.get_parameter('btn_crab').value
         self.btn_zero = self.get_parameter('btn_zeroturn').value
@@ -48,8 +52,7 @@ class JoystickModeNode(Node):
 
         # Mode state
         self.current_mode = 0
-        self.last_btn_state = {self.btn_opp: False, self.btn_crab: False,
-                               self.btn_zero: False, self.btn_str: False}
+        self.last_btn_state = {self.btn_opp: False, self.btn_crab: False, self.btn_zero: False, self.btn_str: False}
 
         self.get_logger().info("Joystick node started – publishes /cmd_vel and /mode_select")
 
@@ -65,9 +68,16 @@ class JoystickModeNode(Node):
 
         # Scale to real units
         twist = Twist()
-        twist.linear.x = lin_x * self.max_lin
-        twist.linear.y = lin_y * self.max_lin
-        twist.angular.z = ang_z * self.max_ang
+
+        # 1. Forward/Backward: Multiply by global max speed (m/s)
+        twist.linear.x = lin_x * self.max_linear_speed_ms
+        
+        # 2. Steering: Pass pure ratio [-1.0 to 1.0]
+        twist.linear.y = float(lin_y)
+        
+        # 3. Rotation: Multiply by global max angular speed (rad/s)
+        twist.angular.z = ang_z * self.max_angular_speed_rads
+
         self.cmd_vel_pub.publish(twist)
 
         # Mode selection (rising edge detection)

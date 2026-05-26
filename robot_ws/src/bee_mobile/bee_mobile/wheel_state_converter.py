@@ -3,11 +3,11 @@ import rclpy
 from rclpy.node import Node
 import math
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Int64MultiArray
+from std_msgs.msg import Float64MultiArray
 
 class WheelStateConverterNode(Node):
     """
-    Subscribes to the four wheel encoder topics (/mobile/wheel_*/encoder_angle, Int64MultiArray) and 
+    Subscribes to the four wheel encoder topics (/mobile/wheel_*/encoder_angle, Float64MultiArray) and 
     republishes as a unified JointState (radians) on /wheel_joint_states for RViz.
     data[0] = wheel rolling velocity (RPM) → integrated to position
     data[1] = steering angle (degrees) → converted to radians
@@ -23,10 +23,10 @@ class WheelStateConverterNode(Node):
         self.joint_state_pub = self.create_publisher(JointState, '/wheel_joint_states', 10)
 
         # Subscribers
-        self.create_subscription(Int64MultiArray, '/mobile/wheel_front_left/encoder_angle',  self.fl_callback, 10)
-        self.create_subscription(Int64MultiArray, '/mobile/wheel_front_right/encoder_angle', self.fr_callback, 10)
-        self.create_subscription(Int64MultiArray, '/mobile/wheel_rear_left/encoder_angle',   self.rl_callback, 10)
-        self.create_subscription(Int64MultiArray, '/mobile/wheel_rear_right/encoder_angle',  self.rr_callback, 10)
+        self.create_subscription(Float64MultiArray, '/mobile/wheel_front_left/encoder_angle',  self.fl_callback, 10)
+        self.create_subscription(Float64MultiArray, '/mobile/wheel_front_right/encoder_angle', self.fr_callback, 10)
+        self.create_subscription(Float64MultiArray, '/mobile/wheel_rear_left/encoder_angle',   self.rl_callback, 10)
+        self.create_subscription(Float64MultiArray, '/mobile/wheel_rear_right/encoder_angle',  self.rr_callback, 10)
 
         # Wheel rolling velocities (RPM → rad/s)
         self.joint_velocities = {
@@ -58,10 +58,10 @@ class WheelStateConverterNode(Node):
     def process_encoder_msg(self, msg, wheel_prefix):
         if len(msg.data) >= 2:
             # data[0]: rolling velocity in RPM → rad/s
-            self.joint_velocities[f'{wheel_prefix}_wheel_joint'] = msg.data[0] * 2 * math.pi / 60.0
+            self.joint_velocities[f'{wheel_prefix}_wheel_joint'] = float(msg.data[0]) * 2 * math.pi / 60.0
 
             # data[1]: steering angle in degrees → radians
-            self.joint_positions[f'{wheel_prefix}_steering_joint'] = msg.data[1] * math.pi / 180.0
+            self.joint_positions[f'{wheel_prefix}_steering_joint'] = float(msg.data[1]) * math.pi / 180.0
         else:
             self.get_logger().warn(f"Malformed message on {wheel_prefix} (expected 2 elements)", once=True)
 
@@ -84,6 +84,7 @@ class WheelStateConverterNode(Node):
         msg.name     = list(self.joint_positions.keys())
         msg.position = list(self.joint_positions.values())
         msg.velocity = [self.joint_velocities.get(n, 0.0) for n in msg.name]
+        msg.effort   = [0.0] * len(msg.name)  # Initialize efforts to 0.0
 
         self.joint_state_pub.publish(msg)
 

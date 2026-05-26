@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int64MultiArray
+from std_msgs.msg import Float64MultiArray
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
@@ -15,7 +15,7 @@ class FourWSOdometry(Node):
         # --- HARDCODED CALIBRATION SWITCH ---
         # Set to True to apply the offsets below. 
         # Set to False once your motors/encoders are physically or firmware-calibrated.
-        self.use_calibration = True 
+        self.use_calibration = False 
 
         # --- Physical Robot Parameters ---
         self.declare_parameter('wheel_diameter_m', 0.43)
@@ -57,7 +57,7 @@ class FourWSOdometry(Node):
         for name in self.wheel_names:
             topic = f'/mobile/wheel_{name}/encoder_angle'
             self.create_subscription(
-                Int64MultiArray, 
+                Float64MultiArray, 
                 topic, 
                 lambda msg, n=name: self.encoder_callback(msg, n), 
                 10
@@ -76,7 +76,7 @@ class FourWSOdometry(Node):
 
         self.get_logger().info(f'4WS Odom Node: Calibration is {"ENABLED" if self.use_calibration else "DISABLED"} in code.')
 
-    def encoder_callback(self, msg: Int64MultiArray, wheel_name: str):
+    def encoder_callback(self, msg: Float64MultiArray, wheel_name: str):
         if len(msg.data) >= 2:
             self.wheel_data[wheel_name] = [float(msg.data[0]), float(msg.data[1])]
 
