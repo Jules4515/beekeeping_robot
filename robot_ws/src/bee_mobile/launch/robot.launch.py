@@ -55,6 +55,14 @@ def generate_launch_description():
         output='screen'
     )
 
+    # swerve_kinematics_node
+    swerve_kinematics_node = Node(
+        package='bee_mobile',
+        executable='swerve_kinematics_node',
+        name='swerve_kinematics_node',
+        output='screen'
+    )
+
     # 5. pid_tuner – optional
     pid_tuner = Node(
         package='bee_mobile',
@@ -84,14 +92,28 @@ def generate_launch_description():
         output='screen',
     )
 
+    # Temporary node for nav2 loopback
+    """ static_tf_map_odom = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_tf_map_odom',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+    ) """
+
     return LaunchDescription([
         # micro_ros_agent,
         joy_node,           # raw joystick driver
-        # joystick_node,      # translates /joy → /cmd_vel + /mode_select
-        four_ws_controller, # kinematics + mode‑specific PID
+        #joystick_node,      # translates /joy → /cmd_vel + /mode_select
+        #four_ws_controller, # kinematics + mode‑specific PID
+        swerve_kinematics_node,
         lidar,
-        slam,
+        # slam,
         camera,
-        odometry,
+        # odometry,
         # pid_tuner,          # remove this line if you prefer to start it manually
     ])
+
+    # nav2 loopback
+    """ return LaunchDescription([
+        static_tf_map_odom
+    ]) """

@@ -16,6 +16,7 @@ def generate_launch_description():
                 'frame_id': 'laser_frame',
                 'inverted': False,
                 'angle_compensate': True,
+                'scan_frequency': 10.0,  # ADDED: reduce lidar frequency to 5 Hz to avoid message filter overflow
             }]
         ),
     ])

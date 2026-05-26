@@ -18,7 +18,7 @@ class FourWSController(Node):
         self.declare_parameter('wheel_diameter_m', 0.43)
         self.declare_parameter('wheel_base_m', 0.96)
         self.declare_parameter('wheel_separation_m', 0.83)
-        self.declare_parameter('max_steering_deg', 120.0)
+        self.declare_parameter('max_steering_deg', 80.0)
 
         # ---------- Software Limits (Mode Specific) ----------
         self.declare_parameter('max_linear_speed_ms', 0.34)       # Straight and Crab mode
@@ -190,6 +190,7 @@ class FourWSController(Node):
 
         # RPM limit for all 4 wheels
         rpm = {name: max(-self.limit_motor_speed_rpm, min(self.limit_motor_speed_rpm, value)) for name, value in rpm.items()}
+        wheel_angles = {name: max(-self.max_steering_deg, min(self.max_steering_deg, value)) for name, value in wheel_angles.items()}
 
         # Publish only on significant change
         for name in self.wheel_modules:
