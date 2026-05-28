@@ -40,12 +40,12 @@ def generate_launch_description():
     )
 
     # Optional: static transform from odom to base_footprint (so you can keep fixed frame = odom)
-    """ static_tf = Node(
+    static_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='static_tf_odom_to_base_footprint',
         arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_footprint']
-    ) """
+    )
 
     # RViz2 node (optional config)
     rviz2 = Node(
@@ -60,6 +60,6 @@ def generate_launch_description():
         robot_state_publisher,
         wheel_state_converter,
         joint_state_publisher,
-        # static_tf,
+        #static_tf,
         rviz2,
     ])
