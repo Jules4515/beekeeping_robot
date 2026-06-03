@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Int8
 from tf2_ros import TransformBroadcaster
 import math
 
@@ -19,15 +19,28 @@ class SwerveKinematicsNode(Node):
 
         # --- Robot Physical Parameters ---
         self.wheel_radius = 0.215  # 0.43m diameter / 2
+
+        # Geometric Center of Rotation (CoR) offset based on wheel coordinates
+        self.cor_x = 0.2861
+        self.cor_y = 0.0
         
         # --- Safety Limits (Software & Hardware) ---
         # Hardware absolute limits (Priority 1)
-        self.declare_parameter('limit_motor_speed_rpm', 25.0)
+        self.declare_parameter('limit_motor_speed_rpm', 30.0)
         self.declare_parameter('max_steering_deg', 80.0)
         
+        # Limit the physical speed of the steering mechanism to prevent mechanical shock
+        self.declare_parameter('max_steering_speed_deg_s', 45.0) 
+        self.max_steering_speed_rad_s = math.radians(self.get_parameter('max_steering_speed_deg_s').value)
+        self.last_cmd_time = self.get_clock().now()
+
+        # --- Watchdog Parameters ---
+        self.cmd_timeout_sec = 0.5  # Trigger safety stop after 0.5 seconds of silence
+        self.watchdog_triggered = False # Prevents spamming stop commands on the network
+
         # Software limits (from Nav2 parameters)
-        self.declare_parameter('max_linear_speed_ms', 0.23)
-        self.declare_parameter('max_angular_speed_rads', 0.36)
+        self.declare_parameter('max_linear_speed_ms', 0.67)
+        self.declare_parameter('max_angular_speed_rads', 1.06)
         
         # Anti-stall parameters (~10 RPM threshold to prevent motor jitter)
         self.declare_parameter('min_physical_speed_ms', 0.23)
@@ -41,12 +54,14 @@ class SwerveKinematicsNode(Node):
         self.min_physical_speed_ms = self.get_parameter('min_physical_speed_ms').value
         self.min_angular_speed_rads = self.get_parameter('min_angular_speed_rads').value
         
-        # Chassis geometry (x, y) relative to center, extracted from URDF
+        # Chassis geometry (x, y) relative to center, extracted from URDF + Hardware direction (dir)
+        # 'dir' controls the command sent to ESP32.
+        # 'enc_dir' corrects the raw feedback received from ESP32.
         self.wheels = {
-            'front_left':  {'x': 0.7661,  'y': 0.5790,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
-            'front_right': {'x': 0.7661,  'y': -0.5790, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
-            'rear_left':   {'x': -0.1939, 'y': 0.5790,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
-            'rear_right':  {'x': -0.1939, 'y': -0.5790, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
+            'front_left':  {'x': 0.7661,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
+            'front_right': {'x': 0.7661,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
+            'rear_left':   {'x': -0.1939, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
+            'rear_right':  {'x': -0.1939, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_cmd_angle': 0.0},
         }
 
         # --- Odometry State ---
@@ -55,9 +70,13 @@ class SwerveKinematicsNode(Node):
         self.odom_theta = 0.0
         self.last_time = self.get_clock().now()
 
+        # --- Hardware State Memory ---
+        self.active_joy_mode = -1
+
         # --- ROS 2 Interfaces ---
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 10)
-        
+        self.mode_sub = self.create_subscription(Int8, '/joystick_control_mode', self.mode_callback, 10)
+
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.wheel_pubs = {}
@@ -79,71 +98,201 @@ class SwerveKinematicsNode(Node):
         self.odom_timer = self.create_timer(0.02, self.odometry_callback)
         self.get_logger().info("Swerve Kinematics Node Initialized with Anti-Stall (0.23m/s) and Limits.")
 
+    def mode_callback(self, msg):
+        """ Asynchronously updates the hardware interaction state (-1 means deadman off) """
+        self.active_joy_mode = msg.data
+
     def encoder_callback(self, msg, wheel_name):
-        """ Reads hardware feedback. Assumes msg.data = [RPM, Angle_in_degrees] as floats. """
+        """ Reads hardware feedback and corrects asymmetric physical mounting signs. """
         if len(msg.data) >= 2:
-            self.wheels[wheel_name]['current_rpm'] = float(msg.data[0])
+            # Apply enc_dir to fix the raw RPM feedback before odometry calculation
+            self.wheels[wheel_name]['current_rpm'] = float(msg.data[0]) * self.wheels[wheel_name]['enc_dir']
             self.wheels[wheel_name]['current_angle'] = float(msg.data[1])
+
+    # def cmd_vel_callback(self, msg):
+    #     """ Inverse Kinematics: Translates global Twist into individual wheel commands """
+        
+    #     # --- STEP 0: ABSOLUTE DEADBAND & HARDWARE PRE-ORIENTATION ---
+    #     if abs(msg.linear.x) < 0.005 and abs(msg.linear.y) < 0.005 and abs(msg.angular.z) < 0.005:
+    #         for name, config in self.wheels.items():
+    #             config['current_rpm'] = 0.0
+                
+    #             # Apply structural steering based on memorized joystick mode
+    #             if self.active_joy_mode == 3:
+    #                 # Zero Turn geometry
+    #                 target_angle_rad = math.atan2(config['x'] - self.cor_x, -(config['y'] - self.cor_y))
+    #                 clamped_angle_deg = math.degrees(target_angle_rad)
+    #             elif self.active_joy_mode in [0, 1, 2]:
+    #                 # Straight or Crab or Holonomic geometry
+    #                 clamped_angle_deg = 0.0
+    #             else:
+    #                 # Deadman off (-1) : Freeze wheels
+    #                 clamped_angle_deg = math.degrees(config['last_cmd_angle'])
+                
+    #             # Enforce physical hardware limits
+    #             clamped_angle_deg = max(-self.max_steering_deg, min(self.max_steering_deg, clamped_angle_deg))
+    #             config['last_cmd_angle'] = math.radians(clamped_angle_deg)
+                
+    #             self.wheel_pubs[name].publish(Float64MultiArray(data=[0.0, float(clamped_angle_deg)]))
+    #         return
+
+    #     # --- STEP 1: SOFTWARE LIMITS ---
+    #     vx = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.x))
+    #     vy = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.y))
+    #     wz = max(-self.max_angular_speed_rads, min(self.max_angular_speed_rads, msg.angular.z))
+
+    #     # --- STEP 2: KINEMATICS & CLAMPING ---
+    #     current_time = self.get_clock().now()
+    #     dt = (current_time - self.last_cmd_time).nanoseconds / 1e9
+    #     self.last_cmd_time = current_time
+        
+    #     # Prevent massive dt jumps during simulation pauses or lag
+    #     if dt <= 0.0 or dt > 0.5:
+    #         dt = 0.02
+
+    #     for name, config in self.wheels.items():
+    #         # Standard rigid body kinematics shifted to Center of Rotation
+    #         vx_wheel = vx - (config['y'] - self.cor_y) * wz
+    #         vy_wheel = vy + (config['x'] - self.cor_x) * wz
+
+    #         target_speed_ms = math.hypot(vx_wheel, vy_wheel)
+    #         last_angle_rad = config['last_cmd_angle'] 
+
+    #         if target_speed_ms > 0.001:
+    #             raw_target_angle = math.atan2(vy_wheel, vx_wheel)
+
+    #             # --- 1. Vectorial Inversion Logic ---
+    #             # To reverse, the wheel must maintain its forward-facing hemisphere limits (-80 to 80)
+    #             # while flipping the traction motor polarity.
+                
+    #             # Check if the raw target falls in the rear hemisphere (> 90 deg or < -90 deg)
+    #             if abs(raw_target_angle) > (math.pi / 2.0):
+    #                 # Flip target angle to the front hemisphere
+    #                 if raw_target_angle > 0.0:
+    #                     target_angle_rad = raw_target_angle - math.pi
+    #                 else:
+    #                     target_angle_rad = raw_target_angle + math.pi
+                        
+    #                 # Invert the motor traction to drive backward along the new vector
+    #                 target_speed_ms = -target_speed_ms
+    #             else:
+    #                 target_angle_rad = raw_target_angle
+
+    #             # --- 2. Slew Rate Limiter ---
+    #             step_diff = (target_angle_rad - last_angle_rad + math.pi) % (2.0 * math.pi) - math.pi
+    #             max_step = self.max_steering_speed_rad_s * dt
+                
+    #             limited_step = max(-max_step, min(max_step, step_diff))
+    #             final_angle_rad = (last_angle_rad + limited_step + math.pi) % (2.0 * math.pi) - math.pi
+
+    #             # --- 3. Hardware Clamping ---
+    #             final_angle_deg = math.degrees(final_angle_rad)
+    #             clamped_angle_deg = max(-self.max_steering_deg, min(self.max_steering_deg, final_angle_deg))
+                
+    #             config['last_cmd_angle'] = math.radians(clamped_angle_deg)
+
+    #             # --- 4. Traction Scaling ---
+    #             alignment_error = abs((target_angle_rad - config['last_cmd_angle'] + math.pi) % (2.0 * math.pi) - math.pi)
+    #             final_speed_ms = target_speed_ms * max(0.0, math.cos(alignment_error))
+
+    #         else:
+    #             # Stop requested or minimal speed
+    #             clamped_angle_deg = math.degrees(last_angle_rad)
+    #             final_speed_ms = 0.0
+
+    #         # 4. Format and publish
+    #         rpm = (final_speed_ms * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']
+    #         rpm = max(-self.limit_motor_speed_rpm, min(self.limit_motor_speed_rpm, rpm))
+    #         #rpm = 0.0
+
+    #         self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm), float(clamped_angle_deg)]))
+
 
     def cmd_vel_callback(self, msg):
         """ Inverse Kinematics: Translates global Twist into individual wheel commands """
         
-        # --- STEP 1: SOFTWARE LIMITS ---
-        # Clamp incoming Nav2 commands to our defined software maximums
-        vx = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.x))
-        vy = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.y))
-        wz = max(-self.max_angular_speed_rads, min(self.max_angular_speed_rads, msg.angular.z))
+        # Reset the watchdog flag since a new command just arrived
+        self.watchdog_triggered = False
 
-        # --- STEP 2: ANTI-STALL LOGIC ---
-        # If Nav2 requests a speed lower than the physical minimum of the motors (~10 RPM),
-        # we scale up the vectors to reach the minimum speed to prevent stalling/jittering.
-        global_speed = math.hypot(vx, vy)
-        STOP_TOLERANCE = 0.05
+        # --- TIME DELTA CALCULATION ---
+        current_time = self.get_clock().now()
+        dt = (current_time - self.last_cmd_time).nanoseconds / 1e9
+        self.last_cmd_time = current_time
         
-        if global_speed < STOP_TOLERANCE and abs(wz) < 0.05:
-            # Intentional stop requested by Nav2
-            vx, vy, wz = 0.0, 0.0, 0.0
-        else:
-            # Proportional boost for linear movement to prevent motor stall
-            if global_speed < self.min_physical_speed_ms and global_speed >= STOP_TOLERANCE:
-                scale_factor = self.min_physical_speed_ms / global_speed
-                vx *= scale_factor
-                vy *= scale_factor
-            
-            # Proportional boost for pure rotation to prevent motor stall
-            if 0.05 <= abs(wz) < self.min_angular_speed_rads:
-                wz = math.copysign(self.min_angular_speed_rads, wz)
+        if dt <= 0.0 or dt > 0.5:
+            dt = 0.02
 
-        # --- STEP 3: KINEMATICS & HARDWARE CLAMPING ---
+        # --- 1. DETERMINE GLOBAL STATE ---
+        is_idle = (abs(msg.linear.x) < 0.005 and abs(msg.linear.y) < 0.005 and abs(msg.angular.z) < 0.005)
+
+        if not is_idle:
+            vx = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.x))
+            vy = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.y))
+            wz = max(-self.max_angular_speed_rads, min(self.max_angular_speed_rads, msg.angular.z))
+        
         for name, config in self.wheels.items():
-            # Local velocity vectors for the wheel
-            vx_wheel = vx - config['y'] * wz
-            vy_wheel = vy + config['x'] * wz
-
-            # Convert cartesian to polar (speed and angle)
-            speed_ms = math.hypot(vx_wheel, vy_wheel)
+            last_angle_rad = config['last_cmd_angle']
             
-            # Optimization: Prevent wheels from snapping back to 0 degrees when stopped
-            if speed_ms > 0.001:
-                angle_rad = math.atan2(vy_wheel, vx_wheel)
-                config['last_cmd_angle'] = angle_rad
+            # --- 2. TARGET GENERATION (Branching Logic) ---
+            if is_idle:
+                # Robot is resting: Apply pre-orientation modes
+                raw_target_speed_ms = 0.0
+                if self.active_joy_mode == 3:
+                    raw_target_angle = math.atan2(config['x'] - self.cor_x, -(config['y'] - self.cor_y))
+                elif self.active_joy_mode in [1, 2]:
+                    raw_target_angle = 0.0
+                else:
+                    raw_target_angle = last_angle_rad
             else:
-                angle_rad = config['last_cmd_angle']
+                # Robot is moving: Apply Inverse Kinematics
+                vx_wheel = vx - (config['y'] - self.cor_y) * wz
+                vy_wheel = vy + (config['x'] - self.cor_x) * wz
+                raw_target_speed_ms = math.hypot(vx_wheel, vy_wheel)
 
-            # Format for ESP32 (RPM and Degrees)
-            rpm = (speed_ms * 60.0) / (2.0 * math.pi * self.wheel_radius)
-            angle_deg = math.degrees(angle_rad)
+                if raw_target_speed_ms > 0.001:
+                    raw_target_angle = math.atan2(vy_wheel, vx_wheel)
+                else:
+                    raw_target_angle = last_angle_rad
+                    raw_target_speed_ms = 0.0
 
-            # Absolute Hardware Clamping (Protects the mechanical parts against extreme demands)
+            # --- 3. UNIFIED PROCESSING PIPELINE ---
+            
+            # 3.1 Vectorial Inversion Logic (Applies to both modes and movement)
+            if abs(raw_target_angle) > (math.pi / 2.0):
+                if raw_target_angle > 0.0:
+                    target_angle_rad = raw_target_angle - math.pi
+                else:
+                    target_angle_rad = raw_target_angle + math.pi
+                raw_target_speed_ms = -raw_target_speed_ms
+            else:
+                target_angle_rad = raw_target_angle
+
+            # 3.2 Slew Rate Limiter
+            step_diff = (target_angle_rad - last_angle_rad + math.pi) % (2.0 * math.pi) - math.pi
+            max_step = self.max_steering_speed_rad_s * dt
+            
+            limited_step = max(-max_step, min(max_step, step_diff))
+            final_angle_rad = (last_angle_rad + limited_step + math.pi) % (2.0 * math.pi) - math.pi
+
+            # 3.3 Hardware Clamping
+            final_angle_deg = math.degrees(final_angle_rad)
+            clamped_angle_deg = max(-self.max_steering_deg, min(self.max_steering_deg, final_angle_deg))
+            config['last_cmd_angle'] = math.radians(clamped_angle_deg)
+
+            # 3.4 Traction Scaling & Publishing
+            if is_idle or raw_target_speed_ms == 0.0:
+                final_speed_ms = 0.0
+            else:
+                alignment_error = abs((target_angle_rad - config['last_cmd_angle'] + math.pi) % (2.0 * math.pi) - math.pi)
+                final_speed_ms = raw_target_speed_ms * max(0.0, math.cos(alignment_error))
+
+            rpm = (final_speed_ms * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']
             rpm = max(-self.limit_motor_speed_rpm, min(self.limit_motor_speed_rpm, rpm))
-            angle_deg = max(-self.max_steering_deg, min(self.max_steering_deg, angle_deg))
 
-            # Publish command [RPM, Angle] with explicit float casting
-            cmd_msg = Float64MultiArray(data=[float(rpm), float(angle_deg)])
-            self.wheel_pubs[name].publish(cmd_msg)
+            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm), float(clamped_angle_deg)]))
 
     def odometry_callback(self):
-        """ Forward Kinematics: Estimates global robot position from wheel feedback """
+        """ Forward Kinematics: Estimates global robot position from wheel feedback using CoR """
         current_time = self.get_clock().now()
         dt = (current_time - self.last_time).nanoseconds / 1e9
         self.last_time = current_time
@@ -151,40 +300,66 @@ class SwerveKinematicsNode(Node):
         if dt <= 0:
             return
 
-        vx_total = 0.0
-        vy_total = 0.0
-        wz_total = 0.0
+        # --- 0. WATCHDOG SOFTWARE ---
+        # Calculate how much time passed without receiving a velocity command
+        dt_watchdog = (current_time - self.last_cmd_time).nanoseconds / 1e9
+        
+        if dt_watchdog > self.cmd_timeout_sec:
+            if not self.watchdog_triggered:
+                self.get_logger().warn("Watchdog triggered: No cmd_vel received for 0.5s. Forcing motors to 0 RPM.")
+                
+                # Override physical commands to stop the robot
+                for name, config in self.wheels.items():
+                    # Send 0.0 RPM but keep the last commanded steering angle
+                    clamped_angle_deg = math.degrees(config['last_cmd_angle'])
+                    self.wheel_pubs[name].publish(Float64MultiArray(data=[0.0, float(clamped_angle_deg)]))
+                
+                # Lock the watchdog so it only publishes the stop command once per timeout event
+                self.watchdog_triggered = True
+        
+        # 1. Calculate individual wheel velocity vectors in the robot frame
+        vx_sum = 0.0
+        vy_sum = 0.0
 
-        # Sum the kinematic contribution of each wheel
         for config in self.wheels.values():
             speed_ms = (config['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
             angle_rad = math.radians(config['current_angle'])
 
-            # Local wheel velocity vectors
-            vx_w = speed_ms * math.cos(angle_rad)
-            vy_w = speed_ms * math.sin(angle_rad)
-
-            vx_total += vx_w
-            vy_total += vy_w
+            config['vx_w'] = speed_ms * math.cos(angle_rad)
+            config['vy_w'] = speed_ms * math.sin(angle_rad)
             
-            # Angular velocity equation for independent wheels
-            r_squared = config['x']**2 + config['y']**2
-            wz_total += (config['x'] * vy_w - config['y'] * vx_w) / r_squared
+            vx_sum += config['vx_w']
+            vy_sum += config['vy_w']
 
-        # Average over the 4 wheels (overdetermined system resolution)
-        vx_robot = vx_total / 4.0
-        vy_robot = vy_total / 4.0
-        wz_robot = wz_total / 4.0
+        # 2. Linear Velocity of the Geometric Center (CoR)
+        vx_cor = vx_sum / 4.0
+        vy_cor = vy_sum / 4.0
 
-        # Midpoint integration for better accuracy during curves
+        # 3. Exact Angular Velocity (wz) using Least Squares relative to CoR
+        wz_numerator = 0.0
+        wz_denominator = 0.0
+        for config in self.wheels.values():
+            # Distance from CoR
+            x_rel = config['x'] - self.cor_x
+            y_rel = config['y'] - self.cor_y
+            
+            wz_numerator += x_rel * (config['vy_w'] - vy_cor) - y_rel * (config['vx_w'] - vx_cor)
+            wz_denominator += x_rel**2 + y_rel**2
+
+        wz_robot = wz_numerator / wz_denominator if wz_denominator > 0 else 0.0
+
+        # 4. Transfer velocity from CoR back to base_footprint (for Nav2 and RViz)
+        # V_base = V_cor + (Omega x R_cor_to_base)
+        vx_robot = vx_cor - (-self.cor_y) * wz_robot
+        vy_robot = vy_cor + (-self.cor_x) * wz_robot
+
+        # 5. Odometry Integration (Position update)
         delta_theta = wz_robot * dt
         theta_midpoint = self.odom_theta + (delta_theta / 2.0)
 
-        # Rotate local velocities into the global fixed map frame
         delta_x = (vx_robot * math.cos(theta_midpoint) - vy_robot * math.sin(theta_midpoint)) * dt
         delta_y = (vx_robot * math.sin(theta_midpoint) + vy_robot * math.cos(theta_midpoint)) * dt
 
-        # Update absolute position
         self.odom_x += delta_x
         self.odom_y += delta_y
         self.odom_theta += delta_theta

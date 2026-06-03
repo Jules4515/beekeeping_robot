@@ -16,7 +16,9 @@ class WheelStateConverterNode(Node):
         super().__init__('wheel_state_converter_node')
 
         # Parameters
-        self.declare_parameter('publish_rate', 10.0)
+        # Publish wheel joint states at a higher default rate to keep RViz
+        # visuals synchronized with odometry/tf (match odom 50Hz by default).
+        self.declare_parameter('publish_rate', 50.0)
         self.publish_rate = self.get_parameter('publish_rate').value
 
         # Publishers

@@ -22,7 +22,7 @@ class JoystickModeNode(Node):
 
         # Global maximums
         self.declare_parameter('max_linear_speed_ms', 0.34)       # m/s
-        self.declare_parameter('max_angular_speed_rads', 0.53)      # rad/s
+        self.declare_parameter('max_angular_speed_rads', 0.36)      # rad/s
 
         # Button indices (Xbox 360: A=0, B=1, X=2, Y=3)
         self.declare_parameter('btn_opposite', 2)        # X

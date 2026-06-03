@@ -17,15 +17,12 @@ setup(
         (os.path.join('share', package_name, 'config'), glob('config/*')),        
         (os.path.join('share', package_name, 'meshes'), glob('meshes/*.STL')),        
         (os.path.join('share', package_name, 'maps'), glob('maps/*')),        
-        # Install Python scripts as executable files (optional, for direct use)
-        (os.path.join('lib', package_name), glob('scripts/*.py')),  
-
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='bee',
     maintainer_email='bee@todo.todo',
-    description='TODO: Package description',
+    description='Swerve kinematics and Joystick control for the bee_mobile robot',
     license='TODO: License declaration',
     extras_require={
         'test': [
@@ -36,11 +33,12 @@ setup(
         'console_scripts': [
             'joystick_node = bee_mobile.joystick_node:main',
             'four_ws_controller = bee_mobile.four_ws_controller:main',
-            'pid_tuner = bee_mobile.pi_tuner:main',
+            'pid_tuner = bee_mobile.pid_tuner:main',
             'wheel_state_converter = bee_mobile.wheel_state_converter:main',
-            'odometry_node = bee_mobile.odometry_node:main',
             'swerve_kinematics_node = bee_mobile.swerve_kinematics_node:main',
-            'sim_bridge = bee_mobile.sim_bridge:main'
+            'sim_bridge = bee_mobile.sim_bridge:main',
+            'mux_joystick_node = bee_mobile.mux_joystick_node:main',
+            'waypoint_commander = bee_mobile.waypoint_commander:main',
         ],
     },
 )

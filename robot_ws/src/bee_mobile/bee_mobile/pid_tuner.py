@@ -12,6 +12,10 @@ class PIDTuner(Node):
     def __init__(self):
         super().__init__('pid_tuner')
 
+        # Control variable for interactive input
+        self.declare_parameter('interactive_mode', True)
+        self.interactive_mode = self.get_parameter('interactive_mode').value
+
         # Wheel modules
         self.wheel_modules = ['front_left', 'front_right', 'rear_left', 'rear_right']
 
@@ -24,14 +28,19 @@ class PIDTuner(Node):
         # Default PID values (tuned to reduce pivot‑mode oscillation)
         # [Kp_d, Ki_d, Kd_d, Off_d,   Kp_s, Ki_s, Kd_s, Off_s]
         self.default_pid = [
-            10.0, 3.2, 0.2, 0.0,    # Drive: Kp, Ki, Kd, Offset (stable)
-            4.0, 0.5, 0.5, 120.0      # Steer: Kp lower (0.2) to reduce 45° oscillation
+            20.0, 3.2, 0.2, 0.0,    # Drive: Kp, Ki, Kd, Offset (stable)
+            20.0, 0.5, 2.0, 130.0  #4.0, 0.5, 0.5, 120.0    # Steer: Kp lower (0.2) to reduce 45° oscillation
         ]
+        
+        # Publish hardcoded values once at startup
         self.publish_to_all(self.default_pid)
 
-        self.get_logger().info('PID Tuner ready – sending same 8 coefficients to all wheels.')
-        self.get_logger().info('Enter 8 numbers: Kp_d Ki_d Kd_d Off_d   Kp_s Ki_s Kd_s Off_s')
-        self.get_logger().info('Example to reduce steering oscillation: 0.5 0 0 350   0.15 0 0.02 0')
+        if self.interactive_mode:
+            self.get_logger().info('PID Tuner ready – sending same 8 coefficients to all wheels.')
+            self.get_logger().info('Enter 8 numbers: Kp_d Ki_d Kd_d Off_d   Kp_s Ki_s Kd_s Off_s')
+            self.get_logger().info('Example to reduce steering oscillation: 0.5 0 0 350   0.15 0 0.02 0')
+        else:
+            self.get_logger().info('Interactive mode disabled. Applied hardcoded PID values.')
 
     def publish_to_all(self, coeffs):
         """Publish the same 8‑element array to every wheel module."""
@@ -53,20 +62,26 @@ def main(args=None):
     node = PIDTuner()
 
     try:
-        while rclpy.ok():
-            rclpy.spin_once(node, timeout_sec=0.1)
-            user_input = input("\nEnter 8 PID values (or 'q' to quit): ").strip()
-            if user_input.lower() == 'q':
-                break
-            parts = user_input.split()
-            if len(parts) == 8:
-                try:
-                    new_pid = [float(x) for x in parts]
-                    node.publish_to_all(new_pid)
-                except ValueError:
-                    node.get_logger().error('Invalid numbers – use floats separated by spaces.')
-            else:
-                node.get_logger().error('Please enter exactly 8 numbers.')
+        if node.interactive_mode:
+            # Interactive loop: wait for user input
+            while rclpy.ok():
+                rclpy.spin_once(node, timeout_sec=0.1)
+                user_input = input("\nEnter 8 PID values (or 'q' to quit): ").strip()
+                if user_input.lower() == 'q':
+                    break
+                parts = user_input.split()
+                if len(parts) == 8:
+                    try:
+                        new_pid = [float(x) for x in parts]
+                        node.publish_to_all(new_pid)
+                    except ValueError:
+                        node.get_logger().error('Invalid numbers – use floats separated by spaces.')
+                else:
+                    node.get_logger().error('Please enter exactly 8 numbers.')
+        else:
+            # Static mode: just keep the node alive so subscribers can receive the message
+            rclpy.spin(node)
+            
     except KeyboardInterrupt:
         pass
 

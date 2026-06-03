@@ -4,8 +4,8 @@
     <xacro:property name="pkg" value="package://bee_mobile/meshes" />
 
     <!-- Position of the steering joint in the chassis frame of reference -->
-    <xacro:property name="left_y" value="0.5790" />
-    <xacro:property name="right_y"  value="-0.5790" />
+    <xacro:property name="left_y" value="0.4150" /> <!-- 0.5790 -->
+    <xacro:property name="right_y"  value="-0.4150" /> <!-- -0.5790 -->
     <xacro:property name="front_x"  value="0.7661" />
     <xacro:property name="rear_x" value="-0.1939" />
 

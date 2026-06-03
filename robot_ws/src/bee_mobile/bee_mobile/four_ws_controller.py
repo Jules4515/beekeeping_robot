@@ -22,7 +22,7 @@ class FourWSController(Node):
 
         # ---------- Software Limits (Mode Specific) ----------
         self.declare_parameter('max_linear_speed_ms', 0.34)       # Straight and Crab mode
-        self.declare_parameter('max_angular_speed_rads', 0.53)      # Tighter limit for Zero Turn mode
+        self.declare_parameter('max_angular_speed_rads', 0.36)      # Tighter limit for Zero Turn mode
 
         # ---------- Hardware Limits (Absolute) ----------
         self.declare_parameter('limit_motor_speed_rpm', 30.0)   # Absolute motor protection (Priority 1)
