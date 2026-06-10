@@ -3,7 +3,7 @@ twist_mux:
     use_stamped: false   # Forces the node to subscribe and publish standard Twist messages
     topics:
       navigation:
-        topic: cmd_vel_nav
+        topic: cmd_vel_smoothed
         timeout: 0.5
         priority: 10
       joystick:

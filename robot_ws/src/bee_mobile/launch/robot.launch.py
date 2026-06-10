@@ -88,7 +88,6 @@ def generate_launch_description():
         package='twist_mux',
         executable='twist_mux',
         output='screen',
-        remappings=[('/cmd_vel_out', '/cmd_vel')],
         parameters=[os.path.join(pkg_share, 'config', 'twist_mux_topics.yaml')]
     )
 

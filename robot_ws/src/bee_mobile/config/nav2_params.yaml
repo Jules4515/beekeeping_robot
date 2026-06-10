@@ -43,7 +43,7 @@ amcl:
     max_beams: 60                       # number of laser beams used per update
     max_particles: 2000
     min_particles: 500
-    odom_frame_id: "dummy_odom"
+    odom_frame_id: "odom"
     pf_err: 0.05                        # target error in filter distribution
     pf_z: 0.99                          # probability that actual error < pf_err
     recovery_alpha_fast: 0.0            # fast exponential decay for recovery
@@ -51,7 +51,7 @@ amcl:
     resample_interval: 1                # resample every N filter updates
     # NOTE: OmniMotionModel would be more accurate for a 4WS robot,
     # but since amcl is not used with slam_toolbox it doesn't matter here.
-    robot_model_type: "nav2_amcl::DifferentialMotionModel"
+    robot_model_type: "nav2_amcl::OmniMotionModel"
     save_pose_rate: 0.5                 # rate at which to save last estimated pose (Hz)
     sigma_hit: 0.2                      # std dev of Gaussian model for hit beams
     tf_broadcast: true                  # broadcast map -> odom TF (disable if slam_toolbox active)
@@ -130,8 +130,8 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.20          # 20 cm — must be reached before stopping (was 0.5)
-      yaw_goal_tolerance: 0.79          # 45 degrees
+      xy_goal_tolerance: 0.40
+      yaw_goal_tolerance: 0.15
       stateful_timeout: 10.0            # max time to maintain stopped state (s)
 
     # -- MPPI Controller ----------------------------------------------------
@@ -139,10 +139,9 @@ controller_server:
       plugin: "nav2_mppi_controller::MPPIController"
 
       # Prediction horizon: time_steps * model_dt = total simulated time
-      # At 0.23 m/s min: 30 * 0.1 = 3 s -> ~0.7 m look-ahead (reduced for real-time performance)
-      time_steps: 30                    # number of prediction steps (reduced from 50 for performance)
+      time_steps: 45                    # number of prediction steps (reduced from 50 for performance)
       model_dt: 0.10                    # time per step (s)
-      batch_size: 150                   # sampled trajectories per iteration (reduced from 500 — compute bottleneck)
+      batch_size: 200                   # sampled trajectories per iteration (reduced from 500 — compute bottleneck)
       iteration_count: 1                # MPPI optimization iterations per cycle
 
       # -- Motion model -----------------------------------------------------
@@ -153,32 +152,32 @@ controller_server:
       # -- Velocity limits --------------------------------------------------
       # Physical minimum speed (0.23 m/s) must be respected.
       # MPPI must be able to command 0.0 to stop at the goal.
-      vx_max:  0.67                    # max forward speed (m/s), equivalent to 20 RPM
-      vx_min:  0.23                    # minimum = hardware constraint (10 RPM)
-      # FIXED (was 0.0): lateral speed now enabled for crab mode
-      vy_max:  0.67                    # max lateral speed (m/s)
-      wz_max:  1.06                    # max angular speed (rad/s) for zero turn
+      vx_max:  0.67
+      vx_min:  0.0                    # Autorise la marche arrière (Claude avait mis 0.00)
+      vy_max:  0.67                    
+      vy_min:  0.0                    # AJOUT OBLIGATOIRE : Autorise le crabe à droite
+      wz_max:  0.71                    
+      wz_min: -0.71                   # AJOUT OBLIGATOIRE : Autorise la rotation à droite
 
       # -- Sampling noise ---------------------------------------------------
-      # std ~ 30% of speed range for good trajectory space exploration
-      # With fewer samples (batch_size=150), increase noise for diversity
-      vx_std:  0.50                     # forward velocity noise std (increased from 0.40)
-      vy_std:  0.50                     # lateral velocity noise std (increased from 0.40)
-      wz_std:  0.80                     # angular velocity noise std (increased from 0.60)
+      # On divise le bruit pour forcer la continuité spatiale (le CIR ne peut plus sauter)
+      vx_std:  0.10                     # (Anciennement 0.20)
+      vy_std:  0.03                     # (Anciennement 0.20) TRÈS IMPORTANT: Tue les sauts latéraux secs.
+      wz_std:  0.05                     # (Anciennement 0.15) Force une évolution très lente de la rotation.
 
       # -- Acceleration limits ----------------------------------------------
-      ax_max:  1.5                      # max forward acceleration (m/s²) (was 0.5)
-      ax_min: -1.5                      # max forward deceleration (was -0.5)
-      # FIXED (was ±3.0): reduced lateral acceleration — robot is heavy
-      ay_max:  1.5                      # max lateral acceleration (m/s²)
-      ay_min: -1.5
-      az_max:  2.0                      # max angular acceleration (rad/s²) (was 1.0)
+      # Maintien de l'accélération longitudinale, effondrement des accélérations latérales/angulaires.
+      ax_max:  0.5                      
+      ax_min: -0.5                      
+      ay_max:  0.10                     # (Anciennement 0.5) Le robot devra amorcer son mode crabe très doucement.
+      ay_min: -0.10
+      az_max:  0.15                     # (Anciennement 0.5) Le robot devra tourner avec la souplesse d'un volant.
+      az_min: -0.15
 
       # -- MPPI algorithm ---------------------------------------------------
       prune_distance: 1.5               # prune path behind robot (m) (was 1.7)
-      transform_tolerance: 0.5          # TF tolerance (s) — increased to handle TF_OLD_DATA warnings
-      temperature: 0.3                  # trajectory diversity — higher = more exploration
-      gamma: 0.015                      # discount factor for cost weighting
+      transform_tolerance: 1.0          # TF tolerance (s) — increased to handle TF_OLD_DATA warnings
+      temperature: 0.05                 # (Anciennement 0.15) Verrouille le choix de la trajectoire pour éviter les vibrations.      gamma: 0.015                      # discount factor for cost weighting
       visualize: true                   # publish candidate trajectories to RViz2
       regenerate_noises: true           # regenerate noise samples each iteration
 
@@ -188,11 +187,7 @@ controller_server:
 
       # AckermannConstraints removed — not relevant for Omni holonomic model
 
-      # -- Critics ----------------------------------------------------------
-      # Removed from original:
-      #   PathAngleCritic    : forces robot to align heading with path direction
-      #                        useless for holonomic robot (crab doesn't need to face forward)
-      #   PreferForwardCritic: penalizes non-forward motion — counterproductive for crab mode
+      # ── Critics — holonomic rough navigation (±50 cm) ─────────────────
       critics: [
         "ConstraintCritic",
         "CostCritic",
@@ -204,75 +199,73 @@ controller_server:
         "PreferForwardCritic"
       ]
 
-      # Enforces velocity/acceleration constraints defined above
+      # Prevents physically impossible maneuvers based on your velocity/acceleration limits.
       ConstraintCritic:
         enabled: true
-        cost_power: 1
-        cost_weight: 4.0
+        cost_power: 1                  # Exponent applied to the cost (1 = linear scaling).
+        cost_weight: 4.0               # Multiplier for the final penalty score.
 
-      # Penalizes trajectories near obstacles
+      # Ensures obstacle avoidance by penalizing trajectories entering inflated costmap zones.
       CostCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 3.81
-        near_collision_cost: 253
-        critical_cost: 300.0
-        # FIXED (was false): robot footprint is 96x116 cm, must be considered
-        consider_footprint: true
-        collision_cost: 1000000.0
-        near_goal_distance: 1.0
-        trajectory_point_step: 2
+        cost_weight: 3.81               # Balance between following the path and avoiding walls.
+        near_collision_cost: 253       # Cost added when entering the inflation radius.
+        critical_cost: 300.0           # Cost threshold to completely reject a trajectory.
+        consider_footprint: true       # Uses the actual robot shape instead of a single center point.
+        collision_cost: 1000000.0      # Infinite penalty for hitting a lethal obstacle.
+        near_goal_distance: 1.0        # Distance in meters where obstacle avoidance relaxes slightly to allow docking.
+        trajectory_point_step: 2       # Checks for collisions every 2 trajectory points to save CPU.
 
+      # Attracts the robot to the exact final X,Y coordinates.
       GoalCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 8.0               # Increased to 8.0 (was 5.0) — strongly prioritize goal convergence
-        threshold_to_consider: 2.0     # Increased to 2.0 (was 1.5) — apply earlier
+        cost_weight: 15.0              # Massive weight to guarantee precise X,Y arrival.
+        threshold_to_consider: 2.0     # Distance in meters from the goal where this critic activates.
 
-      # Forces the chassis to match the final goal orientation.
-      # Increased threshold to 1.5m so the robot aligns while driving,
-      # preventing a late in-place rotation (Zero-Turn) that leaves wheels steered.
+      # Aligns the final robot rotation (Yaw). Kept asleep until the very end for pure Zero Turn.
       GoalAngleCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 4.0               # Increased to prioritize final alignment
-        threshold_to_consider: 1.5     # Must be large enough to allow a smooth curve
+        cost_weight: 10.0              # Strong weight to force rotation, but restricted by the threshold below.
+        threshold_to_consider: 0.3     # Activates ONLY in the last 30cm to force in-place rotation.
 
+      # Keeps the generated trajectories geometrically close to the global path.
       PathAlignCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 10.0
-        max_path_occupancy_ratio: 0.05
-        trajectory_point_step: 3
-        threshold_to_consider: 0.5
-        offset_from_furthest: 15
-        use_path_orientations: false
+        cost_weight: 3.0               # Moderate weight to allow slight deviations for obstacle avoidance.
+        max_path_occupancy_ratio: 0.05 # Max fraction of trajectory allowed outside the path bounds.
+        trajectory_point_step: 3       # Evaluates every 3 points to save CPU.
+        threshold_to_consider: 0.5     # Deactivates near the goal to let GoalCritic take over.
+        offset_from_furthest: 15       # Lookahead distance in path points to align with.
+        use_path_orientations: false   # Evaluates position only, ignoring the path's requested heading.
 
+      # Pushes the robot forward along the path to ensure the shortest and fastest route.
       PathFollowCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 3.0
-        offset_from_furthest: 5
-        threshold_to_consider: 1.5
+        cost_weight: 5.0               # High weight to maintain constant forward progress.
+        offset_from_furthest: 5        # Lookahead points to pull the robot toward.
+        threshold_to_consider: 1.5     # Deactivates near the goal.
 
-      # Forces the robot heading (X-axis) to align with the path trajectory.
-      # Essential for Ackermann-like motion to prevent sideways drifting.
+      # Forces the front of the robot (its nose) to point in the direction it is moving.
       PathAngleCritic:
-        enabled: true
+        enabled: false
         cost_power: 1
-        cost_weight: 8.0
-        offset_from_furthest: 4
-        threshold_to_consider: 0.5
-        max_angle_to_furthest: 1.0
-        mode: 0                        # 0 = Forward motion only
+        cost_weight: 15.0              # High weight ensures immediate initial re-orientation.
+        offset_from_furthest: 4        # Lookahead points for calculating the required angle.
+        threshold_to_consider: 1.0     # Deactivates near the goal.
+        max_angle_to_furthest: 0.25     # Maximum allowed angular deviation in radians.
+        mode: 0                        # 0 = Forward driving direction.
 
-      # Strictly penalizes lateral velocity (Vy) and reverse motion.
-      # Weight increased to suppress Swerve crab-walking behavior during approach.
+      # Penalizes lateral (Y-axis) velocities to heavily discourage crab-walking.
       PreferForwardCritic:
-        enabled: true
+        enabled: false
         cost_power: 1
-        cost_weight: 15.0              # High penalty for lateral kinematics
-        threshold_to_consider: 0.5
+        cost_weight: 20.0              # Extreme weight to force Ackermann-like straight driving.
+        threshold_to_consider: 0.5     # Deactivates near the goal to allow final adjustments.
 
       # TwirlingCritic: penalizes spinning in place, disabled by default
       # TwirlingCritic:
@@ -286,26 +279,26 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0             # costmap update rate (Hz)
+      update_frequency: 10.0             # costmap update rate (Hz)
       publish_frequency: 2.0            # publish rate for visualization (Hz)
       global_frame: odom
       robot_base_frame: base_footprint
       rolling_window: true              # window moves with the robot
-      width: 4                          # window width (m) — increased (was 3) for faster robot
-      height: 4                         # window height (m)
+      width: 6                         # window width (m) — increased (was 3) for faster robot
+      height: 6                         # window height (m)
       resolution: 0.05                  # grid cell size (m)
       transform_tolerance: 0.5
       # Robot footprint polygon (asymmetric: arm extends behind center)
       # Points: [front-left, front-right, rear-right, rear-left] in base_footprint frame
-      footprint: '[ [0.7661, 0.5790], [0.7661, -0.5790], [-0.1939, -0.5790], [-0.1939, 0.5790] ]'
+      footprint: '[ [0.8, 0.7], [0.8, -0.7], [-0.8, -0.7], [-0.8, 0.7] ]'
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0        # cost decay rate with distance from obstacle
-        inflation_radius: 1.05          # safety margin around obstacles (m) (was 0.70)
+        cost_scaling_factor: 10.0       # cost decay rate with distance from obstacle
+        inflation_radius: 1.10
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
-        enabled: False # True
+        enabled: True
         publish_voxel_map: True
         origin_z: 0.0
         z_resolution: 0.05              # voxel height (m)
@@ -319,9 +312,9 @@ local_costmap:
           clearing: True                # use scan to clear free space
           marking: True                 # use scan to mark obstacles
           data_type: "LaserScan"
-          raytrace_max_range: 3.5       # max range to clear free space (m) (was 3.0)
+          raytrace_max_range: 12.0       # max range to clear free space (m) (was 3.0)
           raytrace_min_range: 0.0
-          obstacle_max_range: 3.0       # max range to mark obstacles (m) (was 2.5)
+          obstacle_max_range: 11.5       # max range to mark obstacles (m) (was 2.5)
           obstacle_min_range: 0.05
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
@@ -338,7 +331,8 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_footprint
-      footprint: '[ [0.7661, 0.5790], [0.7661, -0.5790], [-0.1939, -0.5790], [-0.1939, 0.5790] ]'
+      footprint: '[ [0.8, 0.7], [0.8, -0.7], [-0.8, -0.7], [-0.8, 0.7] ]'
+      #footprint: '[ [0.6, 0.6], [0.6, -0.6], [-0.6, -0.6], [-0.6, 0.6] ]'   #longueur = 160cm, largeur = 140cm
       resolution: 0.05
       track_unknown_space: true         # treat unknown cells as potentially traversable
       transform_tolerance: 0.5          # INCREASED: wait up to 300ms for map->odom transform
@@ -346,10 +340,10 @@ global_costmap:
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
-        enabled: true
+        enabled: True
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
-        enabled: False # True
+        enabled: True
         observation_sources: scan
         scan:
           topic: /scan
@@ -357,14 +351,14 @@ global_costmap:
           clearing: True
           marking: True
           data_type: "LaserScan"
-          raytrace_max_range: 3.5       # was 3.0
+          raytrace_max_range: 12.0       # was 3.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 3.0       # was 2.5
+          obstacle_max_range: 11.5       # was 2.5
           obstacle_min_range: 0.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 1.05
+        cost_scaling_factor: 10.0
+        inflation_radius: 1.10
       always_send_full_costmap: True
 
 # The yaml_filename does not need to be specified since it going to be set by defaults in launch.
@@ -440,7 +434,7 @@ behavior_server:
     # FIXED: min_rotational_vel must be >= wz at which wheel speed = physical minimum
     # wz_min = v_min / r_pivot = 0.5 / sqrt((0.96/2)^2 + (0.83/2)^2) = 0.5/0.635 ~ 0.79
     # Set to 0.85 to have a small margin above the stall threshold.
-    max_rotational_vel: 1.06           # was 1.0 — robot can turn at up to 2.0 rad/s
+    max_rotational_vel: 0.71           # was 1.0 — robot can turn at up to 2.0 rad/s
     min_rotational_vel: 0.35            # was 0.4 — CRITICAL: below 0.79 wheels stall
     rotational_acc_lim: 3.2             # angular acceleration limit (rad/s²)
 
@@ -492,16 +486,18 @@ velocity_smoother:
     smoothing_frequency: 20.0
     stamp_smoothed_velocity_with_smoothing_time: False
     scale_velocities: False
-    feedback: "OPEN_LOOP"               # no velocity feedback from odometry
+    feedback: "CLOSED_LOOP"               # no velocity feedback from odometry
     # FIXED: [x, y, theta] — y was 0.0, blocking all lateral (crab) commands
-    max_velocity:    [0.67,  0.67,  1.06] # [0.45,  0.45,  0.71] 
-    min_velocity:    [ 0.0, -0.67, -1.06] # [ 0.0, -0.45, -0.71] 
-    max_accel:        [10.0, 10.0,  3.2]   # was [10.0, 0.0, 3.2]
-    max_decel:        [-10.0, -10.0, -3.2] # was [-10.0, 0.0, -3.2]
+    max_velocity:    [0.67, 0.67, 0.71] 
+    min_velocity:    [-0.67, -0.67, -0.71]
+    # L'accélération [vx, vy, wz] est asymétrique pour garantir la fluidité directionnelle
+    max_accel:       [0.5, 0.10, 0.15]   
+    # Le freinage d'urgence autorise un arrêt net pour protéger la mécanique
+    max_decel:       [-1.5, -0.30, -0.45]
     odom_topic: "odom"
-    odom_duration: 0.1                  # duration of odom history used for smoothing (s)
-    deadband_velocity: [0.0, 0.0, 0.0] # velocities below this are zeroed out
-    velocity_timeout: 1.0              # timeout before publishing zero velocity (s)
+    odom_duration: 0.2                  # duration of odom history used for smoothing (s)
+    deadband_velocity: [0.02, 0.02, 0.02] # velocities below this are zeroed out
+    velocity_timeout: 0.1              # timeout before publishing zero velocity (s)
 
 # -----------------------------------------------------------------------------
 #  Collision Monitor — last-resort safety stop before cmd_vel reaches robot
@@ -510,7 +506,7 @@ collision_monitor:
   ros__parameters:
     base_frame_id: "base_footprint"
     odom_frame_id: "odom"
-    cmd_vel_in_topic: "cmd_vel_smoothed"  # receives smoothed vel from velocity_smoother
+    cmd_vel_in_topic: "cmd_vel_smoothed"     # receives smoothed vel from velocity_smoother
     cmd_vel_out_topic: "cmd_vel_nav"
     state_topic: "collision_monitor_state"
     transform_tolerance: 0.3
@@ -611,20 +607,52 @@ loopback_simulator:
 
 slam_toolbox:
   ros__parameters:
-    # Paramètres généraux
+    # --- General parameters ---
     use_sim_time: false
-    
-    # Configuration des repères géométriques (TF Tree)
     odom_frame: odom
     map_frame: map
     base_frame: base_footprint
-    
-    # Configuration des capteurs
     scan_topic: /scan
     
-    # -----------------------------------------------------------------
-    # VOTRE RÉSOLUTION CONFIGURÉE POUR LE LIDAR C1
-    # d = 2 * pi * 12 * (0.72 / 360) = 0.1508m = 15.08cm à 12 mètres
-    # REDUCED to 0.20 for hardware performance (was 0.15)
-    # -----------------------------------------------------------------
-    resolution: 0.20
+    # --- Map resolution and laser range ---
+    resolution: 0.05
+    max_laser_range: 11.5
+    use_maximum_laser_distance: 11.5
+    
+    # --- TRIGGER TIMING (Calculated for max rotational velocity) ---
+    # Allow updates up to 20Hz to keep up with fast physical rotation
+    minimum_time_interval: 0.05
+    
+    minimum_travel_distance: 0.02  # ↓ De 0.05 à 0.02 (corrige après 2cm de mouvement)
+    minimum_travel_heading: 0.05   # ↓ De 0.15 à 0.05 (corrige après 3° de rotation) 
+    
+    coarse_search_angle_offset: 0.15  # was 0.35
+    scan_buffer_size: 10              # was 30
+
+    # --- SCAN MATCHER ALGORITHM ---
+    use_scan_matching: true
+    use_scan_barycenter: true
+    use_response_expansion: true
+
+    # Coarse search: Keep at ~20 deg. If set too high, symmetric 
+    # environments (hallways) might cause instant 90-degree map tears.
+    coarse_angle_resolution: 0.035      
+    
+    # Fine search: Mathematically widened to 0.02 rad (> 1.1 degrees)
+    # This guarantees the window is larger than the 8.33% odometry error 
+    # accumulated over the 4.5 degree trigger threshold.
+    fine_search_angle_offset: 0.02     
+    fine_angle_resolution: 0.001
+    
+    # --- DATA BUFFER ---
+    # Buffer more scans to maintain feature geometry during rapid spins
+    scan_buffer_maximum_scan_distance: 10.0
+
+    odom_noise_angular: 1.0
+    loop_closure: false
+
+    # Paramètres ICP (pour mieux gérer les couloirs)
+    icp_max_iterations: 30          # ↑ De 20 à 30 (meilleure convergence)
+    icp_epsilon: 0.005              # ↓ De 0.01 à 0.005 (plus précis)
+    icp_max_correspondence_distance: 0.3  # ↓ De 0.5 à 0.3 (évite les fausses correspondances)
+    icp_outlier_distance_threshold: 0.15 # ↓ De 0.2 à 0.15 (rejette les points trop éloignés)

@@ -33,15 +33,11 @@ class SwerveKinematicsNode(Node):
         # --- Watchdog Parameters ---
         self.cmd_timeout_sec = 0.5  # Trigger safety stop after 0.5 seconds of silence
         self.watchdog_triggered = False # Prevents spamming stop commands on the network
-        
-        # --- Schmitt trigger memory for kinematic clutch ---
-        self.clutch_engaged = True  
 
         # Software limits (from Nav2 parameters)
         self.declare_parameter('max_linear_speed_ms', 0.67)
         self.declare_parameter('max_angular_speed_rads', 0.71)
-        self.declare_parameter('max_accel_ms2', 0.5)
-        self.declare_parameter('max_decel_ms2', 1.5)
+        self.declare_parameter('max_accel_ms2', 0.5) 
         
         # Anti-stall parameters (~10 RPM threshold to prevent motor jitter)
         self.declare_parameter('min_physical_speed_ms', 0.23)
@@ -55,7 +51,6 @@ class SwerveKinematicsNode(Node):
         self.min_physical_speed_ms = self.get_parameter('min_physical_speed_ms').value
         self.min_angular_speed_rads = self.get_parameter('min_angular_speed_rads').value
         self.max_accel_ms2 = self.get_parameter('max_accel_ms2').value
-        self.max_decel_ms2 = self.get_parameter('max_decel_ms2').value
         
         # Chassis geometry (x, y) relative to center, extracted from URDF + Hardware direction (dir)
         # 'dir' controls the command sent to ESP32.
@@ -120,43 +115,34 @@ class SwerveKinematicsNode(Node):
             self.wheels[wheel_name]['current_rpm'] = float(msg.data[0]) * self.wheels[wheel_name]['enc_dir']
             self.wheels[wheel_name]['current_angle'] = float(msg.data[1])
 
-    def _normalize_angle(self, angle):
-        """ Ensures angular values remain strictly within [-PI, PI] boundaries """
-        return (angle + math.pi) % (2.0 * math.pi) - math.pi
-
     def cmd_vel_callback(self, msg):
-        """ 
-        Pipeline: Theory -> Synchronization -> Execution.
-        Guarantees geometric integrity of the Instantaneous Center of Rotation (ICR).
-        """
+        """ Inverse Kinematics: Translates global Twist into individual wheel commands """
+        
+        # Reset the watchdog flag since a new command just arrived
         self.watchdog_triggered = False
 
-        # --- 0. TIME DELTA ---
+        # --- TIME DELTA CALCULATION ---
         current_time = self.get_clock().now()
         dt = (current_time - self.last_cmd_time).nanoseconds / 1e9
         self.last_cmd_time = current_time
+        
         if dt <= 0.0 or dt > 0.5:
             dt = 0.02
 
-        is_idle = (abs(msg.linear.x) < 0.05 and abs(msg.linear.y) < 0.05 and abs(msg.angular.z) < 0.05)
+        # --- 1. DETERMINE GLOBAL STATE ---
+        is_idle = (abs(msg.linear.x) < 0.005 and abs(msg.linear.y) < 0.005 and abs(msg.angular.z) < 0.005)
 
         if not is_idle:
             vx = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.x))
             vy = max(-self.max_linear_speed_ms, min(self.max_linear_speed_ms, msg.linear.y))
             wz = max(-self.max_angular_speed_rads, min(self.max_angular_speed_rads, msg.angular.z))
-
-        theoretical_targets = {}
-        angular_errors = []
-
-        # =========================================================
-        # PASS 1: KINEMATIC THEORY & PHYSICAL AWARENESS
-        # =========================================================
+        
         for name, config in self.wheels.items():
             last_angle_rad = config['last_cmd_angle']
-            encoder_angle_rad = math.radians(config['current_angle'])
             
-            # 1. Base Target Generation
+            # --- 2. TARGET GENERATION (Branching Logic) ---
             if is_idle:
+                # Robot is resting: Apply pre-orientation modes
                 raw_target_speed_ms = 0.0
                 if self.active_joy_mode == 3:
                     raw_target_angle = math.atan2(config['x'], -(config['y']))
@@ -165,104 +151,80 @@ class SwerveKinematicsNode(Node):
                 else:
                     raw_target_angle = last_angle_rad
             else:
+                # Robot is moving: Apply Inverse Kinematics
                 vx_wheel = vx - config['y'] * wz
                 vy_wheel = vy + config['x'] * wz
                 raw_target_speed_ms = math.hypot(vx_wheel, vy_wheel)
-                raw_target_angle = math.atan2(vy_wheel, vx_wheel) if raw_target_speed_ms > 0.05 else last_angle_rad
 
-            # 2. Vectorial Optimization (Shortest Path)
-            optimization_gap = self._normalize_angle(raw_target_angle - encoder_angle_rad)
-            if abs(optimization_gap) > math.radians(100.0):
-                target_angle_rad = self._normalize_angle(raw_target_angle - math.pi)
+                if raw_target_speed_ms > 0.001:
+                    raw_target_angle = math.atan2(vy_wheel, vx_wheel)
+                else:
+                    raw_target_angle = last_angle_rad
+                    raw_target_speed_ms = 0.0
+
+            # --- 3. UNIFIED PROCESSING PIPELINE ---
+            
+            # 3.1 Vectorial Inversion Logic (Applies to both modes and movement)
+            if abs(raw_target_angle) > (math.pi / 2.0):
+                if raw_target_angle > 0.0:
+                    target_angle_rad = raw_target_angle - math.pi
+                else:
+                    target_angle_rad = raw_target_angle + math.pi
                 raw_target_speed_ms = -raw_target_speed_ms
             else:
                 target_angle_rad = raw_target_angle
 
-            # 3. Steering Slew Rate Limiter
-            step_diff = self._normalize_angle(target_angle_rad - last_angle_rad)
+            # 3.2 Slew Rate Limiter
+            step_diff = (target_angle_rad - last_angle_rad + math.pi) % (2.0 * math.pi) - math.pi
             max_step = self.max_steering_speed_rad_s * dt
+            
             limited_step = max(-max_step, min(max_step, step_diff))
-            final_angle_rad = self._normalize_angle(last_angle_rad + limited_step)
+            final_angle_rad = (last_angle_rad + limited_step + math.pi) % (2.0 * math.pi) - math.pi
 
-            # Hardware angle clamping
-            clamped_angle_deg = max(-self.max_steering_deg, min(self.max_steering_deg, math.degrees(final_angle_rad)))
-            final_angle_rad = math.radians(clamped_angle_deg)
+            # 3.3 Hardware Clamping
+            final_angle_deg = math.degrees(final_angle_rad)
+            clamped_angle_deg = max(-self.max_steering_deg, min(self.max_steering_deg, final_angle_deg))
+            config['last_cmd_angle'] = math.radians(clamped_angle_deg)
 
-            # 4. Measure Physical Fracture
-            physical_error = abs(self._normalize_angle(target_angle_rad - encoder_angle_rad))
-            angular_errors.append(physical_error)
-
-            theoretical_targets[name] = {
-                'speed': raw_target_speed_ms,
-                'angle_rad': final_angle_rad,
-                'angle_deg': clamped_angle_deg
-            }
-
-        # =========================================================
-        # PASS 2: SYNCHRONIZATION (THE KINEMATIC CLUTCH)
-        # =========================================================
-        max_error = max(angular_errors) if angular_errors else 0.0
-
-        # AJUSTEMENT 1 & 2 : Les seuils de coupure (Hystérésis resserrée)
-        # On passe de 45° à 20°. Le robot s'arrêtera au moindre virage franc.
-        # Il attendra que les roues soient à moins de 10° pour repartir.
-        cutoff_threshold = math.radians(20.0)
-        reengage_threshold = math.radians(10.0)
-
-        if max_error > cutoff_threshold:
-            self.clutch_engaged = False
-        elif max_error < reengage_threshold:
-            self.clutch_engaged = True
-
-        if not self.clutch_engaged:
-            scale_global = 0.0
-        else:
-            # AJUSTEMENT 3 : L'agressivité de la décélération (Exposant)
-            # On passe de cos(x)^3 à cos(x)^6. 
-            # À 15° d'erreur, au lieu de rouler à 90%, il tombera à 80%.
-            scale_global = math.pow(math.cos(max_error), 6)
-
-        # =========================================================
-        # PASS 3: DYNAMIC PROFILING & EXECUTION
-        # =========================================================
-        for name, config in self.wheels.items():
-            target = theoretical_targets[name]
-            
-            # 1. Apply Homothetic Scaling
-            synced_speed = target['speed'] * scale_global
-
-            # 2. Asymmetric Slew Rate Limiter (Acceleration vs Deceleration)
-            speed_diff = synced_speed - config['last_cmd_speed_ms']
-            is_accelerating = (speed_diff * config['last_cmd_speed_ms'] >= 0) or config['last_cmd_speed_ms'] == 0.0
-
-            if is_accelerating:
-                limited_speed_step = max(-self.max_accel_ms2 * dt, min(self.max_accel_ms2 * dt, speed_diff))
+            # 3.4 Traction Scaling & Publishing
+            if is_idle or raw_target_speed_ms == 0.0:
+                final_speed_ms = 0.0
             else:
-                limited_speed_step = max(-self.max_decel_ms2 * dt, min(self.max_decel_ms2 * dt, speed_diff))
+                alignment_error = abs((target_angle_rad - config['last_cmd_angle'] + math.pi) % (2.0 * math.pi) - math.pi)
+                final_speed_ms = raw_target_speed_ms * max(0.0, math.cos(alignment_error))
 
+            # Apply anti-stall minimum physical speed threshold
+            # If a small non-zero command is requested, bump it to the
+            # minimum physical speed (preserving sign) so the robot can start.
+            if final_speed_ms != 0.0 and abs(final_speed_ms) < self.min_physical_speed_ms:
+                final_speed_ms = math.copysign(self.min_physical_speed_ms, final_speed_ms)
+
+            # ---------------------------------------------------------
+            # Software Slew Rate Limiter
+            # WHY: Prevents wheel slip on the 4WS heavy base by capping acceleration,
+            # ensuring the PID controller receives a trackable ramp instead of a raw step.
+            # ---------------------------------------------------------
+            
+            # Calculate max allowable velocity delta for the current physical time step
+            max_speed_step = self.max_accel_ms2 * dt
+            
+            # Determine the raw velocity gap
+            speed_diff = final_speed_ms - config['last_cmd_speed_ms']
+            
+            # Clamp the requested acceleration to the physical capabilities of the robot
+            limited_speed_step = max(-max_speed_step, min(max_speed_step, speed_diff))
+            
+            # Integrate the clamped step into the velocity profile
             ramped_speed_ms = config['last_cmd_speed_ms'] + limited_speed_step
-
-            # 3. Hardware Anti-Stall (FIXED: Handles Stop and Zero-Crossing properly)
-            final_speed_ms = ramped_speed_ms
             
-            if abs(synced_speed) < 0.001:
-                # Intent is to STOP. Cut power instantly if speed falls into motor dead-zone.
-                if abs(final_speed_ms) < self.min_physical_speed_ms:
-                    final_speed_ms = 0.0
-            else:
-                # Intent is to MOVE. Force speed to jump across the dead-zone in the correct direction.
-                if abs(final_speed_ms) < self.min_physical_speed_ms:
-                    final_speed_ms = math.copysign(self.min_physical_speed_ms, synced_speed)
+            # Persist kinematic state for the next control loop
+            config['last_cmd_speed_ms'] = ramped_speed_ms
 
-            # 4. State Persistence
-            config['last_cmd_speed_ms'] = final_speed_ms
-            config['last_cmd_angle'] = target['angle_rad']
-
-            # 5. Conversion & Publishing
-            rpm = (final_speed_ms * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']
+            # Convert the dynamically smoothed velocity into motor RPM
+            rpm = (ramped_speed_ms * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']
             rpm = max(-self.limit_motor_speed_rpm, min(self.limit_motor_speed_rpm, rpm))
 
-            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm), float(target['angle_deg'])]))
+            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm), float(clamped_angle_deg)]))
 
     def odometry_callback(self):
         """ Forward Kinematics: Estimates global robot position from wheel feedback using CoR """
@@ -350,16 +312,9 @@ class SwerveKinematicsNode(Node):
         cy = math.cos(self.odom_theta * 0.5)
         sy = math.sin(self.odom_theta * 0.5)
 
-        # ---------------------------------------------------------
-        # TF Forward-Dating (Extrapolation Buffer)
-        # WHY: Adds 50ms to the TF stamp so asynchronous nodes (like AMCL or RViz) 
-        # asking for 'now()' don't hit the "extrapolation into the future" exception.
-        # ---------------------------------------------------------
-        tf_time = current_time + rclpy.duration.Duration(seconds=0.10)
-
         # 1. Publish TF (odom -> base_footprint)
         t = TransformStamped()
-        t.header.stamp = tf_time.to_msg()
+        t.header.stamp = current_time.to_msg()
         t.header.frame_id = 'odom'
         t.child_frame_id = 'base_footprint'
         t.transform.translation.x = self.odom_x
@@ -371,7 +326,7 @@ class SwerveKinematicsNode(Node):
 
         # 2. Publish Odometry Message
         odom = Odometry()
-        odom.header.stamp = tf_time.to_msg()
+        odom.header.stamp = current_time.to_msg()
         odom.header.frame_id = 'odom'
         odom.child_frame_id = 'base_footprint'
         

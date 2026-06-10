@@ -21,7 +21,7 @@ class MuxJoystickNode(Node):
 
         # Speed limits
         self.declare_parameter('max_linear_speed_ms', 0.67)
-        self.declare_parameter('max_angular_speed_rads', 0.66)
+        self.declare_parameter('max_angular_speed_rads', 0.71)
 
         # Explicit button mapping (Xbox 360/One standard)
         self.declare_parameter('btn_straight', 0)        # A button
@@ -44,6 +44,18 @@ class MuxJoystickNode(Node):
         self.btn_holonome = self.get_parameter('btn_holonome').value
         self.btn_crab = self.get_parameter('btn_crab').value
         self.btn_deadman = self.get_parameter('btn_deadman').value
+
+        # ---------------------------------------------------------
+        # Exponential Smoothing Filter State
+        # WHY: Maintains the previous cycle's filtered values to compute 
+        # the asymptotic ramp, preventing raw joystick steps from shocking the mechanics.
+        # ---------------------------------------------------------
+        self.declare_parameter('alpha_filter', 0.15)
+        self.alpha = self.get_parameter('alpha_filter').value
+        
+        self.filtered_joy_x = 0.0
+        self.filtered_joy_y = 0.0
+        self.filtered_joy_z = 0.0
 
         # State tracking for the deadman switch
         self.was_deadman_pressed = False
@@ -72,6 +84,15 @@ class MuxJoystickNode(Node):
         if abs(joy_x) < self.deadband: joy_x = 0.0
         if abs(joy_y) < self.deadband: joy_y = 0.0
         if abs(joy_z) < self.deadband: joy_z = 0.0
+
+        # ---------------------------------------------------------
+        # Low-Pass Filter Math
+        # WHY: Smooths the 0-to-1 step input into a continuous curve.
+        # A smaller alpha makes the robot feel heavier and smoother.
+        # ---------------------------------------------------------
+        self.filtered_joy_x = (self.alpha * joy_x) + ((1.0 - self.alpha) * self.filtered_joy_x)
+        self.filtered_joy_y = (self.alpha * joy_y) + ((1.0 - self.alpha) * self.filtered_joy_y)
+        self.filtered_joy_z = (self.alpha * joy_z) + ((1.0 - self.alpha) * self.filtered_joy_z)
 
         buttons = msg.buttons
         if not self.last_buttons:
@@ -117,26 +138,26 @@ class MuxJoystickNode(Node):
         twist = Twist()
 
         if deadman_pressed:
-            # Deadman active: Apply standard driving modes
+            # Deadman active: Apply standard driving modes USING FILTERED INPUTS
             if self.current_mode == 1:       # Straight (Locks lateral Y movement)
-                twist.linear.x = joy_x * self.max_lin
+                twist.linear.x = self.filtered_joy_x * self.max_lin
                 twist.linear.y = 0.0
-                twist.angular.z = joy_z * self.max_ang
+                twist.angular.z = self.filtered_joy_z * self.max_ang
                 
             elif self.current_mode == 2:     # Crab (Locks Z rotation)
-                twist.linear.x = joy_x * self.max_lin
-                twist.linear.y = joy_y * self.max_lin
+                twist.linear.x = self.filtered_joy_x * self.max_lin
+                twist.linear.y = self.filtered_joy_y * self.max_lin
                 twist.angular.z = 0.0
                 
             elif self.current_mode == 3:     # Zero Turn (Locks X and Y translations)
                 twist.linear.x = 0.0
                 twist.linear.y = 0.0
-                twist.angular.z = joy_z * self.max_ang
+                twist.angular.z = self.filtered_joy_z * self.max_ang
                 
             else:                            # Holonome (Mode 0 - All axes active)
-                twist.linear.x = joy_x * self.max_lin
-                twist.linear.y = joy_y * self.max_lin
-                twist.angular.z = joy_z * self.max_ang
+                twist.linear.x = self.filtered_joy_x * self.max_lin
+                twist.linear.y = self.filtered_joy_y * self.max_lin
+                twist.angular.z = self.filtered_joy_z * self.max_ang
         
             # Publish the command and update state memory
             self.cmd_vel_pub.publish(twist)
@@ -146,14 +167,19 @@ class MuxJoystickNode(Node):
             # Deadman released
             if self.was_deadman_pressed:
                 # Falling edge detected: Button was just released this exact cycle.
-                # Send a single 0.0 command to explicitly stop the hardware.
-                self.cmd_vel_pub.publish(twist)
+                self.cmd_vel_pub.publish(twist) # twist is already initialized to 0.0
                 
-                # Reset state memory to enter radio silence on the next cycle
+                # ---------------------------------------------------------
+                # Filter Reset
+                # WHY: Crucial safety measure. If we don't reset the filter,
+                # pressing the deadman switch later would resume from the old 
+                # velocity memory instead of starting safely from zero.
+                # ---------------------------------------------------------
+                self.filtered_joy_x = 0.0
+                self.filtered_joy_y = 0.0
+                self.filtered_joy_z = 0.0
+                
                 self.was_deadman_pressed = False
-            else:
-                # Button remains released: Maintain radio silence for twist_mux
-                pass
 
 
 def main(args=None):

@@ -2,91 +2,120 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
+import threading
 
 class PIDTuner(Node):
     """
-    Sends identical PID coefficients to all four wheel modules.
-    Each module expects 8 values: [Kp_drive, Ki_drive, Kd_drive, Offset_drive,
-                                    Kp_steer, Ki_steer, Kd_steer, Offset_steer]
+    Sends identical PID coefficients to wheel modules ONLY upon user input 
+    or when a new microcontroller connects to the network (Topology Event).
     """
     def __init__(self):
         super().__init__('pid_tuner')
 
-        # Control variable for interactive input
         self.declare_parameter('interactive_mode', True)
         self.interactive_mode = self.get_parameter('interactive_mode').value
 
-        # Wheel modules
         self.wheel_modules = ['front_left', 'front_right', 'rear_left', 'rear_right']
-
-        # Publishers for each wheel
         self.pid_pubs = {}
+
+        # Standard Volatile QoS is used. The node relies on active DDS graph monitoring instead.
         for name in self.wheel_modules:
             topic = f'mobile/wheel_{name}/pid_params'
             self.pid_pubs[name] = self.create_publisher(Float64MultiArray, topic, 10)
 
-        # Default PID values (tuned to reduce pivot‑mode oscillation)
-        # [Kp_d, Ki_d, Kd_d, Off_d,   Kp_s, Ki_s, Kd_s, Off_s]
-        self.default_pid = [
-            20.0, 3.2, 0.2, 0.0,    # Drive: Kp, Ki, Kd, Offset (stable)
-            20.0, 0.5, 2.0, 130.0  #4.0, 0.5, 0.5, 120.0    # Steer: Kp lower (0.2) to reduce 45° oscillation
-        ]
+        # Default PID values
+        # [Kp_d, Ki_d, Kd_d, Off_d, Kp_s, Ki_s, Kd_s, Off_s]
+        self.active_pid = [20.0, 3.2, 0.2, 0.0, 30.0, 0.2, 1.5, 130.0] 
+
+        #20.0 3.2 0.2 0.0 30.0 0.2 1.5 130.0
+
+        self.data_lock = threading.Lock()
+
+        # Topology tracking dictionary to detect late-joiners
+        self.last_sub_count = {name: 0 for name in self.wheel_modules}
         
-        # Publish hardcoded values once at startup
-        self.publish_to_all(self.default_pid)
+        # WHY: Monitor the DDS network at 10Hz. If a module's subscription count increases, 
+        # it just connected/rebooted. We trigger a targeted publish.
+        self.topology_timer = self.create_timer(0.1, self.check_topology_callback)
 
         if self.interactive_mode:
-            self.get_logger().info('PID Tuner ready – sending same 8 coefficients to all wheels.')
-            self.get_logger().info('Enter 8 numbers: Kp_d Ki_d Kd_d Off_d   Kp_s Ki_s Kd_s Off_s')
-            self.get_logger().info('Example to reduce steering oscillation: 0.5 0 0 350   0.15 0 0.02 0')
+            self.get_logger().info('Event-Driven PID Tuner ready.')
+            self.get_logger().info('Monitoring network for new MCU connections...')
         else:
-            self.get_logger().info('Interactive mode disabled. Applied hardcoded PID values.')
+            self.get_logger().info('Interactive mode disabled. Running in topology monitor mode.')
+
+    def check_topology_callback(self):
+        """Monitors DDS graph changes to send data only when a module connects."""
+        trigger_publish = False
+        
+        for name, pub in self.pid_pubs.items():
+            current_count = pub.get_subscription_count()
+            
+            # Positive edge detection: A microcontroller has joined the topic
+            if current_count > self.last_sub_count[name]:
+                self.get_logger().info(f'[{name}] Connection detected. Syncing PID parameters.')
+                trigger_publish = True
+                
+            # Update state (handles disconnects gracefully without triggering a publish)
+            self.last_sub_count[name] = current_count
+
+        if trigger_publish:
+            with self.data_lock:
+                coeffs = list(self.active_pid)
+            self.publish_to_all(coeffs)
+
+    def update_pid_values(self, new_coeffs):
+        """Thread-safe update triggered by user input."""
+        with self.data_lock:
+            self.active_pid = new_coeffs
+        self.publish_to_all(new_coeffs)
 
     def publish_to_all(self, coeffs):
-        """Publish the same 8‑element array to every wheel module."""
         if len(coeffs) != 8:
             self.get_logger().error('Must provide exactly 8 coefficients')
             return
-        msg = Float64MultiArray()
-        msg.data = coeffs
+            
+        msg = Float64MultiArray(data=coeffs)
         for name, pub in self.pid_pubs.items():
             pub.publish(msg)
-        self.get_logger().info(
-            f'Published to all wheels: Drive(Kp={coeffs[0]:.3f}, Ki={coeffs[1]:.3f}, '
-            f'Kd={coeffs[2]:.3f}, Off={coeffs[3]:.1f}) | '
-            f'Steer(Kp={coeffs[4]:.3f}, Ki={coeffs[5]:.3f}, Kd={coeffs[6]:.3f}, Off={coeffs[7]:.1f})'
-        )
+
+def input_thread_worker(node):
+    while rclpy.ok():
+        try:
+            user_input = input("\nEnter 8 PID values (or 'q' to quit):\n").strip()
+            if user_input.lower() == 'q':
+                rclpy.shutdown()
+                break
+            
+            parts = user_input.split()
+            if len(parts) == 8:
+                try:
+                    new_pid = [float(x) for x in parts]
+                    node.update_pid_values(new_pid)
+                    node.get_logger().info(f'Manual override: PID updated to {new_pid}')
+                except ValueError:
+                    node.get_logger().error('Invalid numbers. Use floats.')
+            else:
+                node.get_logger().error('Please enter exactly 8 numbers.')
+        except (EOFError, KeyboardInterrupt):
+            break
 
 def main(args=None):
     rclpy.init(args=args)
     node = PIDTuner()
 
+    if node.interactive_mode:
+        input_thread = threading.Thread(target=input_thread_worker, args=(node,), daemon=True)
+        input_thread.start()
+
     try:
-        if node.interactive_mode:
-            # Interactive loop: wait for user input
-            while rclpy.ok():
-                rclpy.spin_once(node, timeout_sec=0.1)
-                user_input = input("\nEnter 8 PID values (or 'q' to quit): ").strip()
-                if user_input.lower() == 'q':
-                    break
-                parts = user_input.split()
-                if len(parts) == 8:
-                    try:
-                        new_pid = [float(x) for x in parts]
-                        node.publish_to_all(new_pid)
-                    except ValueError:
-                        node.get_logger().error('Invalid numbers – use floats separated by spaces.')
-                else:
-                    node.get_logger().error('Please enter exactly 8 numbers.')
-        else:
-            # Static mode: just keep the node alive so subscribers can receive the message
-            rclpy.spin(node)
-            
+        rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
