@@ -80,7 +80,7 @@ def generate_launch_description():
 
     swerve_kinematics_node = Node(
         package='bee_mobile',
-        executable='swerve_kinematics_node',
+        executable='swerve_kinematics_basic_test',
         output='screen'
     )
     
