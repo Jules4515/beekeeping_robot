@@ -15,15 +15,16 @@ class SwerveKinematicsMVP(Node):
 
         self.wheels = {
             'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
-            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': -1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
+            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
             'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': -1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
+            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
         }
 
         self.odom_x = 0.0
         self.odom_y = 0.0
         self.odom_theta = 0.0
         self.last_time = self.get_clock().now()
+        self.last_cmd_time = self.get_clock().now()  # Dedicated timer for Slew Rate Calculation
 
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel_out', self.cmd_vel_callback, 10)
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
@@ -42,6 +43,29 @@ class SwerveKinematicsMVP(Node):
             self.wheels[wheel_name]['current_angle'] = float(msg.data[1])
 
     def cmd_vel_callback(self, msg):
+        # Calculate time elapsed since last command to compute physically achievable angle steps
+        current_time = self.get_clock().now()
+        dt = (current_time - self.last_cmd_time).nanoseconds / 1e9
+        self.last_cmd_time = current_time
+        
+        # Prevent massive dt spikes on first run or after long pauses
+        if dt <= 0.0 or dt > 0.5:
+            dt = 0.1
+
+        # Physical machine limits
+        MAX_STEER_RAD_S = 0.785  # Max servo rotation speed (~45 deg/s) - Tune based on hardware
+        MAX_RPM_LIMIT = 30.0  # Limite de sécurité physique
+        MAX_SPEED_MS = (MAX_RPM_LIMIT * 2.0 * math.pi * self.wheel_radius) / 60.0
+        HARD_LIMIT_RAD = math.radians(80.0) # Limite physique de +-80 deg pour l'orientation des roues
+        
+        # --- PARAMÈTRES DU PROFIL DE TRACTION ---
+        TOLERANCE_VERTE_DEG = 10.0  # Fin de la zone 100%
+        TOLERANCE_ROUGE_DEG = 40.0  # Début de la zone 0%
+        
+        # Conversion en radians pour le calcul interne
+        TOLERANCE_VERTE_RAD = math.radians(TOLERANCE_VERTE_DEG)
+        TOLERANCE_ROUGE_RAD = math.radians(TOLERANCE_ROUGE_DEG)
+
         for name, config in self.wheels.items():
             vx_w = msg.linear.x - config['y'] * msg.angular.z
             vy_w = msg.linear.y + config['x'] * msg.angular.z
@@ -49,25 +73,63 @@ class SwerveKinematicsMVP(Node):
             raw_speed = math.hypot(vx_w, vy_w)
             raw_angle = math.atan2(vy_w, vx_w) if raw_speed > 0.001 else config['last_angle']
 
+            # 1. Absolute Phase Inversion (Clamp to +/- 90 deg)
             if raw_angle > (math.pi / 2.0):
-                target_angle = raw_angle - math.pi
-                target_speed = -raw_speed
+                ideal_angle = raw_angle - math.pi
+                ideal_speed = -raw_speed
             elif raw_angle < -(math.pi / 2.0):
-                target_angle = raw_angle + math.pi
-                target_speed = -raw_speed
+                ideal_angle = raw_angle + math.pi
+                ideal_speed = -raw_speed
             else:
-                target_angle = raw_angle
-                target_speed = raw_speed
+                ideal_angle = raw_angle
+                ideal_speed = raw_speed
 
-            angle_error = abs(target_angle - math.radians(config['current_angle']))
-            if angle_error > 0.78:
-                target_speed = 0.0
+            # 2. Slew Rate Limiter: Ramp the angle target instead of instant snapping
+            angle_diff = ideal_angle - config['last_angle']
+            # Normalisation stricte de la différence pour le chemin le plus court
+            angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))
+            max_step = MAX_STEER_RAD_S * dt
 
-            config['last_angle'] = target_angle
-            config['last_speed'] = target_speed
+            if angle_diff > max_step:
+                cmd_angle = config['last_angle'] + max_step
+            elif angle_diff < -max_step:
+                cmd_angle = config['last_angle'] - max_step
+            else:
+                cmd_angle = ideal_angle
 
-            rpm = (target_speed * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']
-            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm), float(math.degrees(target_angle))]))
+            # 3. Verrou de Traction Proportionnel (Profil Quadratique Convexe)
+            current_phys_angle = math.radians(config['current_angle'])
+            error_to_ideal = ideal_angle - current_phys_angle
+            
+            # Normalisation au chemin le plus court pour éviter le wrap-around de Pi
+            error_to_ideal = abs(math.atan2(math.sin(error_to_ideal), math.cos(error_to_ideal)))
+
+            if error_to_ideal <= TOLERANCE_VERTE_RAD:
+                speed_multiplier = 1.0
+            elif error_to_ideal >= TOLERANCE_ROUGE_RAD:
+                speed_multiplier = 0.0
+            else:
+                # Calcul du ratio linéaire de 0.0 à 1.0 dans la zone de dégradation
+                ratio = (error_to_ideal - TOLERANCE_VERTE_RAD) / (TOLERANCE_ROUGE_RAD - TOLERANCE_VERTE_RAD)
+                
+                # Application du profil Quadratique Convexe : (1 - ratio)^2
+                speed_multiplier = (1.0 - ratio) ** 2
+
+            # Application finale à la consigne de vitesse
+            cmd_speed = ideal_speed * speed_multiplier
+
+            # Application de la limite physique d'angle sur l'orientation des roues (Clamping)
+            cmd_angle = max(min(cmd_angle, HARD_LIMIT_RAD), -HARD_LIMIT_RAD)
+            # Application de la limite physique sur la vitesse des roues (Clamping)
+            cmd_speed = max(min(cmd_speed, MAX_SPEED_MS), -MAX_SPEED_MS)
+
+            # Update state variables
+            config['last_angle'] = cmd_angle
+            config['last_speed'] = cmd_speed
+
+            # Conversion and Publication
+            rpm_final = (cmd_speed * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']            
+            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm_final), float(math.degrees(cmd_angle))]))
 
     def odometry_callback(self):
         current_time = self.get_clock().now()
