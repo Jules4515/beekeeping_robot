@@ -81,7 +81,7 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.20
-      yaw_goal_tolerance: 0.05
+      yaw_goal_tolerance: 0.15
       stateful_timeout: 10.0
 
     FollowPath:
@@ -92,9 +92,9 @@ controller_server:
       iteration_count: 1
       motion_model: "Omni"
       vx_max: 0.67
-      vx_min: 0.0   
+      vx_min: -0.67  
       vy_max: 0.67
-      vy_min: 0.0
+      vy_min: -0.67
       wz_max: 0.71
       wz_min: -0.71
       # Écart-types des bruits aléatoires ajoutés à chaque commande de vitesse pour générer les trajectoires simulées,

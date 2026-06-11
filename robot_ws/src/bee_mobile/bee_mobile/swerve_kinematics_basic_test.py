@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Int8
 from tf2_ros import TransformBroadcaster
 import math
 
@@ -26,6 +26,10 @@ class SwerveKinematicsMVP(Node):
         self.last_time = self.get_clock().now()
         self.last_cmd_time = self.get_clock().now()  # Dedicated timer for Slew Rate Calculation
 
+        # --- État du Joystick ---
+        self.active_joy_mode = -1
+        self.mode_sub = self.create_subscription(Int8, '/joystick_control_mode', self.mode_callback, 10)
+
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel_out', self.cmd_vel_callback, 10)
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -36,6 +40,9 @@ class SwerveKinematicsMVP(Node):
             self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', lambda msg, n=name: self.encoder_callback(msg, n), 10)
 
         self.odom_timer = self.create_timer(0.02, self.odometry_callback)
+
+    def mode_callback(self, msg):
+        self.active_joy_mode = msg.data
 
     def encoder_callback(self, msg, wheel_name):
         if len(msg.data) >= 2:
@@ -71,7 +78,17 @@ class SwerveKinematicsMVP(Node):
             vy_w = msg.linear.y + config['x'] * msg.angular.z
             
             raw_speed = math.hypot(vx_w, vy_w)
-            raw_angle = math.atan2(vy_w, vx_w) if raw_speed > 0.001 else config['last_angle']
+            
+            # --- Logique de Pré-orientation simplifiée ---
+            if raw_speed > 0.001:
+                raw_angle = math.atan2(vy_w, vx_w)
+            else:
+                if self.active_joy_mode == 3:      # Zero Turn
+                    raw_angle = math.atan2(config['x'], -config['y'])
+                elif self.active_joy_mode in [1, 2]: # Straight ou Crab
+                    raw_angle = 0.0
+                else:                              # Holonome (0) ou inactif (-1)
+                    raw_angle = config['last_angle']
 
             # 1. Absolute Phase Inversion (Clamp to +/- 90 deg)
             if raw_angle > (math.pi / 2.0):
@@ -111,7 +128,7 @@ class SwerveKinematicsMVP(Node):
             else:
                 # Calcul du ratio linéaire de 0.0 à 1.0 dans la zone de dégradation
                 ratio = (error_to_ideal - TOLERANCE_VERTE_RAD) / (TOLERANCE_ROUGE_RAD - TOLERANCE_VERTE_RAD)
-                
+
                 # Application du profil Quadratique Convexe : (1 - ratio)^2
                 speed_multiplier = (1.0 - ratio) ** 2
 
@@ -123,12 +140,39 @@ class SwerveKinematicsMVP(Node):
             # Application de la limite physique sur la vitesse des roues (Clamping)
             cmd_speed = max(min(cmd_speed, MAX_SPEED_MS), -MAX_SPEED_MS)
 
+            # --- HYSTÉRÉSIS DE FRICTION (Stick-Slip Asymétrique) ---
+            V_ARRACHEMENT_STATIQUE = 0.30  # Vitesse pour vaincre l'inertie à l'arrêt
+            V_CALAGE_CINETIQUE = 0.05      # Vitesse minimale de freinage avant l'arrêt complet
+            
+            if abs(cmd_speed) < 0.001:
+                # Arrêt pur demandé
+                cmd_speed_hardware = 0.0
+            else:
+                # La roue tourne-t-elle déjà physiquement ? 
+                # (Seuil > 1.0 RPM pour éviter le bruit du capteur)
+                is_physically_moving = abs(config['current_rpm']) > 1.0 
+
+                if is_physically_moving:
+                    # Le robot est en mouvement (Frottement cinétique).
+                    # On le laisse freiner de manière fluide jusqu'à V_CALAGE_CINETIQUE.
+                    if abs(cmd_speed) < V_CALAGE_CINETIQUE:
+                        cmd_speed_hardware = math.copysign(V_CALAGE_CINETIQUE, cmd_speed)
+                    else:
+                        cmd_speed_hardware = cmd_speed
+                else:
+                    # Le robot est bloqué (Frottement statique).
+                    # On force une impulsion pour le faire décoller.
+                    if abs(cmd_speed) < V_ARRACHEMENT_STATIQUE:
+                        cmd_speed_hardware = math.copysign(V_ARRACHEMENT_STATIQUE, cmd_speed)
+                    else:
+                        cmd_speed_hardware = cmd_speed
+
             # Update state variables
             config['last_angle'] = cmd_angle
-            config['last_speed'] = cmd_speed
+            config['last_speed'] = cmd_speed_hardware
 
             # Conversion and Publication
-            rpm_final = (cmd_speed * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']            
+            rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']            
             self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm_final), float(math.degrees(cmd_angle))]))
 
     def odometry_callback(self):
