@@ -41,32 +41,31 @@ class SwerveKinematicsMVP(Node):
             self.wheels[wheel_name]['current_rpm'] = float(msg.data[0]) * self.wheels[wheel_name]['enc_dir']
             self.wheels[wheel_name]['current_angle'] = float(msg.data[1])
 
-    def _normalize_angle(self, angle):
-        return (angle + math.pi) % (2.0 * math.pi) - math.pi
-
     def cmd_vel_callback(self, msg):
         for name, config in self.wheels.items():
-            # 1. Cinématique Inverse Pure
             vx_w = msg.linear.x - config['y'] * msg.angular.z
             vy_w = msg.linear.y + config['x'] * msg.angular.z
             
             raw_speed = math.hypot(vx_w, vy_w)
             raw_angle = math.atan2(vy_w, vx_w) if raw_speed > 0.001 else config['last_angle']
 
-            # 2. Optimisation basique du plus court chemin (Évite l'arrachement des câbles)
-            diff = self._normalize_angle(raw_angle - config['last_angle'])
-            if abs(diff) > (math.pi / 2.0):
-                target_angle = self._normalize_angle(raw_angle - math.pi)
+            if raw_angle > (math.pi / 2.0):
+                target_angle = raw_angle - math.pi
+                target_speed = -raw_speed
+            elif raw_angle < -(math.pi / 2.0):
+                target_angle = raw_angle + math.pi
                 target_speed = -raw_speed
             else:
                 target_angle = raw_angle
                 target_speed = raw_speed
 
-            # 3. Mise à jour de l'état
+            angle_error = abs(target_angle - math.radians(config['current_angle']))
+            if angle_error > 0.78:
+                target_speed = 0.0
+
             config['last_angle'] = target_angle
             config['last_speed'] = target_speed
 
-            # 4. Conversion et Publication immédiate (Aucun délai)
             rpm = (target_speed * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']
             self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm), float(math.degrees(target_angle))]))
 
@@ -74,30 +73,33 @@ class SwerveKinematicsMVP(Node):
         current_time = self.get_clock().now()
         dt = (current_time - self.last_time).nanoseconds / 1e9
         self.last_time = current_time
-        if dt <= 0: return
+        if dt <= 0:
+            return
 
+        # Pass 1 — linear velocities (accumulate all 4 wheels first)
         vx_sum, vy_sum = 0.0, 0.0
-        wz_num, wz_den = 0.0, 0.0
-
         for config in self.wheels.values():
             speed_ms = (config['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
             angle_rad = math.radians(config['current_angle'])
-
-            vx_w = speed_ms * math.cos(angle_rad)
-            vy_w = speed_ms * math.sin(angle_rad)
-            
-            vx_sum += vx_w
-            vy_sum += vy_w
-
-            wz_num += config['x'] * (vy_w - (vy_sum/4.0)) - config['y'] * (vx_w - (vx_sum/4.0))
-            wz_den += config['x']**2 + config['y']**2
+            config['vx_w'] = speed_ms * math.cos(angle_rad)
+            config['vy_w'] = speed_ms * math.sin(angle_rad)
+            vx_sum += config['vx_w']
+            vy_sum += config['vy_w']
 
         vx_robot = vx_sum / 4.0
         vy_robot = vy_sum / 4.0
+
+        # Pass 2 — angular velocity using the FINAL average (not partial)
+        wz_num, wz_den = 0.0, 0.0
+        for config in self.wheels.values():
+            wz_num += (config['x'] * (config['vy_w'] - vy_robot)
+                    - config['y'] * (config['vx_w'] - vx_robot))
+            wz_den += config['x']**2 + config['y']**2
+
         wz_robot = wz_num / wz_den if wz_den > 0 else 0.0
 
         delta_theta = wz_robot * dt
-        theta_mid = self.odom_theta + (delta_theta / 2.0)
+        theta_mid = self.odom_theta + delta_theta / 2.0
         self.odom_x += (vx_robot * math.cos(theta_mid) - vy_robot * math.sin(theta_mid)) * dt
         self.odom_y += (vx_robot * math.sin(theta_mid) + vy_robot * math.cos(theta_mid)) * dt
         self.odom_theta += delta_theta
