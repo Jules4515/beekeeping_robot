@@ -101,6 +101,28 @@ class SwerveKinematicsMVP(Node):
                 ideal_angle = raw_angle
                 ideal_speed = raw_speed
 
+            # ============================================================
+            # MAPPING DE ZONE MORTE (DEADBAND COMPENSATION)
+            # ============================================================
+            V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
+            V_MAX_PHYSICAL = 0.67  # Ta vitesse maximale
+            
+            if abs(ideal_speed) > 0.005: # Seuil anti-bruit pour le 0 absolu
+                # On détermine le sens de la commande
+                sign = math.copysign(1.0, ideal_speed)
+                
+                # On normalise la commande Nav2 (0.0 -> 0.67) sur une échelle (0.0 -> 1.0)
+                # On utilise min() pour éviter de dépasser 1.0 si Nav2 s'emballe
+                ratio = min(abs(ideal_speed) / V_MAX_PHYSICAL, 1.0)
+                
+                # On mappe ce ratio sur la plage physique utile [0.30 -> 0.67]
+                mapped_speed = sign * (V_MIN_PHYSICAL + ratio * (V_MAX_PHYSICAL - V_MIN_PHYSICAL))
+            else:
+                mapped_speed = 0.0
+
+            # On utilise maintenant la vitesse mappée pour la suite des calculs
+            ideal_speed = mapped_speed
+
             # 2. Slew Rate Limiter: Ramp the angle target instead of instant snapping
             angle_diff = ideal_angle - config['last_angle']
             # Normalisation stricte de la différence pour le chemin le plus court
@@ -140,32 +162,31 @@ class SwerveKinematicsMVP(Node):
             # Application de la limite physique sur la vitesse des roues (Clamping)
             cmd_speed = max(min(cmd_speed, MAX_SPEED_MS), -MAX_SPEED_MS)
 
-            # --- HYSTÉRÉSIS DE FRICTION (Stick-Slip Asymétrique) ---
-            V_ARRACHEMENT_STATIQUE = 0.30  # Vitesse pour vaincre l'inertie à l'arrêt
-            V_CALAGE_CINETIQUE = 0.05      # Vitesse minimale de freinage avant l'arrêt complet
+            # ============================================================
+            # SLEW RATE LIMITER (Accélération Linéaire Constante)
+            # ============================================================
+            A_MAX = 0.40  # m/s² - Limite d'accélération (À régler)
+            D_MAX = 0.40  # m/s² - Limite de décélération (Freinage)
             
-            if abs(cmd_speed) < 0.001:
-                # Arrêt pur demandé
-                cmd_speed_hardware = 0.0
+            last_spd = config['last_speed']
+            speed_diff = cmd_speed - last_spd
+            
+            # Détermination de l'état dynamique (Accélération vs Freinage)
+            # On accélère si la vitesse absolue augmente OU si on inverse le sens de rotation
+            is_accelerating = abs(cmd_speed) > abs(last_spd) or (cmd_speed * last_spd < 0)
+            
+            # Choix du taux limite en fonction de l'état
+            max_step = (A_MAX if is_accelerating else D_MAX) * dt
+                
+            # Application de la limite cinématique
+            if abs(speed_diff) > max_step:
+                cmd_speed_hardware = last_spd + math.copysign(max_step, speed_diff)
             else:
-                # La roue tourne-t-elle déjà physiquement ? 
-                # (Seuil > 1.0 RPM pour éviter le bruit du capteur)
-                is_physically_moving = abs(config['current_rpm']) > 1.0 
-
-                if is_physically_moving:
-                    # Le robot est en mouvement (Frottement cinétique).
-                    # On le laisse freiner de manière fluide jusqu'à V_CALAGE_CINETIQUE.
-                    if abs(cmd_speed) < V_CALAGE_CINETIQUE:
-                        cmd_speed_hardware = math.copysign(V_CALAGE_CINETIQUE, cmd_speed)
-                    else:
-                        cmd_speed_hardware = cmd_speed
-                else:
-                    # Le robot est bloqué (Frottement statique).
-                    # On force une impulsion pour le faire décoller.
-                    if abs(cmd_speed) < V_ARRACHEMENT_STATIQUE:
-                        cmd_speed_hardware = math.copysign(V_ARRACHEMENT_STATIQUE, cmd_speed)
-                    else:
-                        cmd_speed_hardware = cmd_speed
+                cmd_speed_hardware = cmd_speed
+                
+            # Coupure nette pour stabilité à l'arrêt complet
+            if abs(cmd_speed_hardware) < 0.01:
+                cmd_speed_hardware = 0.0
 
             # Update state variables
             config['last_angle'] = cmd_angle

@@ -105,10 +105,10 @@ controller_server:
       vx_std: 0.2
       vy_std: 0.15
       wz_std: 0.3
-      ax_max: 0.5
-      ax_min: -0.5
-      ay_max: 0.5
-      ay_min: -0.5
+      ax_max: 0.35
+      ax_min: -0.35
+      ay_max: 0.35
+      ay_min: -0.35
       az_max: 0.5
       az_min: -0.5
       prune_distance: 1.5
@@ -357,15 +357,15 @@ velocity_smoother:
   ros__parameters:
     smoothing_frequency: 20.0
     stamp_smoothed_velocity_with_smoothing_time: False
-    scale_velocities: False
+    scale_velocities: True
     feedback: "OPEN_LOOP"
     max_velocity: [0.67, 0.67, 0.71]
     min_velocity: [-0.67, -0.67, -0.71]
-    max_accel: [0.5, 0.5, 0.5]
-    max_decel: [-0.5, -0.5, -0.5]
+    max_accel: [0.35, 0.35, 0.5]
+    max_decel: [-0.35, -0.35, -0.5]
     odom_topic: "odom"
     odom_duration: 0.2
-    deadband_velocity: [0.02, 0.02, 0.02]
+    deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 0.1
 
 collision_monitor:

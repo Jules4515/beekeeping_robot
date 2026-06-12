@@ -50,7 +50,7 @@ class MuxJoystickNode(Node):
         # WHY: Maintains the previous cycle's filtered values to compute 
         # the asymptotic ramp, preventing raw joystick steps from shocking the mechanics.
         # ---------------------------------------------------------
-        self.declare_parameter('alpha_filter', 0.15)
+        self.declare_parameter('alpha_filter', 0.10)
         self.alpha = self.get_parameter('alpha_filter').value
         
         self.filtered_joy_x = 0.0
