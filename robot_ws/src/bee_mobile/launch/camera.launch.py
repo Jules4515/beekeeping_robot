@@ -5,25 +5,59 @@ import os
 
 def generate_launch_description():
     
-    # Path to the camera calibration file (K, P, R matrices)
-    config = os.path.join(get_package_share_directory('bee_mobile'), 'config', 'camera_info.yaml')
+    # Chemin vers le fichier de calibration validé
+    camera_info_yaml = os.path.join(
+        get_package_share_directory('bee_mobile'), 
+        'config', 
+        'camera_info.yaml'
+    )
 
     return LaunchDescription([
+        
+        # 1. Pilote de la caméra (Fréquence nominale à 30 FPS en local)
         Node(
             package='usb_cam',
             executable='usb_cam_node_exe',
             name='usb_cam',
-            namespace='camera', # Topics published under /camera
+            namespace='camera',
             output='screen',
             parameters=[{
                 'video_device': '/dev/video0',
                 'framerate': 30.0,
-                'pixel_format': 'mjpeg2rgb', # Captures MJPEG, converts to RGB8 for RViz
+                'pixel_format': 'mjpeg2rgb',
                 'image_width': 640,
                 'image_height': 480,
-                'camera_frame_id': 'camera_frame', # TF frame, to be added to URDF
-                # 'io_method': 'mmap', # Memory mapping can be more efficient
-                'camera_info_url': 'file://' + config,
+                'camera_frame_id': 'camera_link_optical',
+                'camera_info_url': 'file://' + camera_info_yaml,
             }]
         ),
+
+        # 2. Transformation Statique : Centre du robot (base_link) -> Centre optique
+        # Syntaxe Jazzy : [x, y, z, roll, pitch, yaw] ou [x, y, z, qx, qy, qz, qw]
+        # Ajuster les valeurs x, y, z mesurées (ex: caméra à +0.7m à l'avant, +0.4m en hauteur)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='chassis_to_camera_tf',
+            arguments=[
+                '1.056', '0.0', '0.03',       # Traduction X, Y, Z en mètres
+                '-1.5708', '0.0', '-1.5708', # Rotation Roll, Pitch, Yaw en radians (REP-103)
+                'chassis', 
+                'camera_link_optical'
+            ]
+        ),
+
+        # 3. Détecteur ArUco unique (Consommation intra-process sans latence réseau)
+        Node(
+            package='ros2_aruco',
+            executable='aruco_node',
+            name='aruco_node',
+            output='screen',
+            parameters=[{
+                'marker_size': 0.068, # Taille physique ajustée (erreur de 3cm corrigée)
+                'aruco_dictionary_id': 'DICT_ARUCO_ORIGINAL',
+                'image_topic': '/camera/image_raw',
+                'camera_info_topic': '/camera/camera_info',
+            }]
+        )
     ])

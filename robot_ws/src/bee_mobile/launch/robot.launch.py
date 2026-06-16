@@ -50,6 +50,13 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
+    aruco_tf_broadcaster_node = Node(
+        package='bee_mobile',
+        executable='aruco_tf_broadcaster',
+        output='screen',
+        condition=UnlessCondition(is_sim)
+    )
+
     # --- Simulation Nodes (SITL Only) ---
     sim_bridge_node = Node(
         package='bee_mobile',
@@ -81,6 +88,13 @@ def generate_launch_description():
     swerve_kinematics_node = Node(
         package='bee_mobile',
         executable='swerve_kinematics_basic_test',
+        #executable='swerve_kinematics_node_test',
+        output='screen'
+    )
+
+    odometry_node = Node(
+        package='bee_mobile',
+        executable='odometry',
         output='screen'
     )
     
@@ -97,10 +111,12 @@ def generate_launch_description():
         #micro_ros_node,
         lidar_launch,
         camera_launch,
+        aruco_tf_broadcaster_node,
         sim_bridge_node,
         static_tf_map_odom,
         joy_node,
         mux_joystick_node,
         swerve_kinematics_node,
+        odometry_node,
         twist_mux_node
     ])

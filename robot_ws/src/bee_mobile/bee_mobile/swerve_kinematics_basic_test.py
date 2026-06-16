@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist, TransformStamped
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64MultiArray, Int8
-from tf2_ros import TransformBroadcaster
 import math
 
 class SwerveKinematicsMVP(Node):
@@ -13,17 +11,14 @@ class SwerveKinematicsMVP(Node):
 
         self.wheel_radius = 0.215
 
+        # si sim mettre des - pour dir pour les right wheels
         self.wheels = {
-            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
-            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
-            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0},
+            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
+            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
+            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
+            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
         }
 
-        self.odom_x = 0.0
-        self.odom_y = 0.0
-        self.odom_theta = 0.0
-        self.last_time = self.get_clock().now()
         self.last_cmd_time = self.get_clock().now()  # Dedicated timer for Slew Rate Calculation
 
         # --- État du Joystick ---
@@ -31,15 +26,11 @@ class SwerveKinematicsMVP(Node):
         self.mode_sub = self.create_subscription(Int8, '/joystick_control_mode', self.mode_callback, 10)
 
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel_out', self.cmd_vel_callback, 10)
-        self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
-        self.tf_broadcaster = TransformBroadcaster(self)
         
         self.wheel_pubs = {}
         for name in self.wheels.keys():
             self.wheel_pubs[name] = self.create_publisher(Float64MultiArray, f'mobile/wheel_{name}/motor_speed', 10)
             self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', lambda msg, n=name: self.encoder_callback(msg, n), 10)
-
-        self.odom_timer = self.create_timer(0.02, self.odometry_callback)
 
     def mode_callback(self, msg):
         self.active_joy_mode = msg.data
@@ -60,7 +51,7 @@ class SwerveKinematicsMVP(Node):
             dt = 0.1
 
         # Physical machine limits
-        MAX_STEER_RAD_S = 0.785  # Max servo rotation speed (~45 deg/s) - Tune based on hardware
+        MAX_STEER_RAD_S = math.radians(45)  # Max servo rotation SPEED (~45 deg/s) - Tune based on hardware
         MAX_RPM_LIMIT = 30.0  # Limite de sécurité physique
         MAX_SPEED_MS = (MAX_RPM_LIMIT * 2.0 * math.pi * self.wheel_radius) / 60.0
         HARD_LIMIT_RAD = math.radians(80.0) # Limite physique de +-80 deg pour l'orientation des roues
@@ -101,40 +92,21 @@ class SwerveKinematicsMVP(Node):
                 ideal_angle = raw_angle
                 ideal_speed = raw_speed
 
-            # ============================================================
-            # MAPPING DE ZONE MORTE (DEADBAND COMPENSATION)
-            # ============================================================
-            V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
-            V_MAX_PHYSICAL = 0.67  # Ta vitesse maximale
-            
-            if abs(ideal_speed) > 0.005: # Seuil anti-bruit pour le 0 absolu
-                # On détermine le sens de la commande
-                sign = math.copysign(1.0, ideal_speed)
-                
-                # On normalise la commande Nav2 (0.0 -> 0.67) sur une échelle (0.0 -> 1.0)
-                # On utilise min() pour éviter de dépasser 1.0 si Nav2 s'emballe
-                ratio = min(abs(ideal_speed) / V_MAX_PHYSICAL, 1.0)
-                
-                # On mappe ce ratio sur la plage physique utile [0.30 -> 0.67]
-                mapped_speed = sign * (V_MIN_PHYSICAL + ratio * (V_MAX_PHYSICAL - V_MIN_PHYSICAL))
-            else:
-                mapped_speed = 0.0
-
-            # On utilise maintenant la vitesse mappée pour la suite des calculs
-            ideal_speed = mapped_speed
-
             # 2. Slew Rate Limiter: Ramp the angle target instead of instant snapping
             angle_diff = ideal_angle - config['last_angle']
             # Normalisation stricte de la différence pour le chemin le plus court
             angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))
-            max_step = MAX_STEER_RAD_S * dt
+            max_step_angle = MAX_STEER_RAD_S * dt
 
-            if angle_diff > max_step:
-                cmd_angle = config['last_angle'] + max_step
-            elif angle_diff < -max_step:
-                cmd_angle = config['last_angle'] - max_step
+            if angle_diff > max_step_angle:
+                cmd_angle = config['last_angle'] + max_step_angle
+            elif angle_diff < -max_step_angle:
+                cmd_angle = config['last_angle'] - max_step_angle
             else:
                 cmd_angle = ideal_angle
+
+            # Application de la limite physique d'angle sur l'orientation des roues (Clamping)
+            cmd_angle = max(min(cmd_angle, HARD_LIMIT_RAD), -HARD_LIMIT_RAD)
 
             # 3. Verrou de Traction Proportionnel (Profil Quadratique Convexe)
             current_phys_angle = math.radians(config['current_angle'])
@@ -150,17 +122,16 @@ class SwerveKinematicsMVP(Node):
             else:
                 # Calcul du ratio linéaire de 0.0 à 1.0 dans la zone de dégradation
                 ratio = (error_to_ideal - TOLERANCE_VERTE_RAD) / (TOLERANCE_ROUGE_RAD - TOLERANCE_VERTE_RAD)
-
                 # Application du profil Quadratique Convexe : (1 - ratio)^2
                 speed_multiplier = (1.0 - ratio) ** 2
 
-            # Application finale à la consigne de vitesse
-            cmd_speed = ideal_speed * speed_multiplier
-
-            # Application de la limite physique d'angle sur l'orientation des roues (Clamping)
-            cmd_angle = max(min(cmd_angle, HARD_LIMIT_RAD), -HARD_LIMIT_RAD)
-            # Application de la limite physique sur la vitesse des roues (Clamping)
-            cmd_speed = max(min(cmd_speed, MAX_SPEED_MS), -MAX_SPEED_MS)
+            # Application finale à la consigne de vitesse LOGIQUE
+            logical_target_speed = ideal_speed * speed_multiplier
+            
+            V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
+            V_MAX_PHYSICAL = 0.67  # Ta vitesse maximale
+            
+            logical_target_speed = max(min(logical_target_speed, V_MAX_PHYSICAL), -V_MAX_PHYSICAL)
 
             # ============================================================
             # SLEW RATE LIMITER (Accélération Linéaire Constante)
@@ -168,93 +139,53 @@ class SwerveKinematicsMVP(Node):
             A_MAX = 0.40  # m/s² - Limite d'accélération (À régler)
             D_MAX = 0.40  # m/s² - Limite de décélération (Freinage)
             
-            last_spd = config['last_speed']
-            speed_diff = cmd_speed - last_spd
+            last_logical_spd = config['last_logical_speed']
+            speed_diff = logical_target_speed - last_logical_spd
             
             # Détermination de l'état dynamique (Accélération vs Freinage)
             # On accélère si la vitesse absolue augmente OU si on inverse le sens de rotation
-            is_accelerating = abs(cmd_speed) > abs(last_spd) or (cmd_speed * last_spd < 0)
+            is_accelerating = abs(logical_target_speed) > abs(last_logical_spd) or (logical_target_speed * last_logical_spd < 0)
             
             # Choix du taux limite en fonction de l'état
-            max_step = (A_MAX if is_accelerating else D_MAX) * dt
+            max_step_lin = (A_MAX if is_accelerating else D_MAX) * dt
                 
             # Application de la limite cinématique
-            if abs(speed_diff) > max_step:
-                cmd_speed_hardware = last_spd + math.copysign(max_step, speed_diff)
+            if abs(speed_diff) > max_step_lin:
+                logical_smoothed_speed = last_logical_spd + math.copysign(max_step_lin, speed_diff)
             else:
-                cmd_speed_hardware = cmd_speed
+                logical_smoothed_speed = logical_target_speed
                 
             # Coupure nette pour stabilité à l'arrêt complet
-            if abs(cmd_speed_hardware) < 0.01:
+            if abs(logical_smoothed_speed) < 0.01:
+                logical_smoothed_speed = 0.0
+
+            # ============================================================
+            # MAPPING DE ZONE MORTE (DEADBAND COMPENSATION)
+            # ============================================================
+            if abs(logical_smoothed_speed) > 0.005: # Seuil anti-bruit pour le 0 absolu
+                # On détermine le sens de la commande
+                sign = math.copysign(1.0, logical_smoothed_speed)
+                
+                # On normalise la commande Nav2 (0.0 -> 0.67) sur une échelle (0.0 -> 1.0)
+                # On utilise min() pour éviter de dépasser 1.0 si Nav2 s'emballe
+                ratio = min(abs(logical_smoothed_speed) / V_MAX_PHYSICAL, 1.0)
+                
+                # On mappe ce ratio sur la plage physique utile [0.30 -> 0.67]
+                cmd_speed_hardware = sign * (V_MIN_PHYSICAL + ratio * (V_MAX_PHYSICAL - V_MIN_PHYSICAL))
+            else:
                 cmd_speed_hardware = 0.0
+
+            # Application de la limite physique sur la vitesse des roues (Clamping)
+            cmd_speed_hardware = max(min(cmd_speed_hardware, MAX_SPEED_MS), -MAX_SPEED_MS)
 
             # Update state variables
             config['last_angle'] = cmd_angle
             config['last_speed'] = cmd_speed_hardware
+            config['last_logical_speed'] = logical_smoothed_speed
 
             # Conversion and Publication
             rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']            
             self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm_final), float(math.degrees(cmd_angle))]))
-
-    def odometry_callback(self):
-        current_time = self.get_clock().now()
-        dt = (current_time - self.last_time).nanoseconds / 1e9
-        self.last_time = current_time
-        if dt <= 0:
-            return
-
-        # Pass 1 — linear velocities (accumulate all 4 wheels first)
-        vx_sum, vy_sum = 0.0, 0.0
-        for config in self.wheels.values():
-            speed_ms = (config['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
-            angle_rad = math.radians(config['current_angle'])
-            config['vx_w'] = speed_ms * math.cos(angle_rad)
-            config['vy_w'] = speed_ms * math.sin(angle_rad)
-            vx_sum += config['vx_w']
-            vy_sum += config['vy_w']
-
-        vx_robot = vx_sum / 4.0
-        vy_robot = vy_sum / 4.0
-
-        # Pass 2 — angular velocity using the FINAL average (not partial)
-        wz_num, wz_den = 0.0, 0.0
-        for config in self.wheels.values():
-            wz_num += (config['x'] * (config['vy_w'] - vy_robot)
-                    - config['y'] * (config['vx_w'] - vx_robot))
-            wz_den += config['x']**2 + config['y']**2
-
-        wz_robot = wz_num / wz_den if wz_den > 0 else 0.0
-
-        delta_theta = wz_robot * dt
-        theta_mid = self.odom_theta + delta_theta / 2.0
-        self.odom_x += (vx_robot * math.cos(theta_mid) - vy_robot * math.sin(theta_mid)) * dt
-        self.odom_y += (vx_robot * math.sin(theta_mid) + vy_robot * math.cos(theta_mid)) * dt
-        self.odom_theta += delta_theta
-
-        self.publish_odometry(current_time, vx_robot, vy_robot, wz_robot)
-
-    def publish_odometry(self, current_time, vx, vy, wz):
-        tf_time = current_time + rclpy.duration.Duration(seconds=0.10)
-        cy = math.cos(self.odom_theta * 0.5)
-        sy = math.sin(self.odom_theta * 0.5)
-
-        t = TransformStamped()
-        t.header.stamp = tf_time.to_msg()
-        t.header.frame_id = 'odom'
-        t.child_frame_id = 'base_footprint'
-        t.transform.translation.x, t.transform.translation.y = self.odom_x, self.odom_y
-        t.transform.rotation.z, t.transform.rotation.w = sy, cy
-        self.tf_broadcaster.sendTransform(t)
-
-        odom = Odometry()
-        odom.header.stamp = tf_time.to_msg()
-        odom.header.frame_id = 'odom'
-        odom.child_frame_id = 'base_footprint'
-        odom.pose.pose.position.x, odom.pose.pose.position.y = self.odom_x, self.odom_y
-        odom.pose.pose.orientation.z, odom.pose.pose.orientation.w = sy, cy
-        odom.twist.twist.linear.x, odom.twist.twist.linear.y = vx, vy
-        odom.twist.twist.angular.z = wz
-        self.odom_pub.publish(odom)
 
 def main(args=None):
     rclpy.init(args=args)

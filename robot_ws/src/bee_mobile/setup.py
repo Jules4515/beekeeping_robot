@@ -42,6 +42,8 @@ setup(
             'sim_bridge = bee_mobile.sim_bridge:main',
             'mux_joystick_node = bee_mobile.mux_joystick_node:main',
             'waypoint_commander = bee_mobile.waypoint_commander:main',
+            'odometry = bee_mobile.odometry:main',
+            'aruco_tf_broadcaster = bee_mobile.aruco_tf_broadcaster:main',
         ],
     },
 )
