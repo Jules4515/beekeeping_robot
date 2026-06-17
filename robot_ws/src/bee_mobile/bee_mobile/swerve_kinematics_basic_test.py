@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64MultiArray, Int8
+from std_msgs.msg import Float64MultiArray, Int8, Float64
 import math
 
 class SwerveKinematicsMVP(Node):
@@ -13,10 +13,10 @@ class SwerveKinematicsMVP(Node):
 
         # si sim mettre des - pour dir pour les right wheels
         self.wheels = {
-            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
-            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
-            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0},
+            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
+            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
+            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
+            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
         }
 
         self.last_cmd_time = self.get_clock().now()  # Dedicated timer for Slew Rate Calculation
@@ -28,8 +28,11 @@ class SwerveKinematicsMVP(Node):
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel_out', self.cmd_vel_callback, 10)
         
         self.wheel_pubs = {}
+        self.logical_speed_pubs = {}
+
         for name in self.wheels.keys():
             self.wheel_pubs[name] = self.create_publisher(Float64MultiArray, f'mobile/wheel_{name}/motor_speed', 10)
+            self.logical_speed_pubs[name] = self.create_publisher(Float64, f'mobile/wheel_{name}/logical_speed', 10)
             self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', lambda msg, n=name: self.encoder_callback(msg, n), 10)
 
     def mode_callback(self, msg):
@@ -136,8 +139,8 @@ class SwerveKinematicsMVP(Node):
             # ============================================================
             # SLEW RATE LIMITER (Accélération Linéaire Constante)
             # ============================================================
-            A_MAX = 0.40  # m/s² - Limite d'accélération (À régler)
-            D_MAX = 0.40  # m/s² - Limite de décélération (Freinage)
+            A_MAX = 2.0  # m/s² - Limite d'accélération (À régler)
+            D_MAX = 2.0  # m/s² - Limite de décélération (Freinage)
             
             last_logical_spd = config['last_logical_speed']
             speed_diff = logical_target_speed - last_logical_spd
@@ -155,29 +158,72 @@ class SwerveKinematicsMVP(Node):
             else:
                 logical_smoothed_speed = logical_target_speed
                 
-            # Coupure nette pour stabilité à l'arrêt complet
-            if abs(logical_smoothed_speed) < 0.01:
-                logical_smoothed_speed = 0.0
+            # # Coupure nette pour stabilité à l'arrêt complet
+            # if abs(logical_smoothed_speed) < 0.01:
+            #     logical_smoothed_speed = 0.0
+
+            # # ============================================================
+            # # MAPPING DE ZONE MORTE (DEADBAND COMPENSATION)
+            # # ============================================================
+            # # ─── Seuils ───────────────────────────────────────────────────
+            # STOP_ZONE    = 0.005   # m/s — en dessous : candidat à l'arrêt
+            # START_THRESH = 0.020   # m/s — hystérésis : doit dépasser ça pour repartir
+            # STOP_CYCLES  = 5      # cycles consécutifs < STOP_ZONE = arrêt confirmé
+            #                     # à 50 Hz → 8 × 20 ms = 160 ms de confirmation
+            
+            # if abs(logical_smoothed_speed) < STOP_ZONE:
+            #     # Incrémenter le compteur de confirmation d'arrêt
+            #     config['stop_counter'] = min(config['stop_counter'] + 1, STOP_CYCLES)
+            # else:
+            #     # Commande significative → reset du compteur, le robot n'essaie pas de s'arrêter
+            #     config['stop_counter'] = 0
+
+            # # Confirmer l'arrêt après N cycles consécutifs sous STOP_ZONE
+            # if config['stop_counter'] >= STOP_CYCLES:
+            #     config['confirmed_stopped'] = True
+            #     self.get_logger().info("config['confirmed_stopped'] = True")
+
+
+            # # Hystérésis de redémarrage : ne repartir que si la commande dépasse START_THRESH
+            # if config['confirmed_stopped'] and abs(logical_smoothed_speed) > START_THRESH:
+            #     config['confirmed_stopped'] = False
+
+            # # ─── Décision finale ──────────────────────────────────────────
+            # if config['confirmed_stopped']:
+            #     cmd_speed_hardware = 0.0   # arrêt confirmé → zéro strict
+            #     self.get_logger().info("cmd_speed_hardware = 0.0")
+
+
+            # else:
+            #     # Mapping linéaire sur la plage physique utile
+            #     sign  = math.copysign(1.0, logical_smoothed_speed)
+            #     ratio = min(abs(logical_smoothed_speed) / V_MAX_PHYSICAL, 1.0)
+            #     cmd_speed_hardware = sign * (V_MIN_PHYSICAL + ratio * (V_MAX_PHYSICAL - V_MIN_PHYSICAL))
+
+
+            # cmd_speed_hardware = logical_smoothed_speed
+
 
             # ============================================================
-            # MAPPING DE ZONE MORTE (DEADBAND COMPENSATION)
+            # COURBE DE PROGRESSIVITÉ CONCAVE (AIDE AUX BASSES VITESSES)
             # ============================================================
-            if abs(logical_smoothed_speed) > 0.005: # Seuil anti-bruit pour le 0 absolu
-                # On détermine le sens de la commande
-                sign = math.copysign(1.0, logical_smoothed_speed)
-                
-                # On normalise la commande Nav2 (0.0 -> 0.67) sur une échelle (0.0 -> 1.0)
-                # On utilise min() pour éviter de dépasser 1.0 si Nav2 s'emballe
-                ratio = min(abs(logical_smoothed_speed) / V_MAX_PHYSICAL, 1.0)
-                
-                # On mappe ce ratio sur la plage physique utile [0.30 -> 0.67]
-                cmd_speed_hardware = sign * (V_MIN_PHYSICAL + ratio * (V_MAX_PHYSICAL - V_MIN_PHYSICAL))
+            V_SEUIL_CONCAVE = 0.30  # m/s - Point de raccordement linéaire
+            abs_smoothed = abs(logical_smoothed_speed)
+            
+            if abs_smoothed > 0.005:  # Seuil anti-bruit pour le zéro absolu
+                if abs_smoothed < V_SEUIL_CONCAVE:
+                    # Application de la fonction concave racine carrée signée
+                    sign = math.copysign(1.0, logical_smoothed_speed)
+                    cmd_speed_hardware = sign * V_SEUIL_CONCAVE * math.sqrt(abs_smoothed / V_SEUIL_CONCAVE)
+                else:
+                    # Au-dessus de 0.30 m/s, comportement standard x = y
+                    cmd_speed_hardware = logical_smoothed_speed
             else:
                 cmd_speed_hardware = 0.0
-
+                
             # Application de la limite physique sur la vitesse des roues (Clamping)
             cmd_speed_hardware = max(min(cmd_speed_hardware, MAX_SPEED_MS), -MAX_SPEED_MS)
-
+            
             # Update state variables
             config['last_angle'] = cmd_angle
             config['last_speed'] = cmd_speed_hardware
@@ -186,6 +232,10 @@ class SwerveKinematicsMVP(Node):
             # Conversion and Publication
             rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']            
             self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm_final), float(math.degrees(cmd_angle))]))
+
+            logical_msg = Float64()
+            logical_msg.data = float(logical_smoothed_speed)
+            self.logical_speed_pubs[name].publish(logical_msg)
 
 def main(args=None):
     rclpy.init(args=args)

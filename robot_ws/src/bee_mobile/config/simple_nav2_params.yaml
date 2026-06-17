@@ -105,12 +105,12 @@ controller_server:
       vx_std: 0.2
       vy_std: 0.15
       wz_std: 0.3
-      ax_max: 0.35
-      ax_min: -0.35
-      ay_max: 0.35
-      ay_min: -0.35
-      az_max: 0.5
-      az_min: -0.5
+      ax_max: 3.0
+      ax_min: -3.0
+      ay_max: 3.0
+      ay_min: -3.0
+      az_max: 3.0
+      az_min: -3.0
       prune_distance: 1.5
       transform_tolerance: 1.0
       # Température : capacité du MPPI à explorer des trajectoires plus coûteuses que la trajectoire nominale (sans bruit),
@@ -361,8 +361,8 @@ velocity_smoother:
     feedback: "OPEN_LOOP"
     max_velocity: [0.67, 0.67, 0.71]
     min_velocity: [-0.67, -0.67, -0.71]
-    max_accel: [0.35, 0.35, 0.5]
-    max_decel: [-0.35, -0.35, -0.5]
+    max_accel: [3.0, 3.0, 3.0]
+    max_decel: [-3.0, -3.0, -3.0]
     odom_topic: "odom"
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]
