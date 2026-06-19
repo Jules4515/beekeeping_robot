@@ -122,7 +122,7 @@ def generate_launch_description():
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
 
     # Chemins fixes vers tes fichiers de configuration réels
-    nav2_params = os.path.join(pkg_share, 'config', 'simple_nav2_params.yaml')
+    nav2_params = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
     map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
     sim_map_path = os.path.join(pkg_share, 'maps', 'tb3_sandbox_upscale.yaml')
 

@@ -41,9 +41,9 @@ def generate_launch_description():
             name='chassis_to_camera_tf',
             arguments=[
                 '1.056', '0.0', '0.03',       # Traduction X, Y, Z en mètres
-                '-1.5708', '0.0', '-1.5708', # Rotation Roll, Pitch, Yaw en radians (REP-103)
+                '-1.5708', '0.0', '-2.0944', # Rotation Roll (default : -pi/2 = -1.5708), Pitch, Yaw (caméra à -30 deg vers le bas -pi/2) en radians (REP-103)
                 'chassis', 
-                'camera_link_optical'
+                'camera_link_optical'      
             ]
         ),
 

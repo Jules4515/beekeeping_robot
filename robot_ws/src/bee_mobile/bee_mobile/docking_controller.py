@@ -8,7 +8,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-class DockingController(Node):
+class RucheDockingManager(Node):
     # State Machine Constants
     STATE_WAITING_NAV2 = 0
     STATE_SEARCHING    = 1
@@ -17,11 +17,11 @@ class DockingController(Node):
     STATE_DOCKED       = 4
 
     def __init__(self):
-        super().__init__('docking_controller')
+        super().__init__('ruche_docking_manager')
 
         # --- Frames Configuration ---
         self.declare_parameter('target_frame', 'aruco_marker_91')
-        self.declare_parameter('base_frame', 'base_link')
+        self.declare_parameter('base_frame', 'chassis')
         
         # --- Velocity Profile Parameters (LOGICAL SPEEDS) ---
         self.declare_parameter('v_max_docking', 0.35)     # Absolute max approach speed
@@ -71,7 +71,7 @@ class DockingController(Node):
 
         # 20Hz Control Loop
         self.timer = self.create_timer(0.05, self.control_loop)
-        self.get_logger().info("Docking Controller Initialized. Waiting for Nav2...")
+        self.get_logger().info("Ruche Docking Manager Initialized. Waiting for Nav2...")
 
     def trigger_callback(self, msg):
         if msg.data and self.current_state == self.STATE_WAITING_NAV2:
@@ -180,7 +180,7 @@ class DockingController(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = DockingController()
+    node = RucheDockingManager()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

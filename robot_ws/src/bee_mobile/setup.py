@@ -40,6 +40,7 @@ setup(
             'odometry = bee_mobile.odometry:main',
             'aruco_tf_broadcaster = bee_mobile.aruco_tf_broadcaster:main',
             'docking_controller = bee_mobile.docking_controller:main',
+            'docking_debug_cli = bee_mobile.docking_debug_cli:main',
         ],
     },
 )
