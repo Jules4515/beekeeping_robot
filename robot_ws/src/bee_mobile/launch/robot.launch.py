@@ -57,6 +57,13 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
+    docking_controller_node = Node(
+        package='bee_mobile',
+        executable='docking_controller',
+        output='screen',
+        condition=UnlessCondition(is_sim)
+    )
+
     # --- Simulation Nodes (SITL Only) ---
     sim_bridge_node = Node(
         package='bee_mobile',
@@ -87,8 +94,7 @@ def generate_launch_description():
 
     swerve_kinematics_node = Node(
         package='bee_mobile',
-        executable='swerve_kinematics_basic_test',
-        #executable='swerve_kinematics_node_test',
+        executable='swerve_kinematics',
         output='screen'
     )
 
@@ -118,5 +124,6 @@ def generate_launch_description():
         mux_joystick_node,
         swerve_kinematics_node,
         odometry_node,
-        twist_mux_node
+        twist_mux_node,
+        docking_controller_node,
     ])

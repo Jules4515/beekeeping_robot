@@ -25,9 +25,7 @@ class PIDTuner(Node):
 
         # Default PID values
         # [Kp_d, Ki_d, Kd_d, Off_d, Kp_s, Ki_s, Kd_s, Off_s]
-        self.active_pid = [25.0, 3.2, 3.0, 20.0, 30.0, 0.2, 1.5, 130.0] 
-
-        #25.0 3.2 3.0 20.0 30.0 0.2 1.5 130.0
+        self.active_pid = [20.0, 8.0, 4.0, 30.0, 25.0, 0.2, 1.5, 130.0] 
 
         self.data_lock = threading.Lock()
 

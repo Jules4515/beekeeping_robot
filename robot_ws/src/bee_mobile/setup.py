@@ -31,19 +31,15 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'joystick_node = bee_mobile.joystick_node:main',
-            'four_ws_controller = bee_mobile.four_ws_controller:main',
             'pid_tuner = bee_mobile.pid_tuner:main',
             'wheel_state_converter = bee_mobile.wheel_state_converter:main',
-            'swerve_kinematics_node = bee_mobile.swerve_kinematics_node:main',
-            'swerve_kinematics_node_old = bee_mobile.swerve_kinematics_node_old:main',
-            'swerve_kinematics_node_test = bee_mobile.swerve_kinematics_node_test:main',
-            'swerve_kinematics_basic_test = bee_mobile.swerve_kinematics_basic_test:main',
+            'swerve_kinematics = bee_mobile.swerve_kinematics:main',
             'sim_bridge = bee_mobile.sim_bridge:main',
             'mux_joystick_node = bee_mobile.mux_joystick_node:main',
             'waypoint_commander = bee_mobile.waypoint_commander:main',
             'odometry = bee_mobile.odometry:main',
             'aruco_tf_broadcaster = bee_mobile.aruco_tf_broadcaster:main',
+            'docking_controller = bee_mobile.docking_controller:main',
         ],
     },
 )

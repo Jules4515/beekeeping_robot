@@ -5,9 +5,9 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64MultiArray, Int8, Float64
 import math
 
-class SwerveKinematicsMVP(Node):
+class SwerveKinematics(Node):
     def __init__(self):
-        super().__init__('swerve_kinematics_node')
+        super().__init__('swerve_kinematics')
 
         self.wheel_radius = 0.215
 
@@ -231,9 +231,10 @@ class SwerveKinematicsMVP(Node):
             logical_msg = Float64()
             logical_msg.data = float(logical_smoothed_speed)
             self.logical_speed_pubs[name].publish(logical_msg)
+            
 def main(args=None):
     rclpy.init(args=args)
-    rclpy.spin(SwerveKinematicsMVP())
+    rclpy.spin(SwerveKinematics())
     rclpy.shutdown()
 
 if __name__ == '__main__':
