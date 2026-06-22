@@ -20,8 +20,8 @@ class MuxJoystickNode(Node):
         self.declare_parameter('deadband', 0.1)
 
         # Speed limits
-        self.declare_parameter('max_linear_speed_ms', 0.67)
-        self.declare_parameter('max_angular_speed_rads', 0.71)
+        self.declare_parameter('max_linear_speed_ms', 0.07)
+        self.declare_parameter('max_angular_speed_rads', 0.09)
 
         # Explicit button mapping (Xbox 360/One standard)
         self.declare_parameter('btn_straight', 0)        # A button
@@ -51,8 +51,10 @@ class MuxJoystickNode(Node):
         # the asymptotic ramp, preventing raw joystick steps from shocking the mechanics.
         # ---------------------------------------------------------
         self.declare_parameter('alpha_filter', 0.10)
+        self.declare_parameter('alpha_filter_wz', 0.05)
         self.alpha = self.get_parameter('alpha_filter').value
-        
+        self.alpha_wz = self.get_parameter('alpha_filter_wz').value
+
         self.filtered_joy_x = 0.0
         self.filtered_joy_y = 0.0
         self.filtered_joy_z = 0.0
@@ -92,7 +94,7 @@ class MuxJoystickNode(Node):
         # ---------------------------------------------------------
         self.filtered_joy_x = (self.alpha * joy_x) + ((1.0 - self.alpha) * self.filtered_joy_x)
         self.filtered_joy_y = (self.alpha * joy_y) + ((1.0 - self.alpha) * self.filtered_joy_y)
-        self.filtered_joy_z = (self.alpha * joy_z) + ((1.0 - self.alpha) * self.filtered_joy_z)
+        self.filtered_joy_z = (self.alpha_wz * joy_z) + ((1.0 - self.alpha_wz) * self.filtered_joy_z)
 
         buttons = msg.buttons
         if not self.last_buttons:

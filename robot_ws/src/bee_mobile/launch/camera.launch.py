@@ -38,11 +38,11 @@ def generate_launch_description():
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
-            name='chassis_to_camera_tf',
+            name='base_link_to_camera_tf',
             arguments=[
                 '1.056', '0.0', '0.03',       # Traduction X, Y, Z en mètres
                 '-1.5708', '0.0', '-2.0944', # Rotation Roll (default : -pi/2 = -1.5708), Pitch, Yaw (caméra à -30 deg vers le bas -pi/2) en radians (REP-103)
-                'chassis', 
+                'base_link', 
                 'camera_link_optical'      
             ]
         ),

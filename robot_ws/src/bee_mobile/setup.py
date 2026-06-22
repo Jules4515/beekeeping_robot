@@ -41,6 +41,9 @@ setup(
             'aruco_tf_broadcaster = bee_mobile.aruco_tf_broadcaster:main',
             'docking_controller = bee_mobile.docking_controller:main',
             'docking_debug_cli = bee_mobile.docking_debug_cli:main',
+            'heading_publisher = bee_mobile.heading_publisher:main',
+            'robot_footprint_publisher = bee_mobile.robot_footprint_publisher:main',
+            'gps_heading_display = bee_mobile.gps_heading_display:main',
         ],
     },
 )

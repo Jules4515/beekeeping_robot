@@ -12,6 +12,19 @@
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>ros2_aruco_interfaces</depend>
+  <depend>nav2_simple_commander</depend>
+  <depend>ament_index_python</depend>
+  <depend>visualization_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>nmea_navsat_driver</depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>

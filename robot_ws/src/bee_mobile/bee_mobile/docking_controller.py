@@ -21,7 +21,7 @@ class RucheDockingManager(Node):
 
         # --- Frames Configuration ---
         self.declare_parameter('target_frame', 'aruco_marker_91')
-        self.declare_parameter('base_frame', 'chassis')
+        self.declare_parameter('base_frame', 'base_link')
         
         # --- Velocity Profile Parameters (LOGICAL SPEEDS) ---
         self.declare_parameter('v_max_docking', 0.35)     # Absolute max approach speed

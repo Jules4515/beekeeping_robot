@@ -3,7 +3,7 @@
 
     <xacro:property name="pkg" value="package://bee_mobile/meshes" />
 
-    <!-- Position of the steering joint in the chassis frame of reference -->
+    <!-- Position of the steering joint in the base_link frame of reference -->
     <xacro:property name="left_y" value="0.4150" /> <!-- 0.5790 -->
     <xacro:property name="right_y"  value="-0.4150" /> <!-- -0.5790 -->
     <xacro:property name="front_x"  value="0.7661" />
@@ -20,18 +20,18 @@
     <!-- Base Footprint - Virtual link representing the robot's 2D ground projection -->
     <link name="base_footprint"/>
 
-    <!-- Chassis -->
-    <link name="chassis">
+    <!-- Base_link (Chassis) -->
+    <link name="base_link">
         <visual>
             <geometry>
-                <mesh filename="${pkg}/chassis.STL" />
+                <mesh filename="${pkg}/base_link.STL" />
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry>
-                <mesh filename="${pkg}/chassis.STL" />
+                <mesh filename="${pkg}/base_link.STL" />
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
         </collision>
@@ -44,13 +44,13 @@
     
     <joint name="base_footprint_joint" type="fixed">
         <parent link="base_footprint"/>
-        <child link="chassis"/>
+        <child link="base_link"/>
         <origin xyz="-0.2861 0 0.79"/>
     </joint>
     
     <!-- ======= Wheel macro =======-->
     <!-- name : front_left / front_right / rear_left / rear_right    -->
-    <!-- steering_joint_x/y : Position of the steering joint in the chassis frame of reference -->
+    <!-- steering_joint_x/y : Position of the steering joint in the base_link frame of reference -->
     <!-- steering_com_x/z : Center Of Mass position of the steering_link in its own frame of reference -->
     <!-- wheel_joint_x : Position of the wheel_joint in the steering_link frame of reference -->
     <!-- wheel_axis : Axis of the wheel_joint (-1 or 1) -->
@@ -80,7 +80,7 @@
 
         <!-- Steering joint -->
         <joint name="${name}_steering_joint" type="revolute">
-            <parent link="chassis" />
+            <parent link="base_link" />
             <child link="${name}_steering_link" />
             <origin xyz="${steering_joint_x} ${steering_joint_y} -0.2370" rpy="0 0 0" />
             <axis xyz="0 0 1" />
@@ -153,7 +153,7 @@
     </link>
 
     <joint name="robot_arm_base_steering" type="prismatic">
-        <parent link="chassis" />
+        <parent link="base_link" />
         <child link="robot_arm_base_steering_link" />
         <origin xyz="0.233073 0.0 0.029" rpy="0 0 0" />
         <axis xyz="0 1 0" />
@@ -346,7 +346,7 @@
     </link>
     
     <joint name="camera_joint" type="fixed">
-        <parent link="chassis" />
+        <parent link="base_link" />
         <child link="default_cam" />
         <origin xyz="0.975 0 0.03" rpy="0 0 0" />
     </joint>
@@ -365,9 +365,9 @@
     </link>
 
     <joint name="lidar_joint" type="fixed">
-        <parent link="chassis" />
+        <parent link="base_link" />
         <child link="laser_frame" />
-        <origin xyz="0.975 0 0.09" rpy="0 0 3.14" />
+        <origin xyz="0.975 0 0.09" rpy="0 0 3.03" />
     </joint>
 
 </robot>
