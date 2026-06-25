@@ -8,6 +8,7 @@ microros_ws/build
 microros_ws/install
 microros_ws/log
 frames_*
+frames_temp/
 robot_ws/src/bee_mobile/bee_mobile/__pycache__
 robot_ws/src/bee_mobile/temp
 .vscode/

@@ -29,6 +29,12 @@ def generate_launch_description():
                 'image_height': 480,
                 'camera_frame_id': 'camera_link_optical',
                 'camera_info_url': 'file://' + camera_info_yaml,
+                'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
+                'gain': 20,
+                #'exposure_absolute': 20,
+                'qos_reliability': 'best_effort',
+                'qos_history': 'keep_last',
+                'qos_depth': 1,
             }]
         ),
 
@@ -47,17 +53,4 @@ def generate_launch_description():
             ]
         ),
 
-        # 3. Détecteur ArUco unique (Consommation intra-process sans latence réseau)
-        Node(
-            package='ros2_aruco',
-            executable='aruco_node',
-            name='aruco_node',
-            output='screen',
-            parameters=[{
-                'marker_size': 0.068, # Taille physique ajustée (erreur de 3cm corrigée)
-                'aruco_dictionary_id': 'DICT_ARUCO_ORIGINAL',
-                'image_topic': '/camera/image_raw',
-                'camera_info_topic': '/camera/camera_info',
-            }]
-        )
     ])

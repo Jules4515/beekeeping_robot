@@ -44,6 +44,10 @@ setup(
             'heading_publisher = bee_mobile.heading_publisher:main',
             'robot_footprint_publisher = bee_mobile.robot_footprint_publisher:main',
             'gps_heading_display = bee_mobile.gps_heading_display:main',
+            'custom_gps_driver = bee_mobile.custom_gps_driver:main',
+            'distance_to_aruco = bee_mobile.distance_to_aruco:main',
+            'tf_math_tester = bee_mobile.tf_math_tester:main',
+            'compressed_aruco_node = bee_mobile.compressed_aruco_node:main',
         ],
     },
 )

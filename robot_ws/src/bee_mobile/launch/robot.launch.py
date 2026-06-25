@@ -57,6 +57,19 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
+    # compressed_aruco_node = Node(
+    #     package='bee_mobile', 
+    #     executable='compressed_aruco_node',
+    #     name='aruco_node',
+    #     namespace='camera',
+    #     output='screen',
+    #     parameters=[{
+    #         'marker_size': 0.068,
+    #         'image_topic': '/camera/image_raw/compressed',
+    #         #'enable_debug': True  # Force la désactivation complète du traitement d'image inutile
+    #     }]
+    # )
+
     docking_controller_node = Node(
         package='bee_mobile',
         executable='docking_controller',
@@ -122,7 +135,7 @@ def generate_launch_description():
         static_tf_map_odom,
         joy_node,
         mux_joystick_node,
-        swerve_kinematics_node,
+        #swerve_kinematics_node,
         odometry_node,
         twist_mux_node,
         docking_controller_node,
