@@ -30,8 +30,8 @@ def generate_launch_description():
                 'camera_frame_id': 'camera_link_optical',
                 'camera_info_url': 'file://' + camera_info_yaml,
                 'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
-                'gain': 20,
-                #'exposure_absolute': 20,
+                'exposure_absolute': 20,
+                'gain': 10,
                 'qos_reliability': 'best_effort',
                 'qos_history': 'keep_last',
                 'qos_depth': 1,

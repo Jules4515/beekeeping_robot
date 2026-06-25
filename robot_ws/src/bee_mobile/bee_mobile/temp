@@ -1,209 +1,334 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64MultiArray, Int8, Float64
-import math
+from sensor_msgs.msg import CompressedImage, Image, CameraInfo
+from geometry_msgs.msg import Pose, PoseArray, TransformStamped
+from tf2_ros import TransformBroadcaster
+from cv_bridge import CvBridge, CvBridgeError
+import cv2
+import numpy as np
 
-class SwerveKinematics(Node):
+class CompressedArucoNode(Node):
     def __init__(self):
-        super().__init__('swerve_kinematics')
-
-        self.wheel_radius = 0.215
-
-        # si sim mettre des - pour dir pour les right wheels
-        self.wheels = {
-            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-        }
-
-        self.last_cmd_time = self.get_clock().now()  # Dedicated timer for Slew Rate Calculation
-
-        # --- État du Joystick ---
-        self.active_joy_mode = -1
-        self.mode_sub = self.create_subscription(Int8, '/joystick_control_mode', self.mode_callback, 10)
-
-        self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel_out', self.cmd_vel_callback, 10)
+        super().__init__('compressed_aruco_node')
         
-        self.wheel_pubs = {}
-        self.logical_speed_pubs = {}
-
-        for name in self.wheels.keys():
-            self.wheel_pubs[name] = self.create_publisher(Float64MultiArray, f'mobile/wheel_{name}/motor_speed', 10)
-            self.logical_speed_pubs[name] = self.create_publisher(Float64, f'mobile/wheel_{name}/logical_speed', 10)
-            self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', lambda msg, n=name: self.encoder_callback(msg, n), 10)
-
-    def mode_callback(self, msg):
-        self.active_joy_mode = msg.data
-
-    def encoder_callback(self, msg, wheel_name):
-        if len(msg.data) >= 2:
-            self.wheels[wheel_name]['current_rpm'] = float(msg.data[0]) * self.wheels[wheel_name]['enc_dir']
-            self.wheels[wheel_name]['current_angle'] = float(msg.data[1])
-
-    def cmd_vel_callback(self, msg):
-        # Calculate time elapsed since last command to compute physically achievable angle steps
-        current_time = self.get_clock().now()
-        dt = (current_time - self.last_cmd_time).nanoseconds / 1e9
-        self.last_cmd_time = current_time
+        # 1. Paramètres ROS 2
+        self.declare_parameter('image_topic', '/camera/image_raw/compressed')
+        self.declare_parameter('camera_info_topic', '/camera/camera_info')
+        self.declare_parameter('marker_size', 0.068)
+        self.declare_parameter('parent_frame', 'camera_link_optical')
         
-        # Prevent massive dt spikes on first run or after long pauses
-        if dt <= 0.0 or dt > 0.5:
-            dt = 0.1
+        self.image_topic = self.get_parameter('image_topic').get_parameter_value().string_value
+        self.info_topic = self.get_parameter('camera_info_topic').get_parameter_value().string_value
+        self.marker_size = self.get_parameter('marker_size').get_parameter_value().double_value
+        self.parent_frame = self.get_parameter('parent_frame').get_parameter_value().string_value
 
-        # Physical machine limits
-        MAX_STEER_RAD_S = math.radians(60.0)  # Max servo rotation SPEED (~45 deg/s) - Tune based on hardware
-        MAX_RPM_LIMIT = 30.0  # Limite de sécurité physique
-        MAX_SPEED_MS = (MAX_RPM_LIMIT * 2.0 * math.pi * self.wheel_radius) / 60.0
-        HARD_LIMIT_RAD = math.radians(80.0) # Limite physique de +-80 deg pour l'orientation des roues
+        # 2. Outils OpenCV et TF
+        self.bridge = CvBridge()
+        self.tf_broadcaster = TransformBroadcaster(self)
+        self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)
+
+        # Configuration du détecteur
+        self.parameters = cv2.aruco.DetectorParameters_create()
+        self.parameters.adaptiveThreshWinSizeMin = 3
+        self.parameters.adaptiveThreshWinSizeMax = 23
+        self.parameters.adaptiveThreshWinSizeStep = 10
+        self.parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+
+        self.camera_matrix = None
+        self.dist_coeffs = None
         
-        # --- PARAMÈTRES DU PROFIL DE TRACTION ---
-        TOLERANCE_VERTE_DEG = 10.0  # Fin de la zone 100%
-        TOLERANCE_ROUGE_DEG = 40.0  # Début de la zone 0%
+        # 3. Souscriptions et Publishers
+        self.info_sub = self.create_subscription(
+            CameraInfo, self.info_topic, self.camera_info_callback, 10
+        )
         
-        # Conversion en radians pour le calcul interne
-        TOLERANCE_VERTE_RAD = math.radians(TOLERANCE_VERTE_DEG)
-        TOLERANCE_ROUGE_RAD = math.radians(TOLERANCE_ROUGE_DEG)
+        # Nouveau topic standard sans dépendance externe
+        self.pose_array_pub = self.create_publisher(PoseArray, 'aruco_marker_poses', 10)
+        self.image_pub = self.create_publisher(Image, '~/debug_image', 10)
 
-        for name, config in self.wheels.items():
-            vx_w = msg.linear.x - config['y'] * msg.angular.z
-            vy_w = msg.linear.y + config['x'] * msg.angular.z
+        self.image_sub = self.create_subscription(
+            CompressedImage, self.image_topic, self.compressed_image_callback, 10
+        )
+        
+        self.get_logger().info(f"⚡ Nœud ArUco Monolithique actif. Parent : {self.parent_frame}")
+
+    def camera_info_callback(self, msg):
+        self.camera_matrix = np.array(msg.k).reshape((3, 3))
+        self.dist_coeffs = np.array(msg.d)
+        self.get_logger().info("✅ Calibration chargée. Fermeture du souscripteur info.")
+        self.destroy_subscription(self.info_sub)
+
+    def compressed_image_callback(self, msg):
+        if self.camera_matrix is None:
+            return
+
+        try:
+            frame = self.bridge.compressed_imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.equalizeHist(gray)
+
+            corners, ids, rejected = cv2.aruco.detectMarkers(gray, self.dictionary, parameters=self.parameters)
             
-            raw_speed = math.hypot(vx_w, vy_w)
-            
-            # --- Logique de Pré-orientation simplifiée ---
-            if raw_speed > 0.001:
-                raw_angle = math.atan2(vy_w, vx_w)
-            else:
-                if self.active_joy_mode == 3:      # Zero Turn
-                    raw_angle = math.atan2(config['x'], -config['y'])
-                elif self.active_joy_mode in [1, 2]: # Straight ou Crab
-                    raw_angle = 0.0
-                else:                              # Holonome (0) ou inactif (-1)
-                    raw_angle = config['last_angle']
+            if ids is not None and len(ids) > 0:
+                # Initialisation du PoseArray standard
+                pose_array_msg = PoseArray()
+                pose_array_msg.header.stamp = msg.header.stamp
+                pose_array_msg.header.frame_id = self.parent_frame
 
-            # 1. Absolute Phase Inversion (Clamp to +/- 90 deg)
-            if raw_angle > (math.pi / 2.0):
-                ideal_angle = raw_angle - math.pi
-                ideal_speed = -raw_speed
-            elif raw_angle < -(math.pi / 2.0):
-                ideal_angle = raw_angle + math.pi
-                ideal_speed = -raw_speed
-            else:
-                ideal_angle = raw_angle
-                ideal_speed = raw_speed
+                # Calcul des poses 3D
+                rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
+                    corners, self.marker_size, self.camera_matrix, self.dist_coeffs
+                )
 
-            # 2. Slew Rate Limiter: Ramp the angle target instead of instant snapping
-            angle_diff = ideal_angle - config['last_angle']
-            # Normalisation stricte de la différence pour le chemin le plus court
-            angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))
-            max_step_angle = MAX_STEER_RAD_S * dt
+                cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
-            if angle_diff > max_step_angle:
-                cmd_angle = config['last_angle'] + max_step_angle
-            elif angle_diff < -max_step_angle:
-                cmd_angle = config['last_angle'] - max_step_angle
-            else:
-                cmd_angle = ideal_angle
+                for i in range(len(ids)):
+                    marker_id = int(ids[i][0])
+                    cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvecs[i], tvecs[i], 0.05)
 
-            # Application de la limite physique d'angle sur l'orientation des roues (Clamping)
-            cmd_angle = max(min(cmd_angle, HARD_LIMIT_RAD), -HARD_LIMIT_RAD)
+                    # 1. Extraction de la Pose
+                    pose = Pose()
+                    pose.position.x = float(tvecs[i][0][0])
+                    pose.position.y = float(tvecs[i][0][1])
+                    pose.position.z = float(tvecs[i][0][2])
 
-            # 3. Verrou de Traction Proportionnel (Profil Quadratique Convexe)
-            current_phys_angle = math.radians(config['current_angle'])
-            error_to_ideal = ideal_angle - current_phys_angle
-            
-            # Normalisation au chemin le plus court pour éviter le wrap-around de Pi
-            error_to_ideal = abs(math.atan2(math.sin(error_to_ideal), math.cos(error_to_ideal)))
+                    # Conversion Rodrigues -> Quaternion
+                    r_matrix, _ = cv2.Rodrigues(rvecs[i])
+                    t = np.trace(r_matrix)
+                    if t > 0:
+                        M = np.sqrt(t + 1.0) * 2
+                        pose.orientation.w = 0.25 * M
+                        pose.orientation.x = (r_matrix[2, 1] - r_matrix[1, 2]) / M
+                        pose.orientation.y = (r_matrix[0, 2] - r_matrix[2, 0]) / M
+                        pose.orientation.z = (r_matrix[1, 0] - r_matrix[0, 1]) / M
+                    else:
+                        if (r_matrix[0, 0] > r_matrix[1, 1]) and (r_matrix[0, 0] > r_matrix[2, 2]):
+                            M = np.sqrt(1.0 + r_matrix[0, 0] - r_matrix[1, 1] - r_matrix[2, 2]) * 2
+                            pose.orientation.w = (r_matrix[2, 1] - r_matrix[1, 2]) / M
+                            pose.orientation.x = 0.25 * M
+                            pose.orientation.y = (r_matrix[0, 1] + r_matrix[1, 0]) / M
+                            pose.orientation.z = (r_matrix[0, 2] + r_matrix[2, 0]) / M
+                        elif r_matrix[1, 1] > r_matrix[2, 2]:
+                            M = np.sqrt(1.0 + r_matrix[1, 1] - r_matrix[0, 0] - r_matrix[2, 2]) * 2
+                            pose.orientation.w = (r_matrix[0, 2] - r_matrix[2, 0]) / M
+                            pose.orientation.x = (r_matrix[0, 1] + r_matrix[1, 0]) / M
+                            pose.orientation.y = 0.25 * M
+                            pose.orientation.z = (r_matrix[1, 2] + r_matrix[2, 1]) / M
+                        else:
+                            M = np.sqrt(1.0 + r_matrix[2, 2] - r_matrix[0, 0] - r_matrix[1, 1]) * 2
+                            pose.orientation.w = (r_matrix[1, 0] - r_matrix[0, 1]) / M
+                            pose.orientation.x = (r_matrix[0, 2] + r_matrix[2, 0]) / M
+                            pose.orientation.y = (r_matrix[1, 2] + r_matrix[2, 1]) / M
+                            pose.orientation.z = 0.25 * M
 
-            if error_to_ideal <= TOLERANCE_VERTE_RAD:
-                speed_multiplier = 1.0
-            elif error_to_ideal >= TOLERANCE_ROUGE_RAD:
-                speed_multiplier = 0.0
-            else:
-                # Calcul du ratio linéaire de 0.0 à 1.0 dans la zone de dégradation
-                ratio = (error_to_ideal - TOLERANCE_VERTE_RAD) / (TOLERANCE_ROUGE_RAD - TOLERANCE_VERTE_RAD)
-                # Application du profil Quadratique Convexe : (1 - ratio)^2
-                speed_multiplier = (1.0 - ratio) ** 2
+                    # Ajout à la liste du topic
+                    pose_array_msg.poses.append(pose)
 
-            # Application finale à la consigne de vitesse LOGIQUE
-            logical_target_speed = ideal_speed * speed_multiplier
-            
-            V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
-            V_MAX_PHYSICAL = 0.67  # Ta vitesse maximale
-            
-            logical_target_speed = max(min(logical_target_speed, V_MAX_PHYSICAL), -V_MAX_PHYSICAL)
+                    # 2. Diffusion directe de la TF (Broadcaster)
+                    tf_msg = TransformStamped()
+                    tf_msg.header.stamp = msg.header.stamp
+                    tf_msg.header.frame_id = self.parent_frame
+                    tf_msg.child_frame_id = f'aruco_marker_{marker_id}'
+                    
+                    tf_msg.transform.translation.x = pose.position.x
+                    tf_msg.transform.translation.y = pose.position.y
+                    tf_msg.transform.translation.z = pose.position.z
+                    tf_msg.transform.rotation = pose.orientation
+                    
+                    self.tf_broadcaster.sendTransform(tf_msg)
 
-            # ============================================================
-            # SLEW RATE LIMITER (Accélération Linéaire Constante)
-            # ============================================================
-            A_MAX = 2.0  # m/s² - Limite d'accélération (À régler)
-            D_MAX = 2.0  # m/s² - Limite de décélération (Freinage)
-            
-            last_logical_spd = config['last_logical_speed']
-            speed_diff = logical_target_speed - last_logical_spd
-            
-            # Détermination de l'état dynamique (Accélération vs Freinage)
-            # On accélère si la vitesse absolue augmente OU si on inverse le sens de rotation
-            is_accelerating = abs(logical_target_speed) > abs(last_logical_spd) or (logical_target_speed * last_logical_spd < 0)
-            
-            # Choix du taux limite en fonction de l'état
-            max_step_lin = (A_MAX if is_accelerating else D_MAX) * dt
+                # Publication du PoseArray et de l'image de Debug
+                self.pose_array_pub.publish(pose_array_msg)
                 
-            # Application de la limite cinématique
-            if abs(speed_diff) > max_step_lin:
-                logical_smoothed_speed = last_logical_spd + math.copysign(max_step_lin, speed_diff)
-            else:
-                logical_smoothed_speed = logical_target_speed
-                
-            # ============================================================
-            # MAPPING CONTINU C1 (HYBRIDE RACINE / LINÉAIRE)
-            # ============================================================
-            V_MAX = 0.67
-            V_MIN_MOTEUR = 0.30
-            V_MIN_NAV2 = 0.10
-            
-            abs_smoothed = abs(logical_smoothed_speed)
-            
-            if abs_smoothed > 0.005:
-                sign = math.copysign(1.0, logical_smoothed_speed)
-                
-                # Pré-calcul des coefficients (À déplacer dans le __init__ pour l'optimisation)
-                m = (V_MAX - V_MIN_MOTEUR) / (V_MAX - V_MIN_NAV2)
-                A = (2.0 * (V_MIN_MOTEUR - m * V_MIN_NAV2)) / math.sqrt(V_MIN_NAV2)
-                B = 2.0 * m - (V_MIN_MOTEUR / V_MIN_NAV2)
+                debug_msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+                self.image_pub.publish(debug_msg)
 
-                if abs_smoothed <= V_MIN_NAV2:
-                    # Zone 1 : Raccordement concave lisse
-                    cmd_speed_hardware = sign * (A * math.sqrt(abs_smoothed) + B * abs_smoothed)
-                else:
-                    # Zone 2 : Ligne droite vers V_MAX
-                    cmd_speed_hardware = sign * (m * (abs_smoothed - V_MIN_NAV2) + V_MIN_MOTEUR)
-            else:
-                cmd_speed_hardware = 0.0
-                
-            cmd_speed_hardware = max(min(cmd_speed_hardware, V_MAX), -V_MAX)
-            
-            # Update state variables
-            config['last_angle'] = cmd_angle
-            config['last_speed'] = cmd_speed_hardware
-            config['last_logical_speed'] = logical_smoothed_speed
-
-            # Conversion and Publication
-            rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']   
-            #rpm_final = 0.0         
-            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm_final), float(math.degrees(cmd_angle))]))
-
-            logical_msg = Float64()
-            logical_msg.data = float(logical_smoothed_speed)
-            self.logical_speed_pubs[name].publish(logical_msg)
+        except CvBridgeError as e:
+            self.get_logger().error(f"Erreur callback : {e}")
 
 def main(args=None):
     rclpy.init(args=args)
-    rclpy.spin(SwerveKinematics())
-    rclpy.shutdown()
+    node = CompressedArucoNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
+
+# #!/usr/bin/env python3
+# import rclpy
+# from rclpy.node import Node
+# from sensor_msgs.msg import CompressedImage, Image, CameraInfo
+# from geometry_msgs.msg import Pose, PoseArray, TransformStamped
+# from tf2_ros import TransformBroadcaster
+# from cv_bridge import CvBridge, CvBridgeError
+# import cv2
+# import numpy as np
+
+# class CompressedArucoNode(Node):
+#     def __init__(self):
+#         super().__init__('compressed_aruco_node')
+        
+#         # 1. Paramètres ROS 2
+#         self.declare_parameter('image_topic', '/camera/image_raw/compressed')
+#         self.declare_parameter('camera_info_topic', '/camera/camera_info')
+#         self.declare_parameter('marker_size', 0.068)
+#         self.declare_parameter('parent_frame', 'camera_link_optical')
+#         self.declare_parameter('enable_debug', False) # Désactivé par défaut pour les performances
+
+#         self.image_topic = self.get_parameter('image_topic').get_parameter_value().string_value
+#         self.info_topic = self.get_parameter('camera_info_topic').get_parameter_value().string_value
+#         self.marker_size = self.get_parameter('marker_size').get_parameter_value().double_value
+#         self.parent_frame = self.get_parameter('parent_frame').get_parameter_value().string_value
+#         self.enable_debug = self.get_parameter('enable_debug').get_parameter_value().bool_value
+
+#         # 2. Outils OpenCV et TF
+#         self.bridge = CvBridge()
+#         self.tf_broadcaster = TransformBroadcaster(self)
+#         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)
+
+#         # Configuration du détecteur
+#         self.parameters = cv2.aruco.DetectorParameters_create()
+#         self.parameters.adaptiveThreshWinSizeMin = 3
+#         self.parameters.adaptiveThreshWinSizeMax = 23
+#         self.parameters.adaptiveThreshWinSizeStep = 10
+#         self.parameters.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+
+#         self.camera_matrix = None
+#         self.dist_coeffs = None
+        
+#         # 3. Souscriptions et Publishers
+#         self.info_sub = self.create_subscription(
+#             CameraInfo, self.info_topic, self.camera_info_callback, 10
+#         )
+        
+#         self.pose_array_pub = self.create_publisher(PoseArray, '/aruco_marker_poses', 10)
+        
+#         # Instanciation conditionnelle du publisher d'image
+#         if self.enable_debug:
+#             self.image_pub = self.create_publisher(Image, '~/debug_image', 10)
+#             self.get_logger().info("⚠️ Mode DEBUG actif (consommation CPU supérieure).")
+
+#         self.image_sub = self.create_subscription(
+#             CompressedImage, self.image_topic, self.compressed_image_callback, 10
+#         )
+        
+#         self.get_logger().info(f"⚡ Nœud ArUco actif. Mode pure performance. Parent : {self.parent_frame}")
+
+#     def camera_info_callback(self, msg):
+#         self.camera_matrix = np.array(msg.k).reshape((3, 3))
+#         self.dist_coeffs = np.array(msg.d)
+#         self.get_logger().info("✅ Calibration chargée. Fermeture du souscripteur info.")
+#         self.destroy_subscription(self.info_sub)
+
+#     def compressed_image_callback(self, msg):
+#         if self.camera_matrix is None:
+#             return
+
+#         try:
+#             # Décodage de l'image (requis pour la détection dans tous les cas)
+#             frame = self.bridge.compressed_imgmsg_to_cv2(msg, desired_encoding='bgr8')
+#             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+#             # Égalisation d'histogramme
+#             gray = cv2.equalizeHist(gray)
+
+#             corners, ids, rejected = cv2.aruco.detectMarkers(gray, self.dictionary, parameters=self.parameters)
+            
+#             if ids is not None and len(ids) > 0:
+#                 pose_array_msg = PoseArray()
+#                 pose_array_msg.header.stamp = msg.header.stamp
+#                 pose_array_msg.header.frame_id = self.parent_frame
+
+#                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
+#                     corners, self.marker_size, self.camera_matrix, self.dist_coeffs
+#                 )
+
+#                 # Le dessin sur l'image n'est exécuté que si le débug est actif
+#                 if self.enable_debug:
+#                     cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+
+#                 for i in range(len(ids)):
+#                     marker_id = int(ids[i][0])
+                    
+#                     if self.enable_debug:
+#                         cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvecs[i], tvecs[i], 0.05)
+
+#                     # Extraction de la Pose
+#                     pose = Pose()
+#                     pose.position.x = float(tvecs[i][0][0])
+#                     pose.position.y = float(tvecs[i][0][1])
+#                     pose.position.z = float(tvecs[i][0][2])
+
+#                     # Conversion Rodrigues -> Quaternion
+#                     r_matrix, _ = cv2.Rodrigues(rvecs[i])
+#                     t = np.trace(r_matrix)
+#                     if t > 0:
+#                         M = np.sqrt(t + 1.0) * 2
+#                         pose.orientation.w = 0.25 * M
+#                         pose.orientation.x = (r_matrix[2, 1] - r_matrix[1, 2]) / M
+#                         pose.orientation.y = (r_matrix[0, 2] - r_matrix[2, 0]) / M
+#                         pose.orientation.z = (r_matrix[1, 0] - r_matrix[0, 1]) / M
+#                     else:
+#                         if (r_matrix[0, 0] > r_matrix[1, 1]) and (r_matrix[0, 0] > r_matrix[2, 2]):
+#                             M = np.sqrt(1.0 + r_matrix[0, 0] - r_matrix[1, 1] - r_matrix[2, 2]) * 2
+#                             pose.orientation.w = (r_matrix[2, 1] - r_matrix[1, 2]) / M
+#                             pose.orientation.x = 0.25 * M
+#                             pose.orientation.y = (r_matrix[0, 1] + r_matrix[1, 0]) / M
+#                             pose.orientation.z = (r_matrix[0, 2] + r_matrix[2, 0]) / M
+#                         elif r_matrix[1, 1] > r_matrix[2, 2]:
+#                             M = np.sqrt(1.0 + r_matrix[1, 1] - r_matrix[0, 0] - r_matrix[2, 2]) * 2
+#                             pose.orientation.w = (r_matrix[0, 2] - r_matrix[2, 0]) / M
+#                             pose.orientation.x = (r_matrix[0, 1] + r_matrix[1, 0]) / M
+#                             pose.orientation.y = 0.25 * M
+#                             pose.orientation.z = (r_matrix[1, 2] + r_matrix[2, 1]) / M
+#                         else:
+#                             M = np.sqrt(1.0 + r_matrix[2, 2] - r_matrix[0, 0] - r_matrix[1, 1]) * 2
+#                             pose.orientation.w = (r_matrix[1, 0] - r_matrix[0, 1]) / M
+#                             pose.orientation.x = (r_matrix[0, 2] + r_matrix[2, 0]) / M
+#                             pose.orientation.y = (r_matrix[1, 2] + r_matrix[2, 1]) / M
+#                             pose.orientation.z = 0.25 * M
+
+#                     pose_array_msg.poses.append(pose)
+
+#                     # Diffusion de la TF
+#                     tf_msg = TransformStamped()
+#                     tf_msg.header.stamp = msg.header.stamp
+#                     tf_msg.header.frame_id = self.parent_frame
+#                     tf_msg.child_frame_id = f'aruco_marker_{marker_id}'
+#                     tf_msg.transform.translation.x = pose.position.x
+#                     tf_msg.transform.translation.y = pose.position.y
+#                     tf_msg.transform.translation.z = pose.position.z
+#                     tf_msg.transform.rotation = pose.orientation
+#                     self.tf_broadcaster.sendTransform(tf_msg)
+
+#                 # Publication des Poses (Léger)
+#                 self.pose_array_pub.publish(pose_array_msg)
+                
+#                 # Publication de la vidéo uniquement si demandée
+#                 if self.enable_debug:
+#                     debug_msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+#                     self.image_pub.publish(debug_msg)
+
+#         except CvBridgeError as e:
+#             self.get_logger().error(f"Erreur callback : {e}")
+
+# def main(args=None):
+#     rclpy.init(args=args)
+#     node = CompressedArucoNode()
+#     try:
+#         rclpy.spin(node)
+#     except KeyboardInterrupt:
+#         pass
+#     finally:
+#         node.destroy_node()
+#         rclpy.shutdown()
+
+# if __name__ == '__main__':
+#     main()

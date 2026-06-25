@@ -130,7 +130,7 @@ def generate_launch_description():
         #micro_ros_node,
         lidar_launch,
         camera_launch,
-        aruco_tf_broadcaster_node,
+        #aruco_tf_broadcaster_node,
         sim_bridge_node,
         static_tf_map_odom,
         joy_node,
