@@ -50,6 +50,16 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
+    pid_tuner = Node(
+        package='bee_mobile',
+        executable='pid_tuner',
+        output='screen',
+        condition=UnlessCondition(is_sim),
+        parameters=[{
+            'interactive_mode': False
+        }]
+    )
+
     aruco_tf_broadcaster_node = Node(
         package='bee_mobile',
         executable='aruco_tf_broadcaster',
@@ -57,18 +67,18 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
-    # compressed_aruco_node = Node(
-    #     package='bee_mobile', 
-    #     executable='compressed_aruco_node',
-    #     name='aruco_node',
-    #     namespace='camera',
-    #     output='screen',
-    #     parameters=[{
-    #         'marker_size': 0.068,
-    #         'image_topic': '/camera/image_raw/compressed',
-    #         #'enable_debug': True  # Force la désactivation complète du traitement d'image inutile
-    #     }]
-    # )
+    compressed_aruco_node = Node(
+        package='bee_mobile', 
+        executable='compressed_aruco_node',
+        name='aruco_node',
+        namespace='camera',
+        output='screen',
+        parameters=[{
+            'marker_size': 0.068,
+            'image_topic': '/camera/image_raw/compressed',
+            'enable_debug': True  # Force la désactivation complète du traitement d'image inutile
+        }]
+    )
 
     docking_controller_node = Node(
         package='bee_mobile',
@@ -131,6 +141,8 @@ def generate_launch_description():
         lidar_launch,
         camera_launch,
         #aruco_tf_broadcaster_node,
+        compressed_aruco_node,
+        pid_tuner,
         sim_bridge_node,
         static_tf_map_odom,
         joy_node,
@@ -138,5 +150,5 @@ def generate_launch_description():
         #swerve_kinematics_node,
         odometry_node,
         twist_mux_node,
-        docking_controller_node,
+        #docking_controller_node,
     ])
