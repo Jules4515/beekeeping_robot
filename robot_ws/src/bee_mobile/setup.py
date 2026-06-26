@@ -38,7 +38,6 @@ setup(
             'mux_joystick_node = bee_mobile.mux_joystick_node:main',
             'waypoint_commander = bee_mobile.waypoint_commander:main',
             'odometry = bee_mobile.odometry:main',
-            'aruco_tf_broadcaster = bee_mobile.aruco_tf_broadcaster:main',
             'docking_controller = bee_mobile.docking_controller:main',
             'docking_debug_cli = bee_mobile.docking_debug_cli:main',
             'heading_publisher = bee_mobile.heading_publisher:main',
@@ -46,8 +45,9 @@ setup(
             'gps_heading_display = bee_mobile.gps_heading_display:main',
             'custom_gps_driver = bee_mobile.custom_gps_driver:main',
             'distance_to_aruco = bee_mobile.distance_to_aruco:main',
-            'tf_math_tester = bee_mobile.tf_math_tester:main',
+            'docking_tf_math_tester = bee_mobile.docking_tf_math_tester:main',
             'compressed_aruco_node = bee_mobile.compressed_aruco_node:main',
+            'docking_tests = bee_mobile.docking_tests:main'
         ],
     },
 )
