@@ -19,6 +19,7 @@ class CompressedArucoNode(Node):
         self.declare_parameter('parent_frame', 'camera_link_optical')
         self.declare_parameter('enable_debug', False) # Désactivé par défaut pour les performances
         self.declare_parameter('target_id', 91)
+        self.declare_parameter('publish_pose_array', False)
 
         self.image_topic = self.get_parameter('image_topic').get_parameter_value().string_value
         self.info_topic = self.get_parameter('camera_info_topic').get_parameter_value().string_value
@@ -26,6 +27,7 @@ class CompressedArucoNode(Node):
         self.parent_frame = self.get_parameter('parent_frame').get_parameter_value().string_value
         self.enable_debug = self.get_parameter('enable_debug').get_parameter_value().bool_value
         self.target_id = self.get_parameter('target_id').get_parameter_value().integer_value
+        self.publish_pose_array = self.get_parameter('publish_pose_array').get_parameter_value().bool_value
 
         # 2. Outils OpenCV et TF
         self.bridge = CvBridge()
@@ -109,9 +111,10 @@ class CompressedArucoNode(Node):
                 ids = np.array([ids[target_idx]], dtype=np.int32)
                 # ------------------------------
 
-                pose_array_msg = PoseArray()
-                pose_array_msg.header.stamp = msg.header.stamp
-                pose_array_msg.header.frame_id = self.parent_frame
+                if self.publish_pose_array:
+                    pose_array_msg = PoseArray()
+                    pose_array_msg.header.stamp = msg.header.stamp
+                    pose_array_msg.header.frame_id = self.parent_frame
 
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                     corners, self.marker_size, self.camera_matrix, self.dist_coeffs
@@ -162,7 +165,8 @@ class CompressedArucoNode(Node):
                             pose.orientation.y = (r_matrix[1, 2] + r_matrix[2, 1]) / M
                             pose.orientation.z = 0.25 * M
 
-                    pose_array_msg.poses.append(pose)
+                    if self.publish_pose_array:
+                        pose_array_msg.poses.append(pose)
 
                     # Diffusion de la TF
                     tf_msg = TransformStamped()
@@ -176,7 +180,8 @@ class CompressedArucoNode(Node):
                     self.tf_broadcaster.sendTransform(tf_msg)
 
                 # Publication des Poses (Léger)
-                self.pose_array_pub.publish(pose_array_msg)
+                if self.publish_pose_array:
+                    self.pose_array_pub.publish(pose_array_msg)
                 
                 # Publication de la vidéo uniquement si demandée
                 if self.enable_debug:

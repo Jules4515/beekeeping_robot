@@ -3,11 +3,22 @@ from std_msgs.msg import Float64MultiArray
 from rclpy.time import Time
 from rclpy.duration import Duration
 
-def clamp_steering_angle(target_angle_rad, max_mechanical_angle_rad=math.radians(90.0)):
+def clamp_steering_angle(target_angle_deg, max_mechanical_angle_deg=90.0):
     """
     Clamps any steering angle that exceeds the physical limits of the servomotors.
     """
-    return max(min(target_angle_rad, max_mechanical_angle_rad), -max_mechanical_angle_rad)
+    return max(min(target_angle_deg, max_mechanical_angle_deg), -max_mechanical_angle_deg)
+
+def normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms):
+    """
+    Normalizes any wheel steering angle to the allowable +/- 90° range.
+    If the raw angle is outside this range, flip the speed direction and add/subtract pi.
+    """
+    if raw_angle_deg > 90.0:
+        return raw_angle_deg - 180.0, -logical_speed_ms
+    elif raw_angle_deg < -90.0:
+        return raw_angle_deg + 180.0, -logical_speed_ms
+    return raw_angle_deg, logical_speed_ms
 
 def apply_stiction_mapping(logical_speed_ms):
     """
@@ -16,8 +27,8 @@ def apply_stiction_mapping(logical_speed_ms):
     """
     V_MAX_MS = 0.67
     V_MIN_NAV2_MS = 0.10
-    V_MIN_RIGHT_MS = 0.225
-    V_MIN_LEFT_MS = 0.260
+    V_MIN_RIGHT_MS = 0.30
+    V_MIN_LEFT_MS = 0.30
     
     abs_val_ms = abs(logical_speed_ms)
     if abs_val_ms < 0.005: 
@@ -37,42 +48,61 @@ def apply_stiction_mapping(logical_speed_ms):
         
     return max(min(mapped_ms, V_MAX_MS), -V_MAX_MS)
 
-def send_hardware_command(wheel_pubs, target_angles_rad, target_speeds_ms, wheel_radius_m, wheels_config):
+def apply_steering_slew_rate(target_angle_deg, last_angle_deg, max_rate_deg_s=90.0, dt=0.05):
+    """
+    Limite la vitesse de rotation des modules de direction.
+    max_rate_deg_s : Vitesse angulaire maximale tolérée (ex: 180°/s).
+    dt : Période de la boucle de contrôle (20 Hz = 0.05s).
+    """
+    max_step = max_rate_deg_s * dt
+    error = target_angle_deg - last_angle_deg
+    
+    if abs(error) > max_step:
+        return last_angle_deg + math.copysign(max_step, error)
+    return target_angle_deg
+
+def send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config):
     """
     Applies stiction and clamping, converts kinematic commands to RPM and degrees,
     and publishes the final commands to the ROS 2 hardware topics.
+
+    The published message is [rpm, steering_angle_deg].
     """
     for name, config in wheels_config.items():
         # .get() : sécurité si la clé name n'existe pas dans le dictionnaire target_angles met 0.0 en vitesse
-        raw_angle_rad = target_angles_rad.get(name, config.get('last_angle_rad', 0.0)) 
-        cmd_angle_rad = clamp_steering_angle(raw_angle_rad)
+        raw_angle_deg = target_angles_deg.get(name, config.get('last_angle_deg', 0.0)) 
+        cmd_angle_deg = clamp_steering_angle(raw_angle_deg)
         
+        cmd_angle_deg = apply_steering_slew_rate(cmd_angle_deg, config.get('last_angle_deg', cmd_angle_deg))
+
         raw_speed_ms = target_speeds_ms.get(name, 0.0)
         physical_speed_ms = apply_stiction_mapping(raw_speed_ms)
         
+        # Conversion m/s vers RPM pour publication
         rpm_final = (physical_speed_ms * 60.0) / (2.0 * math.pi * wheel_radius_m) * config['dir']
-        cmd_angle_deg = math.degrees(cmd_angle_rad)
         
-        config['last_angle_rad'] = cmd_angle_rad
-        config['last_logical_speed_ms'] = raw_speed_ms
+        config['last_angle_deg'] = cmd_angle_deg
+        config['last_speed_ms'] = raw_speed_ms
         
         msg = Float64MultiArray(data=[float(rpm_final), float(cmd_angle_deg)])
+        #print(name, msg)
         wheel_pubs[name].publish(msg)
-
-def is_steering_aligned(wheels_config, target_angles_rad, tolerance_rad=math.radians(5.0)):
+    
+def is_steering_aligned(wheels_config, target_angles_deg, tolerance_deg=5.0):
     """
-    Checks if all wheels are within the tolerance interval of their target angle.
-    Uses atan2 to directly compute the shortest path difference.
+    Vérification linéaire simplifiée. Délègue la gestion circulaire et les limites 
+    au firmware des microcontrôleurs.
     """
     for name, config in wheels_config.items():
-        target_ang_rad = target_angles_rad.get(name, 0.0)
-        # Assuming the hardware encoder callback stores the current angle in degrees
-        phys_angle_rad = math.radians(config.get('current_angle_deg', 0.0))
+        target_ang_deg = clamp_steering_angle(target_angles_deg.get(name, 0.0))
+        phys_angle_deg = config.get('current_angle_deg', 0.0)
         
-        diff_rad = target_ang_rad - phys_angle_rad
-        err_ang_rad = math.atan2(math.sin(diff_rad), math.cos(diff_rad))
+        # Conversion temporaire en rad uniquement pour trigonométrie
+        delta_rad = math.radians(target_ang_deg - phys_angle_deg)
+        delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
+        delta_deg = math.degrees(delta_rad)
         
-        if abs(err_ang_rad) > tolerance_rad:
+        if abs(delta_deg) > tolerance_deg:
             return False
             
     return True
@@ -80,11 +110,22 @@ def is_steering_aligned(wheels_config, target_angles_rad, tolerance_rad=math.rad
 def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=None):
     """
     Retrieves the global or historical transformation via TF2.
-    Returns translations in meters and rotations in radians.
+    Includes a non-blocking check to ensure frames exist before querying.
     """
     time_to_query = query_time if query_time else Time()
+    
+    # --- LE WAIT : Vérifie si la transformation est physiquement possible ---
+    # Si les frames n'existent pas encore dans l'arbre, on n'appelle pas lookup_transform
+    if not tf_buffer.can_transform(parent_frame, child_frame, time_to_query, timeout=Duration(seconds=0.0)):
+        return None
+        
     try:
-        trans = tf_buffer.lookup_transform(parent_frame, child_frame, time_to_query, timeout=Duration(seconds=0.1))
+        trans = tf_buffer.lookup_transform(
+            parent_frame, 
+            child_frame, 
+            time_to_query, 
+            timeout=Duration(seconds=0.0) # Immédiat car can_transform a validé la présence
+        )
         t = trans.transform.translation
         r = trans.transform.rotation
         
@@ -98,66 +139,79 @@ def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=Non
             'yaw_rad': yaw_rad,
             'stamp': trans.header.stamp
         }
-    except Exception:
+    except Exception as e:
+        # Ne s'exécutera que pour les vraies erreurs d'extrapolation temporelle
+        print(f"[TF2 EXTRAPOLATION DEBUG] : {str(e)}")
         return None
 
 def send_pulse(state, elapsed_s, pulse_duration_s, target_vx_ms, target_vy_ms, target_wz_rad_s,
                filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s, alpha_v, alpha_wz,
                wheels_config, wheel_pubs, wheel_radius_m):
+
     """
     Evaluates the pulse-wait sequence with exponential filtering.
     Optimized to compute orientation and velocities based on exclusive active modes.
     """
     # Create targets using previous memory to prevent empty dicts between cycles
-    target_angles_rad = {}
+    target_angles_deg = {}
 
     for name, config in wheels_config.items():
+        logical_speed_ms = 0.0
+        #print(f"target_vx_ms={target_vx_ms:.1f}, target_vy_ms={target_vy_ms:.1f}, target_wz_rad_s={target_wz_rad_s:.1f}")
+
         if abs(target_wz_rad_s) > 0.0:
-            target_angles_rad[name] = math.atan2(config['x'], -config['y'])
+            # Conversion temporaire post-trigonométrie
+            raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
+            wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
+            logical_speed_ms = wheel_radius_from_center_m * target_wz_rad_s
         elif abs(target_vy_ms) > 0.0:
-            target_angles_rad[name] = math.radians(60.0) if target_vy_ms > 0 else math.radians(-60.0)
+            if name in ['front_right', 'rear_left']:
+                raw_angle_deg = 90.0
+            else:
+                raw_angle_deg = -90.0
         else:
-            target_angles_rad[name] = 0.0
+            raw_angle_deg = 0.0
+
+        target_angle_deg, logical_speed_ms = normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms)
+        target_angles_deg[name] = target_angle_deg
+        #print(f"target_angle_deg={target_angle_deg:.1f}")
     
     zero_speeds_ms = {k: 0.0 for k in wheels_config.keys()}
 
-    # 1. State: WAITING - command servos to rotate (traction remains at 0)
     if state == 'WAITING':
-        send_hardware_command(wheel_pubs, target_angles_rad, zero_speeds_ms, wheel_radius_m, wheels_config)
+        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
         state = 'WAITING_WHEEL_ORIENTATION'
 
-    # 2. State: WAITING_WHEEL_ORIENTATION - Monitor encoder feedback non-blocking
     elif state == 'WAITING_WHEEL_ORIENTATION':
-        if is_steering_aligned(wheels_config, target_angles_rad):
+        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
+        if is_steering_aligned(wheels_config, target_angles_deg):
             state = 'SENDING_PULSE'
 
-    # 3. State: SENDING_PULSE - Apply low-pass filter and power the traction motors
     elif state == 'SENDING_PULSE':
         if elapsed_s < pulse_duration_s:
-            # Apply exponential low-pass filter
             filtered_vx_ms = (alpha_v * target_vx_ms) + ((1.0 - alpha_v) * filtered_vx_ms)
             filtered_vy_ms = (alpha_v * target_vy_ms) + ((1.0 - alpha_v) * filtered_vy_ms)
             filtered_wz_rad_s = (alpha_wz * target_wz_rad_s) + ((1.0 - alpha_wz) * filtered_wz_rad_s)
 
-            # SIMPLIFIED KINETIC DISTRIBUTION (Exclusive pulse-wait modes)
             target_speeds_ms = {}
             for name, config in wheels_config.items():
                 if abs(target_wz_rad_s) > 0.0:
-                    # Pure rotation: V = R * w
                     wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
-                    target_speeds_ms[name] = wheel_radius_from_center_m * filtered_wz_rad_s
+                    raw_speed = wheel_radius_from_center_m * filtered_wz_rad_s
+                    # Conversion temporaire post-trigonométrie
+                    raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
+                    _, ideal_speed = normalize_steering_angle_and_speed(raw_angle_deg, raw_speed)
+                    target_speeds_ms[name] = ideal_speed
                 elif abs(target_vy_ms) > 0.0:
-                    # Pure Crab: V = Vy / sin(60)
-                    target_speeds_ms[name] = filtered_vy_ms / math.sin(math.radians(60.0))
+                    # Le sens de la vitesse s'adapte à l'angle pour un vecteur de poussée unifié
+                    target_speeds_ms[name] = filtered_vy_ms if target_angles_deg[name] > 0.0 else -filtered_vy_ms
                 else:
-                    # Pure Straight: V = Vx
                     target_speeds_ms[name] = filtered_vx_ms
 
-            send_hardware_command(wheel_pubs, target_angles_rad, target_speeds_ms, wheel_radius_m, wheels_config)
+            send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config)
 
         else:
-            # End of timer: Trigger hard braking, reset to WAITING
-            send_hardware_command(wheel_pubs, target_angles_rad, zero_speeds_ms, wheel_radius_m, wheels_config)
+            send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
             state = 'WAITING'
 
     return state, filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s

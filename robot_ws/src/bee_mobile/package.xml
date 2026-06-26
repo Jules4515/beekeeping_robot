@@ -17,7 +17,6 @@
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>nav_msgs</depend>
-  <depend>ros2_aruco_interfaces</depend>
   <depend>nav2_simple_commander</depend>
   <depend>ament_index_python</depend>
   <depend>visualization_msgs</depend>

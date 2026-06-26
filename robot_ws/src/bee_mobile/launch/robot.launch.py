@@ -60,23 +60,17 @@ def generate_launch_description():
         }]
     )
 
-    aruco_tf_broadcaster_node = Node(
-        package='bee_mobile',
-        executable='aruco_tf_broadcaster',
-        output='screen',
-        condition=UnlessCondition(is_sim)
-    )
-
     compressed_aruco_node = Node(
         package='bee_mobile', 
         executable='compressed_aruco_node',
-        name='aruco_node',
+        name='compressed_aruco_node',
         namespace='camera',
         output='screen',
         parameters=[{
             'marker_size': 0.068,
             'image_topic': '/camera/image_raw/compressed',
-            'enable_debug': True  # Force la désactivation complète du traitement d'image inutile
+            'enable_debug': False,  # Force la désactivation complète du traitement d'image inutile
+            'publish_pose_array': False
         }]
     )
 
@@ -140,7 +134,6 @@ def generate_launch_description():
         #micro_ros_node,
         lidar_launch,
         camera_launch,
-        #aruco_tf_broadcaster_node,
         compressed_aruco_node,
         pid_tuner,
         sim_bridge_node,
