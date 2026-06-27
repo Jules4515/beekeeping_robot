@@ -31,8 +31,8 @@ class DockingController(Node):
         self.tol_x_m     = 0.05
         
         # --- Configuration des Pulses & Filtres ---
-        self.pulse_duration_s = 0.25
-        self.wait_duration_s = 0.50
+        self.pulse_duration_s = 0.60
+        self.wait_duration_s = 1.0
         
         self.alpha_v = 0.10
         self.alpha_wz = 0.05
@@ -95,32 +95,54 @@ class DockingController(Node):
                 self.wheels[wheel_name]['current_angle_deg'] = float(msg.data[1])
 
     def perception_loop(self):
-        tf_cam_to_tag = get_universal_transform(self.tf_buffer, self.camera_frame, self.aruco_frame)
+        """
+        Process A: Interrogation directe de l'arbre TF2.
+        STRICT SAMPLING: Mis à jour uniquement quand le robot est immobile.
+        """
+        with self.lock:
+            if self._state != 'WAITING':
+                return
+
+        # 1. Interrogation de TF2 depuis le centre du châssis.
+        tf_base_to_tag = get_universal_transform(self.tf_buffer, self.base_frame, self.aruco_frame)
         
-        if not tf_cam_to_tag:
+        if not tf_base_to_tag:
             with self.lock:
-                # FIX: We only trigger a lost tag warning if we actually had a target previously.
                 if self.target_odom is not None and (time.time() - self.last_tag_time_s) > 0.4:
-                    if not self.tag_lost_recently:
-                        self.get_logger().error("[PERCEPTION] ArUco target lost for > 0.4s! Failsafe primed.")
                     self.tag_lost_recently = True
             return
 
-        tf_camera_to_odom = get_universal_transform(self.tf_buffer, self.odom_frame, self.camera_frame)
+        tf_odom_to_base = get_universal_transform(self.tf_buffer, self.odom_frame, self.base_frame)
         
-        if tf_camera_to_odom:
+        if tf_odom_to_base:
             with self.lock:
-                cam_yaw = tf_camera_to_odom['yaw_rad']
+                robot_yaw = tf_odom_to_base['yaw_rad']
                 
-                target_x_m = tf_camera_to_odom['x_m'] + (tf_cam_to_tag['x_m'] * math.cos(cam_yaw) - tf_cam_to_tag['y_m'] * math.sin(cam_yaw))
-                target_y_m = tf_camera_to_odom['y_m'] + (tf_cam_to_tag['x_m'] * math.sin(cam_yaw) + tf_cam_to_tag['y_m'] * math.cos(cam_yaw))
+                # 2. Projection cartésienne (X = Avant, Y = Gauche)
+                local_x = tf_base_to_tag['x_m']
+                local_y = tf_base_to_tag['y_m']
                 
-                target_yaw_rad = cam_yaw + tf_cam_to_tag['yaw_rad']
-                target_yaw_rad = math.atan2(math.sin(target_yaw_rad), math.cos(target_yaw_rad))
+                target_x_m = tf_odom_to_base['x_m'] + (local_x * math.cos(robot_yaw) - local_y * math.sin(robot_yaw))
+                target_y_m = tf_odom_to_base['y_m'] + (local_x * math.sin(robot_yaw) + local_y * math.cos(robot_yaw))
 
-                # Log uniquement à la première détection ou récupération de cible
+                # 3. FIX VECTORIEL: Calcul du cap via la normale de la ruche
+                qx = tf_base_to_tag['qx']
+                qy = tf_base_to_tag['qy']
+                qz = tf_base_to_tag['qz']
+                qw = tf_base_to_tag['qw']
+
+                # Le vecteur Z du tag correspond à 2*(qx*qz + qw*qy) pour X et 2*(qy*qz - qw*qx) pour Y
+                nx = 2.0 * (qx * qz + qw * qy)
+                ny = 2.0 * (qy * qz - qw * qx)
+
+                # La ruche regarde vers l'extérieur (nx, ny). Le robot doit lui faire face (-nx, -ny).
+                tag_yaw_local = math.atan2(-ny, -nx)
+                
+                target_yaw_rad = robot_yaw + tag_yaw_local
+                target_yaw_rad = math.atan2(math.sin(target_yaw_rad), math.cos(target_yaw_rad)) # Normalisation
+
                 if self.target_odom is None or self.tag_lost_recently:
-                    self.get_logger().info(f"[PERCEPTION] Target Acquired (Abs Odom): X={target_x_m:.2f}, Y={target_y_m:.2f}, Yaw={target_yaw_rad:.2f}")
+                    self.get_logger().info(f"[PERCEPTION] Target Acquired (Abs Odom): X={target_x_m:.2f}, Y={target_y_m:.2f}, Yaw={math.degrees(target_yaw_rad):.2f}°")
 
                 self.target_odom = {
                     'x_m': target_x_m,
@@ -181,6 +203,7 @@ class DockingController(Node):
         err_x_local = dx * math.cos(theta) + dy * math.sin(theta)
         err_y_local = -dx * math.sin(theta) + dy * math.cos(theta)
         
+        # Le robot cherche à s'aligner parallèlement à la normale de la ruche
         diff = self.target_odom['yaw_rad'] - theta
         err_theta_rad = math.atan2(math.sin(diff), math.cos(diff))
         err_theta_deg = math.degrees(err_theta_rad)

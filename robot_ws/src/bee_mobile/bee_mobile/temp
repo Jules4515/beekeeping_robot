@@ -1,257 +1,333 @@
-#!/usr/bin/env python3
 import math
-import time
-import threading
-import rclpy
-from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
-from geometry_msgs.msg import PoseArray
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
+from rclpy.time import Time
+from rclpy.duration import Duration
 
-# Importation stricte de la librairie mathématique partagée
-from bee_mobile.docking_math import send_pulse, get_universal_transform
+def clamp_steering_angle(target_angle_deg, max_mechanical_angle_deg=90.0):
+    """
+    Clamps any steering angle that exceeds the physical limits of the servomotors.
+    """
+    return max(min(target_angle_deg, max_mechanical_angle_deg), -max_mechanical_angle_deg)
 
-class DockingController(Node):
-    def __init__(self):
-        super().__init__('docking_controller')
+def normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms):
+    """
+    Normalizes any wheel steering angle to the allowable +/- 90° range.
+    If the raw angle is outside this range, flip the speed direction and add/subtract pi.
+    """
+    if raw_angle_deg > 90.0:
+        return raw_angle_deg - 180.0, -logical_speed_ms
+    elif raw_angle_deg < -90.0:
+        return raw_angle_deg + 180.0, -logical_speed_ms
+    return raw_angle_deg, logical_speed_ms
 
-        # --- Frames ---
-        self.odom_frame = 'odom'
-        self.base_frame = 'base_link'
-        self.aruco_frame = 'aruco_marker_91'
-        self.camera_frame = 'camera_link_optical'
+def apply_stiction_mapping(logical_speed_ms, wheel_name):
+    """
+    Modèle de friction Coulomb asymétrique.
+    Découple la position physique de la roue de son vecteur cinématique.
+    """
+    V_MAX_MS = 0.67
+    V_MIN_NAV2_MS = 0.10
+    
+    abs_val_ms = abs(logical_speed_ms)
+    if abs_val_ms < 0.005: 
+        return 0.0
+    
+    sign = math.copysign(1.0, logical_speed_ms)
         
-        # --- Limites Logiques Strictes ---
-        self.v_pulse = 0.30
-        self.w_pulse = 0.30
-        self.wheel_radius_m = 0.215
-        
-        # --- Tolérances de la Machine d'États ---
-        self.tol_theta_deg = 0.5
-        self.tol_y_m     = 0.05
-        self.tol_x_m     = 0.05
-        
-        # --- Configuration des Pulses & Filtres ---
-        self.pulse_duration_s = 0.25
-        self.wait_duration_s = 0.50
-        
-        self.alpha_v = 0.10
-        self.alpha_wz = 0.05
-        
-        self.filtered_vx_ms = 0.0
-        self.filtered_vy_ms = 0.0
-        self.filtered_wz_rad_s = 0.0
-        
-        # --- État du Séquenceur ---
-        self.state = 'WAITING'
-        self.wait_start_time_s = time.time()
-        self.pulse_start_time_s = 0.0
-        
-        # Cibles logiques mémorisées
-        self.latched_target_vx = 0.0
-        self.latched_target_vy = 0.0
-        self.latched_target_wz = 0.0
-        self.last_pulse_cmd = [0.0, 0.0, 0.0]
-        
-        # --- Variables d'Historique et Perception ---
-        self.target_odom = None
-        self.last_tag_time_s = time.time()
-        self.tag_lost_recently = False
-        self.rollback_allowed = True
-        
-        self.lock = threading.Lock()
-        
-        self.wheels = {
-            'front_left':  {'x': 0.48,  'y': 0.4150, 'dir': 1.0, 'enc_dir': 1.0,  'current_speed_ms': 0.0, 'current_angle_deg': 0.0, 'last_speed_ms': 0.0, 'last_angle_deg': 0.0},
-            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_speed_ms': 0.0, 'current_angle_deg': 0.0, 'last_speed_ms': 0.0, 'last_angle_deg': 0.0},
-            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_speed_ms': 0.0, 'current_angle_deg': 0.0, 'last_speed_ms': 0.0, 'last_angle_deg': 0.0},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_speed_ms': 0.0, 'current_angle_deg': 0.0, 'last_speed_ms': 0.0, 'last_angle_deg': 0.0},
-        }
-        
-        self.wheel_pubs = {}
-        for name in self.wheels.keys():
-            self.wheel_pubs[name] = self.create_publisher(Float64MultiArray, f'mobile/wheel_{name}/motor_speed', 10)
-            self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', lambda msg, n=name: self.encoder_callback(msg, n), 10)
-
-        self.perception_timer = self.create_timer(0.066, self.perception_loop)
-
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
-
-        # Process B: Synchronous 20Hz Control Loop
-        self.timer = self.create_timer(0.05, self.control_loop)
-        self.get_logger().info("Docking Controller Initialized (Async Architecture).")
-
-    def encoder_callback(self, msg, wheel_name):
-        """Updates internal hardware state from encoders. Executed asynchronously."""
-        with self.lock:
-            if len(msg.data) >= 2:
-                current_rpm = float(msg.data[0]) * self.wheels[wheel_name]['enc_dir']
-                self.wheels[wheel_name]['current_speed_ms'] = (current_rpm * 2.0 * math.pi * self.wheel_radius_m) / 60.0
-                self.wheels[wheel_name]['current_angle_deg'] = float(msg.data[1])
-            else:
-                self.get_logger().warn(f"Encoder parsing failed for {wheel_name}. Expected 2 values.", once=True)
-
-    def perception_loop(self):
-        """
-        Process A: Interrogation directe de l'arbre TF2 (sans topic PoseArray).
-        """
-        # 1. On cherche directement la TF locale (Caméra -> Tag)
-        tf_cam_to_tag = get_universal_transform(self.tf_buffer, self.camera_frame, self.aruco_frame)
-        
-        if not tf_cam_to_tag:
-            with self.lock:
-                if (time.time() - self.last_tag_time_s) > 0.4:
-                    self.tag_lost_recently = True
-            return
-
-        # 2. On cherche la position de la caméra dans le monde plat
-        tf_camera_to_odom = get_universal_transform(self.tf_buffer, self.odom_frame, self.camera_frame)
-        
-        if tf_camera_to_odom:
-            with self.lock:
-                cam_yaw = tf_camera_to_odom['yaw_rad']
-                
-                # Projection géométrique (X, Y local du tag -> X, Y global Odom)
-                target_x_m = tf_camera_to_odom['x_m'] + (tf_cam_to_tag['x_m'] * math.cos(cam_yaw) - tf_cam_to_tag['y_m'] * math.sin(cam_yaw))
-                target_y_m = tf_camera_to_odom['y_m'] + (tf_cam_to_tag['x_m'] * math.sin(cam_yaw) + tf_cam_to_tag['y_m'] * math.cos(cam_yaw))
-                
-                target_yaw_rad = cam_yaw + tf_cam_to_tag['yaw_rad']
-                target_yaw_rad = math.atan2(math.sin(target_yaw_rad), math.cos(target_yaw_rad))
-
-                self.target_odom = {
-                    'x_m': target_x_m,
-                    'y_m': target_y_m,
-                    'yaw_rad': target_yaw_rad
-                }
-                
-                self.last_tag_time_s = time.time()
-                self.tag_lost_recently = False
-                self.rollback_allowed = True
-
-    def control_loop(self):
-        """
-        Process B: 20Hz synchronous state machine. 
-        Evaluates projection errors, handles fail-safes, and delegates kinematics to docking_math.py.
-        """
-        with self.lock:
-            # 1. Failsafe priority: Execute rollback if tag is lost during operation
-            if self.tag_lost_recently and self.rollback_allowed and self.state not in ['ROLLBACK', 'SENDING_PULSE']:
-                self.get_logger().error("Initiating emergency ROLLBACK vector.")
-                self.state = 'ROLLBACK'
-
-            # 2. State Machine Routing
-            if self.state == 'WAITING':
-                self._handle_waiting_state()
-            
-            elif self.state == 'EVALUATE_ERRORS':
-                self._handle_evaluation_state()
-                
-            elif self.state in ['WAITING_WHEEL_ORIENTATION', 'SENDING_PULSE']:
-                self._handle_pulse_execution()
-
-            elif self.state == 'ROLLBACK':
-                self._handle_rollback()
-
-    def _handle_waiting_state(self):
-        """Locks wheels at current orientation, commands 0 speed, waits for camera stabilization."""
-        send_pulse(
-            self.state, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            self.alpha_v, self.alpha_wz, self.wheels, self.wheel_pubs, self.wheel_radius_m
-        )
-        
-        if (time.time() - self.wait_start_time_s) >= self.wait_duration_s:
-            if self.target_odom is not None:
-                self.state = 'EVALUATE_ERRORS'
-            else:
-                self.get_logger().warn("Waiting for initial ArUco detection to begin docking...", throttle_duration_sec=2.0)
-
-    def _handle_evaluation_state(self):
-        """Projects global error into local base_link coordinates and selects Bang-Bang mode."""
-        robot_pose = get_universal_transform(self.tf_buffer, self.odom_frame, self.base_frame)
-        if not robot_pose:
-            self.get_logger().error("TF Error: Cannot fetch robot pose in odom frame.", throttle_duration_sec=1.0)
-            self.state = 'WAITING'
-            self.wait_start_time_s = time.time()
-            return
-
-        # Global vector error calculation
-        dx = self.target_odom['x_m'] - robot_pose['x_m']
-        dy = self.target_odom['y_m'] - robot_pose['y_m']
-        
-        # Local error projection using 2D rotation matrix
-        theta = robot_pose['yaw_rad']
-        err_x_local = dx * math.cos(theta) + dy * math.sin(theta)
-        err_y_local = -dx * math.sin(theta) + dy * math.cos(theta)
-        
-        # Angular error shortest path
-        diff = self.target_odom['yaw_rad'] - theta
-        err_theta_rad = math.atan2(math.sin(diff), math.cos(diff))
-        err_theta_deg = math.degrees(err_theta_rad)
-
-        # Mode Selection (Strict Priority: Angular -> Lateral -> Longitudinal)
-        self.latched_target_vx, self.latched_target_vy, self.latched_target_wz = 0.0, 0.0, 0.0
-        
-        if abs(err_theta_deg) > self.tol_theta_deg:
-            self.latched_target_wz = math.copysign(self.w_pulse, err_theta_rad)
-        elif abs(err_y_local) > self.tol_y_m:
-            self.latched_target_vy = math.copysign(self.v_pulse, err_y_local)
-        elif abs(err_x_local) > self.tol_x_m:
-            self.latched_target_vx = math.copysign(self.v_pulse, err_x_local)
+    # Application de la stiction selon l'asymétrie mécanique réelle
+    if 'left' in wheel_name:
+        if sign > 0:
+            # Le robot avance : le moteur gauche tourne en sens "matériel arrière" (moins performant)
+            v_min_motor_ms = 0.30  # Boost plus important pour compenser
         else:
-            self.get_logger().info("--- DOCKING SEQUENCE SUCCESSFUL ---")
-            self.state = 'WAITING'
-            self.wait_start_time_s = time.time()
-            return
-
-        self.last_pulse_cmd = [self.latched_target_vx, self.latched_target_vy, self.latched_target_wz]
-        self.state = 'WAITING_WHEEL_ORIENTATION'
-
-    def _handle_pulse_execution(self):
-        """Passes latched commands to docking_math and monitors elapsed pulse time."""
-        elapsed_s = 0.0
-        if self.state == 'SENDING_PULSE':
-            elapsed_s = time.time() - self.pulse_start_time_s
-
-        new_state, self.filtered_vx_ms, self.filtered_vy_ms, self.filtered_wz_rad_s = send_pulse(
-            self.state, elapsed_s, self.pulse_duration_s,
-            self.latched_target_vx, self.latched_target_vy, self.latched_target_wz,
-            self.filtered_vx_ms, self.filtered_vy_ms, self.filtered_wz_rad_s,
-            self.alpha_v, self.alpha_wz,
-            self.wheels, self.wheel_pubs, self.wheel_radius_m
-        )
-
-        # Detect transition from orientation to active pulsing
-        if self.state == 'WAITING_WHEEL_ORIENTATION' and new_state == 'SENDING_PULSE':
-            self.pulse_start_time_s = time.time()
-            
-        # Detect end of pulse
-        if self.state == 'SENDING_PULSE' and new_state == 'WAITING':
-            self.filtered_vx_ms, self.filtered_vy_ms, self.filtered_wz_rad_s = 0.0, 0.0, 0.0
-            self.wait_start_time_s = time.time()
-            
-        self.state = new_state
-
-    def _handle_rollback(self):
-        """Inverts the last known velocity vector and initiates a safety pulse."""
-        self.latched_target_vx = -self.last_pulse_cmd[0]
-        self.latched_target_vy = -self.last_pulse_cmd[1]
-        self.latched_target_wz = -self.last_pulse_cmd[2]
+            # Le robot recule : le moteur gauche tourne en sens "matériel avant" (performant)
+            v_min_motor_ms = 0.30  # Moins de friction à vaincre
+    else:
+        # Roues droites (montées à l'endroit)
+        if sign > 0:
+            # Le robot avance : le moteur droit tourne en sens "matériel avant" (performant)
+            v_min_motor_ms = 0.30  # Valeur standard de référence
+        else:
+            # Le robot recule : le moteur droit tourne en sens "matériel arrière" (moins performant)
+            v_min_motor_ms = 0.30  # Légère compensation nécessaire
         
-        self.rollback_allowed = False
-        self.state = 'WAITING_WHEEL_ORIENTATION'
+    m = (V_MAX_MS - v_min_motor_ms) / (V_MAX_MS - V_MIN_NAV2_MS)
+    A = (2.0 * (v_min_motor_ms - m * V_MIN_NAV2_MS)) / math.sqrt(V_MIN_NAV2_MS)
+    B = 2.0 * m - (v_min_motor_ms / V_MIN_NAV2_MS)
+    
+    if abs_val_ms <= V_MIN_NAV2_MS:
+        mapped_ms = sign * (A * math.sqrt(abs_val_ms) + B * abs_val_ms)
+    else:
+        mapped_ms = sign * (m * (abs_val_ms - V_MIN_NAV2_MS) + v_min_motor_ms)
+        
+    return max(min(mapped_ms, V_MAX_MS), -V_MAX_MS)
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = DockingController()
+def apply_steering_slew_rate(target_angle_deg, last_angle_deg, max_rate_deg_s=90.0, dt=0.05):
+    """
+    Limite la vitesse de rotation des modules de direction.
+    max_rate_deg_s : Vitesse angulaire maximale tolérée (ex: 180°/s).
+    dt : Période de la boucle de contrôle (20 Hz = 0.05s).
+    """
+    max_step = max_rate_deg_s * dt
+    error = target_angle_deg - last_angle_deg
+    
+    if abs(error) > max_step:
+        return last_angle_deg + math.copysign(max_step, error)
+    return target_angle_deg
+
+def send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config, apply_stiction=True):
+    """
+    Applies stiction and clamping, converts kinematic commands to RPM and degrees,
+    and publishes the final commands to the ROS 2 hardware topics.
+
+    The published message is [rpm, steering_angle_deg].
+    """
+    
+    for name, config in wheels_config.items():
+        # .get() : sécurité si la clé name n'existe pas dans le dictionnaire target_angles met 0.0 en vitesse
+        raw_angle_deg = target_angles_deg.get(name, config.get('last_angle_deg', 0.0)) 
+        cmd_angle_deg = clamp_steering_angle(raw_angle_deg)
+        
+        cmd_angle_deg = apply_steering_slew_rate(cmd_angle_deg, config.get('last_angle_deg', cmd_angle_deg))
+
+        raw_speed_ms = target_speeds_ms.get(name, 0.0)
+
+        # BYPASS CONDITIONNEL
+        if apply_stiction:
+            physical_speed_ms = apply_stiction_mapping(raw_speed_ms, name)
+        else:
+            physical_speed_ms = raw_speed_ms
+        
+        # Conversion m/s vers RPM pour publication
+        rpm_final = (physical_speed_ms * 60.0) / (2.0 * math.pi * wheel_radius_m) * config['dir']
+        
+        config['last_angle_deg'] = cmd_angle_deg
+        config['last_speed_ms'] = raw_speed_ms
+        
+        msg = Float64MultiArray(data=[float(rpm_final), float(cmd_angle_deg)])
+        #print(name, msg)
+        wheel_pubs[name].publish(msg)
+        
+def is_steering_aligned(wheels_config, target_angles_deg, tolerance_deg=5.0):
+    """
+    Vérification linéaire simplifiée. Délègue la gestion circulaire et les limites 
+    au firmware des microcontrôleurs.
+    """
+    for name, config in wheels_config.items():
+        target_ang_deg = clamp_steering_angle(target_angles_deg.get(name, 0.0))
+        phys_angle_deg = config.get('current_angle_deg', 0.0)
+        
+        # Conversion temporaire en rad uniquement pour trigonométrie
+        delta_rad = math.radians(target_ang_deg - phys_angle_deg)
+        delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
+        delta_deg = math.degrees(delta_rad)
+        
+        if abs(delta_deg) > tolerance_deg:
+            return False
+            
+    return True
+
+def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=None):
+    """
+    Retrieves the global or historical transformation via TF2.
+    Includes a non-blocking check to ensure frames exist before querying.
+    """
+    time_to_query = query_time if query_time else Time()
+    
+    # --- LE WAIT : Vérifie si la transformation est physiquement possible ---
+    # Si les frames n'existent pas encore dans l'arbre, on n'appelle pas lookup_transform
+    if not tf_buffer.can_transform(parent_frame, child_frame, time_to_query, timeout=Duration(seconds=0.0)):
+        return None
+        
     try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        node.get_logger().info("Docking Controller aborted.")
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        trans = tf_buffer.lookup_transform(
+            parent_frame, 
+            child_frame, 
+            time_to_query, 
+            timeout=Duration(seconds=0.0) # Immédiat car can_transform a validé la présence
+        )
+        t = trans.transform.translation
+        r = trans.transform.rotation
+        
+        siny_cosp = 2.0 * (r.w * r.z + r.x * r.y)
+        cosy_cosp = 1.0 - 2.0 * (r.y * r.y + r.z * r.z)
+        yaw_rad = math.atan2(siny_cosp, cosy_cosp)
+        
+        return {
+            'x_m': t.x, 'y_m': t.y, 'z_m': t.z,
+            'qx': r.x, 'qy': r.y, 'qz': r.z, 'qw': r.w,
+            'yaw_rad': yaw_rad,
+            'stamp': trans.header.stamp
+        }
+    except Exception as e:
+        # Ne s'exécutera que pour les vraies erreurs d'extrapolation temporelle
+        print(f"[TF2 EXTRAPOLATION DEBUG] : {str(e)}")
+        return None
 
-if __name__ == '__main__':
-    main()
+def send_pulse(state, elapsed_s, pulse_duration_s, target_vx_ms, target_vy_ms, target_wz_rad_s,
+               filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s, alpha_v, alpha_wz,
+               wheels_config, wheel_pubs, wheel_radius_m):
+
+    """
+    Evaluates the pulse-wait sequence with exponential filtering.
+    Optimized to compute orientation and velocities based on exclusive active modes.
+    """
+    # Create targets using previous memory to prevent empty dicts between cycles
+    target_angles_deg = {}
+
+    for name, config in wheels_config.items():
+        logical_speed_ms = 0.0
+        #print(f"target_vx_ms={target_vx_ms:.1f}, target_vy_ms={target_vy_ms:.1f}, target_wz_rad_s={target_wz_rad_s:.1f}")
+
+        if abs(target_wz_rad_s) > 0.0:
+            # Conversion temporaire post-trigonométrie
+            raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
+            wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
+            logical_speed_ms = wheel_radius_from_center_m * target_wz_rad_s
+        elif abs(target_vy_ms) > 0.0:
+            if name in ['front_right', 'rear_left']:
+                raw_angle_deg = 90.0
+            else:
+                raw_angle_deg = -90.0
+        else:
+            raw_angle_deg = 0.0
+
+        target_angle_deg, logical_speed_ms = normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms)
+        target_angles_deg[name] = target_angle_deg
+        #print(f"target_angle_deg={target_angle_deg:.1f}")
+    
+    zero_speeds_ms = {k: 0.0 for k in wheels_config.keys()}
+
+    if state == 'WAITING':
+        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
+        state = 'WAITING_WHEEL_ORIENTATION'
+
+    elif state == 'WAITING_WHEEL_ORIENTATION':
+        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
+        if is_steering_aligned(wheels_config, target_angles_deg):
+            state = 'SENDING_PULSE'
+
+    elif state == 'SENDING_PULSE':
+        if elapsed_s < pulse_duration_s:
+            filtered_vx_ms = (alpha_v * target_vx_ms) + ((1.0 - alpha_v) * filtered_vx_ms)
+            filtered_vy_ms = (alpha_v * target_vy_ms) + ((1.0 - alpha_v) * filtered_vy_ms)
+            filtered_wz_rad_s = (alpha_wz * target_wz_rad_s) + ((1.0 - alpha_wz) * filtered_wz_rad_s)
+
+            target_speeds_ms = {}
+            for name, config in wheels_config.items():
+                if abs(target_wz_rad_s) > 0.0:
+                    wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
+                    raw_speed = wheel_radius_from_center_m * filtered_wz_rad_s
+                    # Conversion temporaire post-trigonométrie
+                    raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
+                    _, ideal_speed = normalize_steering_angle_and_speed(raw_angle_deg, raw_speed)
+                    target_speeds_ms[name] = ideal_speed
+                elif abs(target_vy_ms) > 0.0:
+                    # Le sens de la vitesse s'adapte à l'angle pour un vecteur de poussée unifié
+                    target_speeds_ms[name] = filtered_vy_ms if target_angles_deg[name] > 0.0 else -filtered_vy_ms
+                else:
+                    target_speeds_ms[name] = filtered_vx_ms
+
+            send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config, )
+
+        else:
+            send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
+            state = 'WAITING'
+
+    return state, filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s
+
+def send_pulse_smooth(state, elapsed_s, pulse_duration_s,
+                       target_vx_ms, target_vy_ms, target_wz_rad_s,
+                       filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s,
+                       alpha_v, alpha_wz, mode, dt,
+                       wheels_config, wheel_pubs, wheel_radius_m):
+    """
+    Same kinematic structure as send_pulse, but replaces the abrupt
+    end-of-pulse cutoff with a smooth deceleration ramp.
+      mode 1 : RC discharge
+      mode 2 : exact mirror of the acceleration curve (zero jerk both ends)
+
+    IMPORTANT: dt must be the REAL control loop period — not a guessed
+    constant — otherwise the Vmax-at-T/2 guarantee silently breaks.
+    """
+    half_time_s = pulse_duration_s / 2.0
+    half_steps = max(1.0, round(half_time_s / dt))
+
+    # Amplification so the charging curve lands exactly on `target` at T/2
+    amp_v  = 1.0 / (1.0 - math.pow(1.0 - alpha_v,  half_steps))
+    amp_wz = 1.0 / (1.0 - math.pow(1.0 - alpha_wz, half_steps))
+
+    # ── Angle targets — identical to send_pulse (geometry + fixed-diagonal
+    #    crab trick, no unnecessary 180° reorientation on direction flip) ──
+    target_angles_deg = {}
+    for name, config in wheels_config.items():
+        logical_speed_ms = 0.0
+        if abs(target_wz_rad_s) > 0.0:
+            raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
+            r = math.hypot(config['x'], config['y'])
+            logical_speed_ms = r * target_wz_rad_s
+        elif abs(target_vy_ms) > 0.0:
+            raw_angle_deg = 90.0 if name in ['front_right', 'rear_left'] else -90.0
+        else:
+            raw_angle_deg = 0.0
+
+        target_angle_deg, _ = normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms)
+        target_angles_deg[name] = target_angle_deg
+
+    zero_speeds_ms = {k: 0.0 for k in wheels_config.keys()}
+
+    if state == 'WAITING':
+        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
+        state = 'WAITING_WHEEL_ORIENTATION'
+
+    elif state == 'WAITING_WHEEL_ORIENTATION':
+        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
+        if is_steering_aligned(wheels_config, target_angles_deg):
+            state = 'SENDING_PULSE'
+
+    elif state == 'SENDING_PULSE':
+        if elapsed_s <= half_time_s:
+            # Phase 1 — acceleration (same for both modes)
+            filtered_vx_ms    = alpha_v  * (target_vx_ms    * amp_v)  + (1.0 - alpha_v)  * filtered_vx_ms
+            filtered_vy_ms    = alpha_v  * (target_vy_ms    * amp_v)  + (1.0 - alpha_v)  * filtered_vy_ms
+            filtered_wz_rad_s = alpha_wz * (target_wz_rad_s * amp_wz) + (1.0 - alpha_wz) * filtered_wz_rad_s
+
+        elif elapsed_s <= pulse_duration_s:
+            if mode == 1:
+                # Phase 2, mode 1 — RC discharge toward zero
+                filtered_vx_ms    = (1.0 - alpha_v)  * filtered_vx_ms
+                filtered_vy_ms    = (1.0 - alpha_v)  * filtered_vy_ms
+                filtered_wz_rad_s = (1.0 - alpha_wz) * filtered_wz_rad_s
+            else:
+                # Phase 2, mode 2 — exact mirror of the charging curve
+                current_step = int(round(elapsed_s / dt))
+                total_steps  = int(round(pulse_duration_s / dt))
+                mirror_step  = max(0, total_steps - current_step)
+
+                decay_v  = 1.0 - math.pow(1.0 - alpha_v,  mirror_step)
+                decay_wz = 1.0 - math.pow(1.0 - alpha_wz, mirror_step)
+
+                filtered_vx_ms    = target_vx_ms    * amp_v  * decay_v
+                filtered_vy_ms    = target_vy_ms    * amp_v  * decay_v
+                filtered_wz_rad_s = target_wz_rad_s * amp_wz * decay_wz
+
+            target_speeds_ms = {}
+            for name, config in wheels_config.items():
+                if abs(target_wz_rad_s) > 0.0:
+                    r = math.hypot(config['x'], config['y'])
+                    raw_speed = r * filtered_wz_rad_s
+                    raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
+                    _, ideal_speed = normalize_steering_angle_and_speed(raw_angle_deg, raw_speed)
+                    target_speeds_ms[name] = ideal_speed
+                elif abs(target_vy_ms) > 0.0:
+                    target_speeds_ms[name] = filtered_vy_ms if target_angles_deg[name] > 0.0 else -filtered_vy_ms
+                else:
+                    target_speeds_ms[name] = filtered_vx_ms
+
+            send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config, apply_stiction=False)
+
+        else:
+            send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config, apply_stiction=False)
+            state = 'WAITING'
+
+    return state, filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s

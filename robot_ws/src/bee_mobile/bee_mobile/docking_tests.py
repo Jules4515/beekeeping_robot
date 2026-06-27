@@ -9,7 +9,7 @@ from geometry_msgs.msg import PoseArray
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
-from bee_mobile.docking_math import send_pulse, get_universal_transform
+from bee_mobile.docking_math import send_pulse, get_universal_transform, send_pulse_smooth
 
 class DockingTests(Node):
     def __init__(self):
@@ -45,8 +45,8 @@ class DockingTests(Node):
         self.tol_x     = 0.05
         
         # --- Configuration des Pulses & Filtres ---
-        self.pulse_duration = 0.70
-        self.wait_duration = 0.50
+        self.pulse_duration = 0.8
+        self.wait_duration = 1.0
         self.micro_state = 'WAITING'
         self.state_start_time = self.get_clock().now()
         
@@ -135,6 +135,8 @@ class DockingTests(Node):
                 self.execute_tf_test()
             elif self.ACTIVE_TEST in [8, 9]:
                 self.execute_tf_buffer_tests()
+            elif self.ACTIVE_TEST in [10, 11]:
+                self.execute_smooth_kinematic_test()
 
     def execute_kinematic_test(self):
         target_vx, target_vy, target_wz = 0.0, 0.0, 0.0
@@ -188,7 +190,7 @@ class DockingTests(Node):
         mappings = {
             4: ('camera_link_optical', self.aruco_frame),
             5: (self.base_frame, 'camera_link_optical', ),
-            6: ('base_footprint', self.base_frame),
+            6: (self.base_frame, self.aruco_frame),
             7: (self.odom_frame, self.aruco_frame)
             #7: (self.odom_frame, 'base_footprint')
         }
@@ -197,10 +199,19 @@ class DockingTests(Node):
         tf_data = get_universal_transform(self.tf_buffer, parent, child)
         
         if tf_data:
+            # --- FIX GÉOMÉTRIQUE ANTI-GIMBAL LOCK ---
+            # Si la cible est le tag ArUco, on ignore le Yaw du quaternion (bruit optique)
+            # et on calcule le cap réel (vecteur directeur 2D) depuis l'origine du parent.
+            if 'aruco_marker' in child:
+                stable_yaw_rad = math.atan2(tf_data['y_m'], tf_data['x_m'])
+                tf_data['yaw_rad'] = stable_yaw_rad
+            # ----------------------------------------
+
+        if tf_data:
             self.get_logger().info(
                 f"[{parent} -> {child}] "
                 f"X: {tf_data['x_m']:.3f}m, Y: {tf_data['y_m']:.3f}m, Z: {tf_data['z_m']:.3f}m | "
-                f"Yaw: {tf_data['yaw_rad']:.3f}rad"
+                f"Yaw: {math.degrees(tf_data['yaw_rad']):.3f}deg"
             )
 
     def execute_tf_buffer_tests(self):
@@ -243,6 +254,40 @@ class DockingTests(Node):
                     throttle_duration_sec=0.5
                 )
 
+    def execute_smooth_kinematic_test(self):
+        mode = 1 if self.ACTIVE_TEST == 10 else 2
+
+        if self.micro_state == 'WAITING':
+            self.latched_target_vx = 0.4
+            self.latched_target_vy = 0.0
+            self.latched_target_wz = 0.0
+            self.pulse_start_time_s = time.time()
+            self.micro_state = 'WAITING_WHEEL_ORIENTATION'
+            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Début profil Smooth (Mode {mode}). Vmax=0.35, T=1.0s")
+
+        elapsed_s = 0.0
+        if self.micro_state == 'SENDING_PULSE':
+            elapsed_s = time.time() - self.pulse_start_time_s
+
+        new_state, self.filtered_vx, self.filtered_vy, self.filtered_wz = send_pulse_smooth(
+            self.micro_state, elapsed_s, 0.8,
+            self.latched_target_vx, self.latched_target_vy, self.latched_target_wz,
+            self.filtered_vx, self.filtered_vy, self.filtered_wz,
+            0.45, 0.45, mode, 0.05,                      # dt=0.05 — doit matcher self.timer (create_timer(0.05, ...))
+            self.wheels, self.wheel_pubs, self.wheel_radius
+        )
+
+        if self.micro_state == 'WAITING_WHEEL_ORIENTATION' and new_state == 'SENDING_PULSE':
+            self.pulse_start_time_s = time.time()
+            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Roues alignées. Phase d'accélération.")
+
+        if self.micro_state == 'SENDING_PULSE' and new_state == 'WAITING':
+            self.filtered_vx, self.filtered_vy, self.filtered_wz = 0.0, 0.0, 0.0
+            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Fin d'impulsion fluide. Auto-stop.")
+            self.ACTIVE_TEST = 0
+
+        self.micro_state = new_state
+
     def keyboard_listener_loop(self):
         """Boucle bloquante s'exécutant dans un thread séparé pour détecter les commandes clavier."""
         menu = "\n=== CMD === | 0:IDLE | 1-3:KINEMATICS | 4-7:TF | 8:RACE CHECK | 9:LATENCY | [Entrée]:Relancer ==="
@@ -260,24 +305,32 @@ class DockingTests(Node):
                         
                     if cmd != "":
                         try:
-                            # Parsing du mode (premier caractère)
-                            mode = int(cmd[0])
-                            if not (0 <= mode <= 9):
+                            # Sépare les chiffres du début (le numéro de test) de la
+                            # lettre optionnelle à la fin (direction: 'b' ou 'r')
+                            digits = ''
+                            suffix = ''
+                            for ch in cmd:
+                                if ch.isdigit():
+                                    digits += ch
+                                else:
+                                    suffix += ch
+
+                            mode = int(digits)
+                            if not (0 <= mode <= 11):
                                 raise ValueError
-                            
+
                             self.ACTIVE_TEST = mode
-                            self.pulse_direction = 1.0  # Convention ROS : +X avant, +Y gauche, +Wz CCW
-                            
-                            # Parsing de la direction (deuxième caractère éventuel)
-                            if len(cmd) > 1:
-                                d = cmd[1]
+                            self.pulse_direction = 1.0
+
+                            if suffix:
+                                d = suffix[0]
                                 if mode == 1 and d == 'b':
                                     self.pulse_direction = -1.0
                                 elif mode in [2, 3] and d == 'r':
                                     self.pulse_direction = -1.0
-                                    
+
                         except (ValueError, IndexError):
-                            print("Erreur de syntaxe. Exemples valides : '1', '1b', '3r', '5'")
+                            print("Erreur de syntaxe. Exemples valides : '1', '1b', '3r', '10', '11'")
                             continue
                             
                     # Application logicielle selon le test sélectionné

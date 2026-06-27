@@ -47,7 +47,8 @@ setup(
             'distance_to_aruco = bee_mobile.distance_to_aruco:main',
             'docking_tf_math_tester = bee_mobile.docking_tf_math_tester:main',
             'compressed_aruco_node = bee_mobile.compressed_aruco_node:main',
-            'docking_tests = bee_mobile.docking_tests:main'
+            'docking_tests = bee_mobile.docking_tests:main',
+            'goals = bee_mobile.goals:main'
         ],
     },
 )

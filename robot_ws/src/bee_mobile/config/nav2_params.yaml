@@ -80,8 +80,8 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.5
-      yaw_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.15
       stateful_timeout: 10.0
 
     FollowPath:
@@ -91,10 +91,10 @@ controller_server:
       batch_size: 200 # Nombre de trajectoires simulées à chaque itération (dt) pour trouver la meilleure trajectoire à suivre
       iteration_count: 1
       motion_model: "Omni"
-      vx_max: 0.67
-      vx_min: -0.67  
-      vy_max: 0.67
-      vy_min: -0.67
+      vx_max: 0.50
+      vx_min: -0.50
+      vy_max: 0.50
+      vy_min: -0.50
       wz_max: 0.71
       wz_min: -0.71
       # Écart-types des bruits aléatoires ajoutés à chaque commande de vitesse pour générer les trajectoires simulées,
@@ -359,8 +359,8 @@ velocity_smoother:
     stamp_smoothed_velocity_with_smoothing_time: False
     scale_velocities: True
     feedback: "OPEN_LOOP"
-    max_velocity: [0.67, 0.67, 0.71]
-    min_velocity: [-0.67, -0.67, -0.71]
+    max_velocity: [0.50, 0.50, 0.71]
+    min_velocity: [-0.50, -0.50, -0.71]
     max_accel: [3.0, 3.0, 3.0]
     max_decel: [-3.0, -3.0, -3.0]
     odom_topic: "odom"
