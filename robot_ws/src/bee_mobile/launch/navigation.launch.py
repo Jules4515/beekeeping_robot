@@ -110,15 +110,7 @@
 #         activate_slam
 #     ])
 
-"""
-Launch file for bee_mobile Navigation and Mapping.
 
-Usage combinations:
-1. simulation:=false mapping_mode:=true  | Real-world exploration: Runs async SLAM only with hardware clock to build a map.
-2. simulation:=false mapping_mode:=false | Real-world autonomy: Runs Nav2 + AMCL only with a pre-saved map and hardware clock.
-3. simulation:=true mapping_mode:=true   | Simulated exploration: Runs async SLAM only using a virtual clock (e.g., Gazebo).
-4. simulation:=true mapping_mode:=false  | Simulated autonomy: Runs Nav2 + AMCL only using a virtual clock for safe parameter testing.
-"""
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -129,23 +121,23 @@ def generate_launch_description():
     pkg_share = get_package_share_directory('bee_mobile')
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
 
-    # --- 2. File Paths (Dynamic Map Selection) ---
+    # Chemins fixes vers tes fichiers de configuration réels
     nav2_params = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
+    map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
     sim_map_path = os.path.join(pkg_share, 'maps', 'tb3_sandbox_upscale.yaml')
 
-    # --- 3. Nodes Configuration ---
-
-    # Nav2 bringup when using the simulation map (mapping_mode:=false, simulation:=true)
-    nav2_cmd_sim = IncludeLaunchDescription(
+    # Lancement Nav2 en mode Autonomie Réelle
+    nav2_bringup = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
         launch_arguments={
-            'map': sim_map_path,
+            'map': map_path, # MONDE RÉEL
+            #'map': sim_map_path, # SIMULATION
             'params_file': nav2_params,
-            'use_sim_time': 'False',
-            'slam': 'False',
+            'use_sim_time': 'False', # Crucial pour le matériel réel
+            'slam': 'False',         # On utilise la map existante pour localiser
         }.items()
     )
 
     return LaunchDescription([
-        nav2_cmd_sim
+        nav2_bringup
     ])

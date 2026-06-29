@@ -3,10 +3,14 @@ twist_mux:
     use_stamped: false   # Forces the node to subscribe and publish standard Twist messages
     topics:
       navigation:
-        topic: cmd_vel_smoothed
+        topic: cmd_vel_nav
         timeout: 0.5
         priority: 10
+      docking:
+        topic: cmd_vel_docking
+        timeout: 0.5
+        priority: 50 # Overrides Nav2, but yields to Joystick
       joystick:
         topic: cmd_vel_joy
         timeout: 0.1
-        priority: 100 # Higher priority overrides navigation
+        priority: 100 # Highest priority override

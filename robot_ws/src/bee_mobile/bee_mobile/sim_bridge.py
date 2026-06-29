@@ -22,7 +22,7 @@ class SimBridgeNode(Node):
             pub_topic = f'mobile/wheel_{name}/encoder_angle'
             self.pubs[name] = self.create_publisher(Float64MultiArray, pub_topic, 10)
 
-            # Subscriber to the commands sent by swerve_kinematics_node
+            # Subscriber to the commands sent by swerve_kinematics
             sub_topic = f'mobile/wheel_{name}/motor_speed'
             self.create_subscription(
                 Float64MultiArray, 

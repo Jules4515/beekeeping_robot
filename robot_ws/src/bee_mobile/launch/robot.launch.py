@@ -50,6 +50,37 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
+    pid_tuner = Node(
+        package='bee_mobile',
+        executable='pid_tuner',
+        output='screen',
+        condition=UnlessCondition(is_sim),
+        parameters=[{
+            'interactive_mode': False
+        }]
+    )
+
+    compressed_aruco_node = Node(
+        package='bee_mobile', 
+        executable='compressed_aruco_node',
+        name='compressed_aruco_node',
+        namespace='camera',
+        output='screen',
+        parameters=[{
+            'marker_size': 0.068,
+            'image_topic': '/camera/image_raw/compressed',
+            'enable_debug': False,  # Force la désactivation complète du traitement d'image inutile
+            'publish_pose_array': False
+        }]
+    )
+
+    docking_controller_node = Node(
+        package='bee_mobile',
+        executable='docking_controller',
+        output='screen',
+        condition=UnlessCondition(is_sim)
+    )
+
     # --- Simulation Nodes (SITL Only) ---
     sim_bridge_node = Node(
         package='bee_mobile',
@@ -80,7 +111,13 @@ def generate_launch_description():
 
     swerve_kinematics_node = Node(
         package='bee_mobile',
-        executable='swerve_kinematics_basic_test',
+        executable='swerve_kinematics',
+        output='screen'
+    )
+
+    odometry_node = Node(
+        package='bee_mobile',
+        executable='odometry',
         output='screen'
     )
     
@@ -97,10 +134,14 @@ def generate_launch_description():
         #micro_ros_node,
         lidar_launch,
         camera_launch,
+        compressed_aruco_node,
+        pid_tuner,
         sim_bridge_node,
         static_tf_map_odom,
         joy_node,
         mux_joystick_node,
-        swerve_kinematics_node,
-        twist_mux_node
+        #swerve_kinematics_node,
+        odometry_node,
+        twist_mux_node,
+        #docking_controller_node,
     ])
