@@ -1,143 +1,282 @@
-# """
-# Launch file for bee_mobile Navigation and Mapping.
-
-# Usage combinations:
-# 1. simulation:=false mapping_mode:=true  | Real-world exploration: Runs async SLAM only with hardware clock to build a map.
-# 2. simulation:=false mapping_mode:=false | Real-world autonomy: Runs Nav2 + AMCL only with a pre-saved map and hardware clock.
-# 3. simulation:=true mapping_mode:=true   | Simulated exploration: Runs async SLAM only using a virtual clock (e.g., Gazebo).
-# 4. simulation:=true mapping_mode:=false  | Simulated autonomy: Runs Nav2 + AMCL only using a virtual clock for safe parameter testing.
-# """
 # import os
 # from ament_index_python.packages import get_package_share_directory
 # from launch import LaunchDescription
-# from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, TimerAction
+# from launch.actions import IncludeLaunchDescription
 # from launch.launch_description_sources import PythonLaunchDescriptionSource
-# from launch.substitutions import LaunchConfiguration, PythonExpression
-# from launch.conditions import IfCondition, UnlessCondition
-# from launch_ros.actions import Node
 
 # def generate_launch_description():
 #     pkg_share = get_package_share_directory('bee_mobile')
 #     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
 
-#     # --- 1. Arguments Definition ---
-#     sim_arg = DeclareLaunchArgument(
-#         'simulation',
-#         default_value='false',
-#         description='Set to true to use simulation clock (Gazebo/Loopback)'
-#     )
-#     is_sim = LaunchConfiguration('simulation')
-
-#     mapping_mode_arg = DeclareLaunchArgument(
-#         'mapping_mode',
-#         default_value='false',
-#         description='Set to true to run SLAM only. Set to false to run Nav2 with a saved map.'
-#     )
-#     mapping_mode = LaunchConfiguration('mapping_mode')
-
-#     # --- 2. File Paths (Dynamic Map Selection) ---
+#     # Chemins fixes vers tes fichiers de configuration réels
 #     nav2_params = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
-    
-#     real_map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
+#     map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
 #     sim_map_path = os.path.join(pkg_share, 'maps', 'tb3_sandbox_upscale.yaml')
 
-#     # --- 3. Nodes Configuration ---
-
-#     # Nav2 bringup when using the simulation map (mapping_mode:=false, simulation:=true)
-#     nav2_cmd_sim = IncludeLaunchDescription(
+#     # Lancement Nav2 en mode Autonomie Réelle
+#     nav2_bringup = IncludeLaunchDescription(
 #         PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
-#         condition=IfCondition(PythonExpression(["'", mapping_mode, "'.lower() == 'false' and '", is_sim, "'.lower() == 'true'"])),
 #         launch_arguments={
-#             'map': sim_map_path,
+#             'map': map_path, # MONDE RÉEL
+#             #'map': sim_map_path, # SIMULATION
 #             'params_file': nav2_params,
-#             'use_sim_time': is_sim,
-#             'slam': 'False',
+#             'use_sim_time': 'False', # Crucial pour le matériel réel
+#             'slam': 'False',         # On utilise la map existante pour localiser
 #         }.items()
-#     )
-
-#     # Nav2 bringup when using the real map (mapping_mode:=false, simulation:=false)
-#     # WHY: Setting slam to 'False' automatically disables slam_toolbox and forces Nav2 
-#     # to spin up amcl and map_server to localize on the static real_map_path.
-#     nav2_cmd_real = IncludeLaunchDescription(
-#         PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
-#         condition=IfCondition(PythonExpression(["'", mapping_mode, "'.lower() == 'false' and '", is_sim, "'.lower() == 'false'"])),
-#         launch_arguments={
-#             'map': real_map_path,
-#             'params_file': nav2_params,
-#             'use_sim_time': is_sim,
-#             'slam': 'False'
-#         }.items()
-#     )
-
-#     # --- 4. Custom SLAM Toolbox Stack (Runs ONLY when mapping_mode is true) ---
-#     slam_node = Node(
-#         condition=IfCondition(mapping_mode),
-#         package='slam_toolbox',
-#         executable='async_slam_toolbox_node',
-#         name='slam_toolbox',
-#         namespace='',
-#         output='screen',
-#         # Load YAML to preserve Swerve drift limits and QoS configurations
-#         parameters=[nav2_params],
-#         #arguments=['--ros-args', '--log-level', 'debug']
-#     )
-
-#     configure_slam = TimerAction(
-#         condition=IfCondition(mapping_mode),
-#         period=3.0,
-#         actions=[ExecuteProcess(
-#             cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'configure'],
-#             output='screen'
-#         )]
-#     )
-
-#     activate_slam = TimerAction(
-#         condition=IfCondition(mapping_mode),
-#         period=10.0,
-#         actions=[ExecuteProcess(
-#             cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'activate'],
-#             output='screen'
-#         )]
 #     )
 
 #     return LaunchDescription([
-#         sim_arg,
-#         mapping_mode_arg,
-#         nav2_cmd_sim,
-#         nav2_cmd_real,
-#         slam_node,
-#         configure_slam,
-#         activate_slam
+#         nav2_bringup
 #     ])
 
-
 import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction, RegisterEventHandler
+from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import RegisterEventHandler
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('bee_mobile')
+    bee_mobile_dir = get_package_share_directory('bee_mobile')
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
+    
+    nav2_params = os.path.join(bee_mobile_dir, 'config', 'nav2_params.yaml')
+    map_file = os.path.join(bee_mobile_dir, 'maps', 'blank_map.yaml')
+    ekf_config = os.path.join(bee_mobile_dir, 'config', 'ekf.yaml')
+    
+    # ============================================
+    # PHASE 1 : Capteurs de base (démarrage immédiat)
+    # ============================================
+    
+    # # GPS Driver
+    # nmea_driver = Node(
+    #     package='nmea_navsat_driver',
+    #     executable='nmea_serial_driver',
+    #     name='nmea_serial_driver',
+    #     output='screen',
+    #     parameters=[{
+    #         'port': '/dev/ttyUSB_GPS',
+    #         'baud': 115200,
+    #         'publish_nmea_sentence': True,
+    #     }]
+    # )
 
-    # Chemins fixes vers tes fichiers de configuration réels
-    nav2_params = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
-    map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
-    sim_map_path = os.path.join(pkg_share, 'maps', 'tb3_sandbox_upscale.yaml')
+    custom_gps_driver = Node(
+        package='bee_mobile',
+        executable='custom_gps_driver',
+        name='custom_gps_driver',
+        output='screen',
+        parameters=[{
+            'port': '/dev/ttyUSB_GPS',
+            'baud': 115200,
+        }]
+    )
+    
+    # # Heading Publisher
+    # heading_publisher = Node(
+    #     package='bee_mobile',
+    #     executable='heading_publisher',
+    #     name='heading_publisher',
+    #     output='screen',
+    # )
+    
+    # Transform GPS statique
+    gps_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='gps_tf',
+        arguments=['--x', '0.2861', '--y', '0.0', '--z', '0.24',
+                '--roll', '0.0', '--pitch', '0.0', '--yaw', '0.0',
+                '--frame-id', 'base_link', '--child-frame-id', 'gps_link']
+    )
 
-    # Lancement Nav2 en mode Autonomie Réelle
-    nav2_bringup = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
-        launch_arguments={
-            'map': map_path, # MONDE RÉEL
-            #'map': sim_map_path, # SIMULATION
-            'params_file': nav2_params,
-            'use_sim_time': 'False', # Crucial pour le matériel réel
-            'slam': 'False',         # On utilise la map existante pour localiser
-        }.items()
+    # ============================================
+    # VIRTUAL LIDAR - LiDAR fantôme pour le collision monitor
+    # ============================================
+    # virtual_lidar = Node(
+    #     package='bee_mobile',
+    #     executable='virtual_lidar',
+    #     name='virtual_lidar',
+    #     output='screen',
+    #     parameters=[{'publish_rate': 1.0}]
+    # )
+
+    # ============================================
+    # PHASE 2 : Localisation (après 2 secondes)
+    # ============================================
+    
+    # EKF Local (délai de 2s pour laisser les capteurs démarrer)
+    ekf_local = TimerAction(
+        period=2.0,
+        actions=[
+            Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_node',
+                output='screen',
+                parameters=[ekf_config],
+            )
+        ]
+    )
+    
+    # EKF Global (délai de 2.5s)
+    ekf_global = TimerAction(
+        period=2.5,
+        actions=[
+            Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_node_global',
+                output='screen',
+                parameters=[
+                    ekf_config
+                #     {
+                #     'odom0_pose': [0.64, 0.0, 0.5, 0.0, 0.0, 0.0],}
+                    ],
+                remappings=[
+                    ('/odometry/filtered', '/odometry/global'),
+                ]
+            )
+        ]
+    )
+
+    robot_footprint = TimerAction(
+        period=4.0,
+        actions=[
+            Node(
+                package='bee_mobile',
+                executable='robot_footprint_publisher',
+                name='robot_footprint_publisher',
+                output='screen',
+            )
+        ]
+    )
+    
+    # ============================================
+    # PHASE 3 : Transformation GPS (après 5 secondes)
+    # ============================================
+    
+    # Pour l'initialisation de mapviz
+    initialize_origin = TimerAction(
+        period=5.0,
+        actions=[
+            Node(
+                package='swri_transform_util',
+                executable='initialize_origin.py',
+                name='initialize_origin',
+                output='screen',
+                remappings=[('fix', '/fix')],
+                parameters=[{
+                    'local_xy_frame': 'map',
+                    'local_xy_origin': 'auto',
+                }]
+            )
+        ]
+    )
+
+    # gps_corrector = Node(
+    #     package='bee_mobile',
+    #     executable='gps_corrector',
+    #     name='gps_corrector',
+    #     parameters=[{
+    #         'offset_x': -0.64,  # Mesurez : distance centre → GPS vers l'AVANT
+    #         'offset_y': 0.0,   # Mesurez : distance centre → GPS vers la GAUCHE
+    #         'offset_z': 0.95,
+    #     }]
+    # )
+
+    # Navsat transform qui attend que gps_tf soit prêt
+    navsat_transform = RegisterEventHandler(
+        OnProcessStart(
+            target_action=gps_tf,
+            on_start=[
+                TimerAction(
+                    period=2.0,  # 2 secondes après que gps_tf ait démarré
+                    actions=[
+                        Node(
+                            package='robot_localization',
+                            executable='navsat_transform_node',
+                            name='navsat_transform_node',
+                            output='screen',
+                            parameters=[ekf_config],
+                            remappings=[
+                                ('/gps/fix', '/fix'),
+                                ('/imu', '/heading_imu'),
+                                ('/odometry/filtered', '/odometry/global'),
+                            ]
+                        )
+                    ]
+                )
+            ]
+        )
+    )
+        
+    # ============================================
+    # PHASE 4 : Services et Navigation (après 8 secondes)
+    # ============================================
+    
+    gps_health_monitor = TimerAction(
+        period=7.0,
+        actions=[
+            Node(
+                package='bee_mobile',
+                executable='gps_health_monitor',
+                name='gps_health_monitor',
+                output='screen',
+                parameters=[{
+                    'min_gps_status': 2,
+                    'gps_timeout': 2.0,
+                }]
+            )
+        ]
+    )
+    
+    # Nav2 Bringup (après 10 secondes, quand tout est stable)
+    nav2_bringup = TimerAction(
+        period=10.0,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')
+                ),
+                launch_arguments={
+                    'map': map_file,
+                    'params_file': nav2_params,
+                    'use_sim_time': 'False',
+                    'slam': 'False',
+                    'amcl': 'False',
+                    'run_amcl': 'False',
+                }.items()
+            )
+        ]
     )
 
     return LaunchDescription([
-        nav2_bringup
+        # Phase 1 : Immédiat
+        custom_gps_driver,
+        #heading_publisher,                               # heading_publisher.py
+        gps_tf,
+        #virtual_lidar,                                   # virtual_lidar.py
+        
+        # Phase 2 : Après délai
+        ekf_local,
+        ekf_global,
+        robot_footprint,                                 # robot_footprint_publisher.py
+        
+        # Phase 3 : GPS Transform
+        initialize_origin,                               # pour mapviz
+        # gps_corrector,
+        navsat_transform,
+        
+        # Phase 4 : Services et Navigation
+        gps_health_monitor,                              # gps_health_monitor
+        nav2_bringup,
     ])
+
+# on utilise pour avoir des infos/action dans un terminal :
+# gps_heading_display.py
+# gps_health_monitor.py
+# previsualisation_gps.py
+# pid_tuner.py

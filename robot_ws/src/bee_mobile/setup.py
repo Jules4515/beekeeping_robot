@@ -31,24 +31,33 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            # General
             'pid_tuner = bee_mobile.pid_tuner:main',
-            'wheel_state_converter = bee_mobile.wheel_state_converter:main',
-            'swerve_kinematics = bee_mobile.swerve_kinematics:main',
-            'sim_bridge = bee_mobile.sim_bridge:main',
-            'mux_joystick_node = bee_mobile.mux_joystick_node:main',
-            'waypoint_commander = bee_mobile.waypoint_commander:main',
             'odometry = bee_mobile.odometry:main',
+            'wheel_state_converter = bee_mobile.wheel_state_converter:main',
+            'sim_bridge = bee_mobile.sim_bridge:main',
+            'mux_joystick = bee_mobile.mux_joystick:main',
+            'waypoint_commander = bee_mobile.waypoint_commander:main',
+            
+            # Nav2
+            'swerve_kinematics = bee_mobile.swerve_kinematics:main',
+            'goal_manager = bee_mobile.goal_manager:main',
+
+            # Docking
+            'aruco_tag_detector = bee_mobile.aruco_tag_detector:main',
             'docking_controller = bee_mobile.docking_controller:main',
-            'docking_debug_cli = bee_mobile.docking_debug_cli:main',
-            'heading_publisher = bee_mobile.heading_publisher:main',
-            'robot_footprint_publisher = bee_mobile.robot_footprint_publisher:main',
-            'gps_heading_display = bee_mobile.gps_heading_display:main',
-            'custom_gps_driver = bee_mobile.custom_gps_driver:main',
-            'distance_to_aruco = bee_mobile.distance_to_aruco:main',
-            'docking_tf_math_tester = bee_mobile.docking_tf_math_tester:main',
-            'compressed_aruco_node = bee_mobile.compressed_aruco_node:main',
             'docking_tests = bee_mobile.docking_tests:main',
-            'goals = bee_mobile.goals:main'
+            'docking_tf_math_tester = bee_mobile.docking_tf_math_tester:main',
+
+            # GPS
+            'custom_gps_driver = bee_mobile.custom_gps_driver:main',
+            'virtual_lidar = bee_mobile.virtual_lidar:main',
+            'robot_footprint_publisher = bee_mobile.robot_footprint_publisher:main',
+            'gps_health_monitor = bee_mobile.gps_health_monitor:main',
+            'environment_monitor = bee_mobile.environment_monitor:main',
+            'previsualization_gps = bee_mobile.previsualization_gps:main',
+            
+            'gps_heading_display = bee_mobile.gps_heading_display:main',
         ],
     },
 )

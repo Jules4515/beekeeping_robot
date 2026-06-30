@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64MultiArray, Int8, Float64
 import math
@@ -234,8 +235,15 @@ class SwerveKinematics(Node):
             
 def main(args=None):
     rclpy.init(args=args)
-    rclpy.spin(SwerveKinematics())
-    rclpy.shutdown()
+    node = SwerveKinematics()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from sensor_msgs.msg import CompressedImage, Image, CameraInfo
 from geometry_msgs.msg import Pose, PoseArray, TransformStamped
 from tf2_ros import TransformBroadcaster
@@ -8,9 +9,9 @@ from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
 
-class CompressedArucoNode(Node):
+class ArucoTagDetector(Node):
     def __init__(self):
-        super().__init__('compressed_aruco_node')
+        super().__init__('aruco_tag_detector')
         
         # 1. Paramètres ROS 2
         self.declare_parameter('image_topic', '/camera/image_raw/compressed')
@@ -193,14 +194,18 @@ class CompressedArucoNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = CompressedArucoNode()
+    node = ArucoTagDetector()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        # Capture silencieuse du Ctrl+C et de l'arrêt externe
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
+        # Bloc exécuté dans 100% des cas, même en cas de crash interne
         node.destroy_node()
-        rclpy.shutdown()
+        # Vérification cruciale pour éviter l'erreur "Context is already shutdown"
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

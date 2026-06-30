@@ -2,14 +2,15 @@
 import rclpy
 import math
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from rclpy.action import ActionClient
 from geometry_msgs.msg import Pose2D
 from nav2_msgs.action import NavigateToPose
 from std_msgs.msg import Float64MultiArray
 
-class Nav2GoalManager(Node):
+class GoalManager(Node):
     def __init__(self):
-        super().__init__('nav2_goal_manager')
+        super().__init__('goal_manager')
         
         self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
         
@@ -93,14 +94,15 @@ class Nav2GoalManager(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = Nav2GoalManager()
+    node = GoalManager()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         node.force_stop_motors()
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
+        node.destroy_node()
         if rclpy.ok():
-            node.destroy_node()
             rclpy.shutdown()
 
 if __name__ == '__main__':

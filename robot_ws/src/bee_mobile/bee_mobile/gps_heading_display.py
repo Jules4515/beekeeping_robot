@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import QuaternionStamped
 import math
@@ -68,9 +69,14 @@ class GPSHeadingDisplay(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = GPSHeadingDisplay()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

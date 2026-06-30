@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from std_msgs.msg import Float64MultiArray
 
-class SimBridgeNode(Node):
+class SimBridge(Node):
     """
     Simulates perfect hardware by maintaining the state of the motors
     and broadcasting encoder feedback at a strict, continuous frequency (50Hz).
     """
     def __init__(self):
-        super().__init__('sim_bridge_node')
+        super().__init__('sim_bridge')
 
         self.wheel_modules = ['front_left', 'front_right', 'rear_left', 'rear_right']
         self.pubs = {}
@@ -51,14 +52,15 @@ class SimBridgeNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = SimBridgeNode()
+    node = SimBridge()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

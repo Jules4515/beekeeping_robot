@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from std_msgs.msg import Int8
 
-class MuxJoystickNode(Node):
+class MuxJoystick(Node):
     """
     Reads a joystick and publishes /cmd_vel_joy for twist_mux.
     Uses dedicated buttons (A, B, X, Y) to lock specific movement axes.
     """
     def __init__(self):
-        super().__init__('mux_joystick_node')
+        super().__init__('mux_joystick')
 
         # Axis mapping
         self.declare_parameter('speed_axis', 1)
@@ -20,8 +21,8 @@ class MuxJoystickNode(Node):
         self.declare_parameter('deadband', 0.1)
 
         # Speed limits
-        self.declare_parameter('max_linear_speed_ms', 0.07)
-        self.declare_parameter('max_angular_speed_rads', 0.09)
+        self.declare_parameter('max_linear_speed_ms', 0.50)#0.07
+        self.declare_parameter('max_angular_speed_rads', 0.50)#0.09
 
         # Explicit button mapping (Xbox 360/One standard)
         self.declare_parameter('btn_straight', 0)        # A button
@@ -186,10 +187,15 @@ class MuxJoystickNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MuxJoystickNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    node = MuxJoystick()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

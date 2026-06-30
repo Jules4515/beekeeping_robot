@@ -60,10 +60,10 @@ def generate_launch_description():
         }]
     )
 
-    compressed_aruco_node = Node(
+    aruco_tag_detector_node = Node(
         package='bee_mobile', 
-        executable='compressed_aruco_node',
-        name='compressed_aruco_node',
+        executable='aruco_tag_detector',
+        name='aruco_tag_detector',
         namespace='camera',
         output='screen',
         parameters=[{
@@ -105,7 +105,7 @@ def generate_launch_description():
 
     mux_joystick_node = Node(
         package='bee_mobile',
-        executable='mux_joystick_node',
+        executable='mux_joystick',
         output='screen'
     )
 
@@ -134,7 +134,7 @@ def generate_launch_description():
         #micro_ros_node,
         lidar_launch,
         camera_launch,
-        compressed_aruco_node,
+        aruco_tag_detector_node,
         pid_tuner,
         sim_bridge_node,
         static_tf_map_odom,

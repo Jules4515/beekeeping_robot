@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 import math
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
 
-class WheelStateConverterNode(Node):
+class WheelStateConverter(Node):
     """
     Subscribes to the four wheel encoder topics (/mobile/wheel_*/encoder_angle, Float64MultiArray) and 
     republishes as a unified JointState (radians) on /wheel_joint_states for RViz.
@@ -13,7 +14,7 @@ class WheelStateConverterNode(Node):
     data[1] = steering angle (degrees) → converted to radians
     """
     def __init__(self):
-        super().__init__('wheel_state_converter_node')
+        super().__init__('wheel_state_converter')
 
         # Parameters
         # Publish wheel joint states at a higher default rate to keep RViz
@@ -93,10 +94,15 @@ class WheelStateConverterNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = WheelStateConverterNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    node = WheelStateConverter()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

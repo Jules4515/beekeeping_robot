@@ -1,0 +1,192 @@
+# ekf_node:
+#   ros__parameters:
+#     frequency: 10.0
+#     sensor_timeout: 5.0
+#     two_d_mode: true
+#     publish_tf: true
+#     publish_acceleration: false
+#     use_sim_time: false
+#     smooth_lagged_data: false
+#     history_length: 0.0
+    
+#     # Frames du robot
+#     #map_frame: map
+#     odom_frame: odom
+#     base_link_frame: base_link
+#     world_frame: odom
+
+#     odom0: /odom
+#     odom0_config: [false, false, false, # Position (x, y, z)
+#                   false, false, false, # Orientation (roll, pitch, yaw)
+#                   true,  true, false, # Vitesse lin. : X=OUI, Y=NON, Z=NON
+#                   false, false, false, # Vitesse ang. : AUCUNE ! (On ignore les roues pour la rotation)
+#                   false, false, false] # Accélération
+    
+#     # --- IMU (cap GPS) ---
+#     imu0: /heading_imu
+#     imu0_config: [false, false, false,
+#                   false, false, true,
+#                   false, false, false,
+#                   false, false, true, # false, false, false,
+#                   false, false, false]
+
+#     imu0_relative: true
+
+# ekf_node_global:
+#   ros__parameters:
+#     frequency: 5.0
+#     sensor_timeout: 5.0
+#     two_d_mode: true
+#     publish_tf: true
+#     publish_acceleration: false
+#     use_sim_time: false
+
+#     # Frames du robot
+#     map_frame: map
+#     odom_frame: odom
+#     base_link_frame: base_link
+#     world_frame: map
+
+#     # --- 1. GPS (via navsat_transform_node) ---
+#     odom0: /odometry/gps
+#     odom0_config: [true,  true,  false,  # Position X, Y absolues (Le rôle du GPS)
+#                   false, false, false,
+#                   false, false, false,
+#                   false, false, false,
+#                   false, false, false]
+#     odom0_relative: false
+
+#     odom0_pose: [0.2861, 0.0, 0.24,   # x, y, z (À MESURER EXACTEMENT)
+#                 0.0, 0.0, 0.0]     # roll, pitch, yaw
+
+#     # --- 2. ODOMÉTRIE ROUES ---
+#     odom1: /odom                     # On écoute le vrai calcul de votre script Python
+#     odom1_config: [false, false, false,
+#                   false, false, false,
+#                   true,  true, false,  # Seulement la vitesse X (avancer/reculer)
+#                   false, false, false,  # Pas de vitesse angulaire (à cause des frottements)
+#                   false, false, false]
+    
+#     # --- 3. IMU (Boussole + Gyroscope) ---
+#     imu0: /heading_imu
+#     imu0_config: [false, false, false,
+#                   false, false, true,    # Yaw absolu (Cap boussole)
+#                   false, false, false,
+#                   false, false, true,    # Vitesse angulaire (La vraie rotation physique)
+#                   false, false, false]
+#     # imu0_pose_angular: 0.01
+
+ekf_node:
+  ros__parameters:
+    frequency: 10.0          # Augmenté à 20Hz pour plus de réactivité locale
+    sensor_timeout: 0.1
+    two_d_mode: true
+    publish_tf: true
+    publish_acceleration: false
+    use_sim_time: false
+
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom        # Le filtre local travaille dans le repère odom
+
+    # --- ODOMÉTRIE ROUES (Vitesses locales) ---
+    odom0: /odom
+    odom0_config: [false, false, false,
+                  false, false, false,
+                  true,  true,  false, # Vitesse X et Y actives pour robot holonome
+                  false, false, false, # Pas de vitesse angulaire (on laisse l'IMU gérer)
+                  false, false, false]
+    odom0_relative: false
+
+    # --- IMU / GPS HEADING (Rotations locales) ---
+    imu0: /heading_imu
+    imu0_config: [false, false, false,
+                  false, false, false, # FALSE ICI : Pas de lacet absolu dans l'EKF local !
+                  false, false, false,
+                  false, false, true,  # TRUE ICI : On veut la vitesse angulaire (wz)
+                  false, false, false]
+    imu0_relative: false     # CORRECTION : Doit être à false pour un cap absolu
+
+ekf_node_global:
+  ros__parameters:
+    frequency: 5.0          # Augmenté à 10Hz
+    sensor_timeout: 0.2
+    two_d_mode: true
+    publish_tf: true
+    publish_acceleration: false
+    use_sim_time: false
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: map         # Le filtre global travaille dans le repère map
+
+    # --- 1. POSITION GPS ABSOLUE ---
+    odom0: /odometry/gps
+    odom0_config: [true,  true,  false, # Position X, Y absolue calculée par navsat_transform
+                  false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, false]
+    odom0_relative: false
+
+    # --- 2. ODOMÉTRIE ROUES ---
+    odom1: /odom
+    odom1_config: [false, false, false,
+                  false, false, false,
+                  true,  true,  false, # Vitesse X et Y aussi dans le filtre global
+                  false, false, false,
+                  false, false, false]
+    odom1_relative: false
+    
+    # --- 3. IMU ABSOLUE (Le Cap boussole) ---
+    imu0: /heading_imu
+    imu0_config: [false, false, false,
+                  false, false, true,  # TRUE ICI : Le lacet absolu (Yaw) pour orienter la carte
+                  false, false, false,
+                  false, false, true,  # Vitesse angulaire (wz) pour lisser les rotations
+                  false, false, false]
+    imu0_relative: false     # CORRECTION : Garder absolument à false
+
+
+navsat_transform_node:
+  ros__parameters:
+    # --- 1. Repères Spatiaux (TF) ---
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+
+    # --- 2. Fonctionnement Général ---
+    use_sim_time: false
+    frequency: 5.0
+    delay: 0.0
+
+    # --- 3. Configuration Spécifique (Double Antenne / RTK) ---
+    # Un double GPS donne le Nord Vrai, on n'utilise pas l'odométrie pour deviner le cap
+    use_odometry_yaw: false 
+    
+    # Force l'altitude à 0, très important pour un robot mobile 2D
+    zero_altitude: true               
+
+    # --- 4. Paramètres Géographiques ---
+    # Déclinaison magnétique à 0 car on est sur le Nord Vrai (Double Antenne)
+    magnetic_declination_radians: 0.0 
+    
+    # yaw_offset : Convertit le "Nord GPS" (0° pointant vers le Nord) en "Nord ROS" (0° pointant vers l'Est)
+    # Si ton capteur envoie déjà un repère de type ENU (East-North-Up), laisse à 0.0. 
+    # S'il envoie du NED (North-East-Down), tu devras mettre ~1.5707963 (Pi/2).
+    yaw_offset: 0.0 
+
+    # --- 5. Sorties et Origine ---
+    publish_filtered_gps: true
+    
+    # Publie la transformation (UTM/Local) vers la carte. 
+    broadcast_cartesian_transform: false 
+    
+    # Utilise un repère cartésien local basé sur un point de référence (datum) plutôt que les immenses coordonnées UTM
+    use_local_cartesian: true         
+
+    # On attend un datum fixe (origine de la carte) au lieu de prendre le premier signal GPS reçu.
+    wait_for_datum: true
+    #base_link_offset: [0.64, 0.0, 1.3]  # x, y, z du GPS dans base_link
+    datum: [36.3058915, 120.4968436, 0.0]
