@@ -12,3 +12,4 @@ frames_temp/
 robot_ws/src/bee_mobile/bee_mobile/__pycache__
 robot_ws/src/bee_mobile/temp
 .vscode/
+robot_ws/src/bee_mobile/sakai_base_j/
