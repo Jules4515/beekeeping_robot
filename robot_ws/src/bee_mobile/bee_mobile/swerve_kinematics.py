@@ -165,7 +165,7 @@ class SwerveKinematics(Node):
             logical_target_speed = ideal_speed * speed_multiplier
             
             V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
-            V_MAX_PHYSICAL = 0.50  # Ta vitesse maximale
+            V_MAX_PHYSICAL = 0.70  # Ta vitesse maximale
             
             logical_target_speed = max(min(logical_target_speed, V_MAX_PHYSICAL), -V_MAX_PHYSICAL)
 
@@ -194,7 +194,7 @@ class SwerveKinematics(Node):
             # ============================================================
             # MAPPING CONTINU C1 (HYBRIDE RACINE / LINÉAIRE)
             # ============================================================
-            V_MAX = 0.50
+            V_MAX = 0.70
             V_MIN_MOTEUR = 0.30
             V_MIN_NAV2 = 0.10
             

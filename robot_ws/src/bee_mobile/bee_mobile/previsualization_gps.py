@@ -766,7 +766,7 @@ class GpsMissionNode(Node):
         # ============================================================
         # LECTURE ET CONVERSION DES WAYPOINTS
         # ============================================================
-        pkg_share = get_package_share_directory('sakai_base') # Vérifie que ce nom correspond bien à ton package
+        pkg_share = get_package_share_directory('bee_mobile') # Vérifie que ce nom correspond bien à ton package
         yaml_path = os.path.join(pkg_share, 'config', 'waypoints_GPS.yaml')
         
         with open(yaml_path, 'r') as f:

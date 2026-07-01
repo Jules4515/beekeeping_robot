@@ -19,7 +19,7 @@ class DockingController(Node):
         self.odom_frame = 'odom'
         self.base_frame = 'base_link'
         self.aruco_frame = 'aruco_marker_91'
-        self.camera_frame = 'camera_link_optical'
+        self.camera_frame = 'camera_link'
         
         # --- Limites Logiques Strictes ---
         self.v_pulse = 0.30

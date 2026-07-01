@@ -103,7 +103,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        default_cam:
+        camera_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -270,9 +270,9 @@ Visualization Manager:
           Value: false
         base_link:
           Value: true
-        camera_link_optical:
+        camera_link:
           Value: true
-        default_cam:
+        camera_link:
           Value: false
         finger_1_link:
           Value: false
@@ -322,7 +322,7 @@ Visualization Manager:
           odom:
             base_footprint:
               base_link:
-                camera_link_optical:
+                camera_link:
                   aruco_marker_0:
                     {}
                   aruco_marker_1002:
@@ -381,7 +381,7 @@ Visualization Manager:
                     {}
                   aruco_marker_976:
                     {}
-                default_cam:
+                camera_link:
                   {}
                 front_left_steering_link:
                   front_left_link:
@@ -762,9 +762,9 @@ Visualization Manager:
           Value: false
         base_link:
           Value: true
-        camera_link_optical:
+        camera_link:
           Value: true
-        default_cam:
+        camera_link:
           Value: false
         finger_1_link:
           Value: false
@@ -814,7 +814,7 @@ Visualization Manager:
           odom:
             base_footprint:
               base_link:
-                camera_link_optical:
+                camera_link:
                   aruco_marker_0:
                     {}
                   aruco_marker_1002:
@@ -873,7 +873,7 @@ Visualization Manager:
                     {}
                   aruco_marker_976:
                     {}
-                default_cam:
+                camera_link:
                   {}
                 front_left_steering_link:
                   front_left_link:

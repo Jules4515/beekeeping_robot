@@ -21,7 +21,7 @@ class MuxJoystick(Node):
         self.declare_parameter('deadband', 0.1)
 
         # Speed limits
-        self.declare_parameter('max_linear_speed_ms', 0.50)#0.07
+        self.declare_parameter('max_linear_speed_ms', 0.70)#0.07
         self.declare_parameter('max_angular_speed_rads', 0.50)#0.09
 
         # Explicit button mapping (Xbox 360/One standard)

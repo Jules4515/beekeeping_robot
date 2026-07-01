@@ -86,7 +86,7 @@ ekf_node:
     use_sim_time: false
 
     odom_frame: odom
-    base_link_frame: base_link
+    base_link_frame: base_footprint
     world_frame: odom        # Le filtre local travaille dans le repère odom
 
     # --- ODOMÉTRIE ROUES (Vitesses locales) ---
@@ -118,7 +118,7 @@ ekf_node_global:
 
     map_frame: map
     odom_frame: odom
-    base_link_frame: base_link
+    base_link_frame: base_footprint
     world_frame: map         # Le filtre global travaille dans le repère map
 
     # --- 1. POSITION GPS ABSOLUE ---
@@ -142,7 +142,7 @@ ekf_node_global:
     # --- 3. IMU ABSOLUE (Le Cap boussole) ---
     imu0: /heading_imu
     imu0_config: [false, false, false,
-                  false, false, true,  # TRUE ICI : Le lacet absolu (Yaw) pour orienter la carte
+                  true, true, true,  # TRUE ICI : Le lacet absolu (Yaw) pour orienter la carte
                   false, false, false,
                   false, false, true,  # Vitesse angulaire (wz) pour lisser les rotations
                   false, false, false]
@@ -154,7 +154,7 @@ navsat_transform_node:
     # --- 1. Repères Spatiaux (TF) ---
     map_frame: map
     odom_frame: odom
-    base_link_frame: base_link
+    base_link_frame: base_footprint
 
     # --- 2. Fonctionnement Général ---
     use_sim_time: false

@@ -17,7 +17,7 @@ class ArucoTagDetector(Node):
         self.declare_parameter('image_topic', '/camera/image_raw/compressed')
         self.declare_parameter('camera_info_topic', '/camera/camera_info')
         self.declare_parameter('marker_size', 0.068)
-        self.declare_parameter('parent_frame', 'camera_link_optical')
+        self.declare_parameter('parent_frame', 'camera_link')
         self.declare_parameter('enable_debug', False) # Désactivé par défaut pour les performances
         self.declare_parameter('target_id', 91)
         self.declare_parameter('publish_pose_array', False)

@@ -27,7 +27,7 @@ def generate_launch_description():
                 'pixel_format': 'mjpeg2rgb',
                 'image_width': 640,
                 'image_height': 480,
-                'camera_frame_id': 'camera_link_optical',
+                'camera_frame_id': 'camera_link',
                 'camera_info_url': 'file://' + camera_info_yaml,
                 'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
                 'exposure_absolute': 20,
@@ -37,20 +37,4 @@ def generate_launch_description():
                 'qos_depth': 1,
             }]
         ),
-
-        # 2. Transformation Statique : Centre du robot (base_link) -> Centre optique
-        # Syntaxe Jazzy : [x, y, z, roll, pitch, yaw] ou [x, y, z, qx, qy, qz, qw]
-        # Ajuster les valeurs x, y, z mesurées (ex: caméra à +0.7m à l'avant, +0.4m en hauteur)
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='base_link_to_camera_tf',
-            arguments=[
-                '1.056', '0.0', '0.03',       # Traduction X, Y, Z en mètres
-                '-1.5708', '0.0', '-2.0944', # Rotation Roll (default : -pi/2 = -1.5708), Pitch, Yaw (caméra à -30 deg vers le bas -pi/2) en radians (REP-103)
-                'base_link', 
-                'camera_link_optical'      
-            ]
-        ),
-
     ])
