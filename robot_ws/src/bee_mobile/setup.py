@@ -56,6 +56,7 @@ setup(
             'gps_health_monitor = bee_mobile.gps_health_monitor:main',
             'environment_monitor = bee_mobile.environment_monitor:main',
             'previsualization_gps = bee_mobile.previsualization_gps:main',
+            'gps_monitor = bee_mobile.gps_monitor:main',
             
             'gps_heading_display = bee_mobile.gps_heading_display:main',
         ],
