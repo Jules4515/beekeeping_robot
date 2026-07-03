@@ -319,7 +319,7 @@ class GPSHealthMonitor(Node):
             
     def enable_callback(self, request, response):
         """Service pour activer/désactiver manuellement"""
-        self.gps_healthy = request.data
+        self.gps_healthyaml_pathy = request.data
         self.publish_health_state()
         response.success = True
         response.message = f'GPS health set to {self.gps_healthy}'

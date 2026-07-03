@@ -1,7 +1,31 @@
 waypoints_GPS:
 
-- name : DATUM
-  latitude : 36.3058915
-  longitude : 120.4968436
-  yaw : 1.5708
-  wait_time : 10.0
+# - name : DATUM
+#   latitude : 36.3058915
+#   longitude : 120.4968436
+#   yaw : 1.5708
+#   wait_time : 10.0
+
+- name      : WP_2
+  latitude  : 36.3059103
+  longitude : 120.4968042
+  yaw       : -9.17
+  wait_time : 0.0
+- name      : WP_6
+  latitude  : 36.3059433
+  longitude : 120.4967821
+  yaw       : 77.98
+  wait_time : 0.0
+
+- name      : WP_7
+  latitude  : 36.3059064
+  longitude : 120.4968007
+  yaw       : 6.09
+  wait_time : 0.0
+
+- name      : WP_8
+  latitude  : 36.3059064
+  longitude : 120.4968006
+  yaw       : 6.25
+  wait_time : 0.0
+
