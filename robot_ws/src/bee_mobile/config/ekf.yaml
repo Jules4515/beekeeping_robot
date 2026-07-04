@@ -13,11 +13,11 @@ ekf_node:
 
     # --- ODOMÉTRIE ROUES (Vitesses locales) ---
     odom0: /odom
-    odom0_config: [false, false,  false,
-                  false, false, true,
-                  true, true, false,
-                  false, false, true,
-                  false, false, false]
+    odom0_config: [false, false, false,
+                   false, false, true,
+                   true,  true,  false,
+                   false, false, true,
+                   false, false, false]
     odom0_relative: false
 
     # --- IMU / GPS HEADING (Rotations locales) ---
@@ -28,11 +28,11 @@ ekf_node:
     #               false, false, false,
     #               false, false, false]
     # imu0_relative: false
-
+    
 ekf_node_global:
   ros__parameters:
-    frequency: 20.0
-    sensor_timeout: 0.5
+    frequency: 20.0 # <-- RESTAURÉ À 20 Hz
+    sensor_timeout: 0.1
     two_d_mode: true
     publish_tf: true
     publish_acceleration: false
@@ -45,7 +45,7 @@ ekf_node_global:
 
     # --- 1. POSITION GPS ABSOLUE ---
     odom0: /odometry/gps
-    odom0_config: [true,  true,  false, # Position X, Y absolue calculée par navsat_transform
+    odom0_config: [true,  true,  false, 
                    false, false, false,
                    false, false, false,
                    false, false, false,
@@ -57,19 +57,18 @@ ekf_node_global:
     odom1_config: [false, false, false,
                    false, false, false,
                    true,  true,  false,
-                   false, false, false,
+                   false, false, true,  # <-- CORRECTIF 1 : V_yaw activé
                    false, false, false]
     odom1_relative: false
     
     # --- 3. IMU ABSOLUE (Le Cap boussole) ---
     imu0: /heading_imu
     imu0_config: [false, false, false,
-                  true,  true,  true,
+                  false, false, true,   # <-- CORRECTIF 2 : Roll et Pitch désactivés
                   false, false, false,
-                  false, false, true,  # Vitesse angulaire (wz) pour lisser les rotations
+                  false, false, false,
                   false, false, false]
     imu0_relative: false
-
 
 navsat_transform_node:
   ros__parameters:

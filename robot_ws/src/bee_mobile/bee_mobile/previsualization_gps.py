@@ -213,6 +213,46 @@ class GpsMissionNode(Node):
         self.print_gps_banner()
         print("="*50)
 
+        # A TESTER MAIS MARCHE PAS, ARRETE LA MISSION DIRECT JSP PK
+        # # ============================================================
+        # # EXÉCUTION FLUIDE DE LA TRAJECTOIRE COMPLETE
+        # # ============================================================
+        
+        # print("\n" + "="*50)
+        # print("DÉMARRAGE DE LA MISSION CONTINUE (NavigateThroughPoses)")
+        # self.print_gps_banner()
+        # print("="*50)
+        # input("\n> ENTRÉE pour lancer le robot... (Ctrl+C pour annuler)")
+
+        # # On envoie toute la liste de coordonnées à Nav2 en une seule fois
+        # self.navigator.goThroughPoses(map_poses)
+
+        # i = 0
+        # while not self.navigator.isTaskComplete():
+        #     i += 1
+        #     # On spin notre Node personnalisé manuellement pour continuer de recevoir /gps/status
+        #     rclpy.spin_once(self, timeout_sec=0.05)
+            
+        #     feedback = self.navigator.getFeedback()
+        #     if feedback and i % 10 == 0:
+        #         # Affichage allégé pour ne pas spammer le terminal
+        #         # feedback.distance_remaining donne la distance jusqu'au DERNIER point de la liste
+        #         print(f"  En route... | {feedback.distance_remaining:.1f} m restants jusqu'à la fin | GPS: {self.gps_status['emoji']} {self.gps_status['text']}")
+
+        # # Analyse du résultat final de la trajectoire
+        # result = self.navigator.getResult()
+        # if result == TaskResult.SUCCEEDED:
+        #     print("\n  [SUCCÈS] Trajectoire complète achevée !")
+        # elif result == TaskResult.CANCELED:
+        #     print("\n  [ANNULÉ] Mission interrompue par l'utilisateur ou le joystick.")
+        # elif result == TaskResult.FAILED:
+        #     print("\n  [ÉCHEC] Le robot n'a pas pu terminer la trajectoire complète.")
+
+        # print("\n" + "="*50)
+        # print("FIN DE MISSION !")
+        # self.print_gps_banner()
+        # print("="*50)
+
 def main(args=None):
     rclpy.init(args=args)
     node = GpsMissionNode()

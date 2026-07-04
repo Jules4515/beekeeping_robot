@@ -57,6 +57,7 @@ setup(
             'environment_monitor = bee_mobile.environment_monitor:main',
             'previsualization_gps = bee_mobile.previsualization_gps:main',
             'gps_monitor = bee_mobile.gps_monitor:main',
+            'auto_gps_saver = bee_mobile.auto_gps_saver:main',
             
             'gps_heading_display = bee_mobile.gps_heading_display:main',
         ],

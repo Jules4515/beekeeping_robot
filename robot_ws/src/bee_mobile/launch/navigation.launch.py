@@ -36,14 +36,13 @@ from launch.event_handlers import OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import RegisterEventHandler
 
 def generate_launch_description():
     bee_mobile_dir = get_package_share_directory('bee_mobile')
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
     
     nav2_params = os.path.join(bee_mobile_dir, 'config', 'nav2_params.yaml')
-    map_file = os.path.join(bee_mobile_dir, 'maps', 'blank_map.yaml')
+    map_file = os.path.join(bee_mobile_dir, 'maps', 'blank_small_map.yaml')
     ekf_config = os.path.join(bee_mobile_dir, 'config', 'ekf.yaml')
     
     # ============================================
@@ -81,16 +80,6 @@ def generate_launch_description():
     #     name='heading_publisher',
     #     output='screen',
     # )
-    
-    # Transform GPS statique
-    gps_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='gps_tf',
-        arguments=['--x', '0.2861', '--y', '0.0', '--z', '0.24',
-                '--roll', '0.0', '--pitch', '0.0', '--yaw', '0.0',
-                '--frame-id', 'base_link', '--child-frame-id', 'gps_link']
-    )
 
     # ============================================
     # VIRTUAL LIDAR - LiDAR fantôme pour le collision monitor
@@ -188,30 +177,24 @@ def generate_launch_description():
     # )
 
     # Navsat transform qui attend que gps_tf soit prêt
-    navsat_transform = RegisterEventHandler(
-        OnProcessStart(
-            target_action=gps_tf,
-            on_start=[
-                TimerAction(
-                    period=2.0,  # 2 secondes après que gps_tf ait démarré
-                    actions=[
-                        Node(
-                            package='robot_localization',
-                            executable='navsat_transform_node',
-                            name='navsat_transform_node',
-                            output='screen',
-                            parameters=[ekf_config],
-                            remappings=[
-                                ('/gps/fix', '/fix'),
-                                ('/imu', '/heading_imu'),
-                                ('/odometry/filtered', '/odometry/global'),
-                            ]
-                        )
-                    ]
-                )
-            ]
-        )
+    navsat_transform = TimerAction(
+        period=4.0,
+        actions=[
+            Node(
+                package='robot_localization',
+                executable='navsat_transform_node',
+                name='navsat_transform_node',
+                output='screen',
+                parameters=[ekf_config],
+                remappings=[
+                    ('/gps/fix', '/fix'),
+                    ('/imu', '/heading_imu'),
+                    ('/odometry/filtered', '/odometry/global'),
+                ]
+            )
+        ]
     )
+            
         
     # ============================================
     # PHASE 4 : Services et Navigation (après 8 secondes)
@@ -257,7 +240,6 @@ def generate_launch_description():
         # Phase 1 : Immédiat
         custom_gps_driver,
         #heading_publisher,                               # heading_publisher.py
-        gps_tf,
         #virtual_lidar,                                   # virtual_lidar.py
         
         # Phase 2 : Après délai

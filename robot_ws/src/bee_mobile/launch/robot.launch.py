@@ -27,7 +27,7 @@ def generate_launch_description():
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
-        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 20.0,}]  # Increased from 50 to 100 Hz
+        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 10.0,}]  # Increased from 50 to 100 Hz
     )
 
     # --- Hardware Nodes (Real World Only) ---

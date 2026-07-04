@@ -55,7 +55,7 @@ class SwerveKinematics(Node):
             dt = 0.1
 
         # Physical machine limits
-        MAX_STEER_RAD_S = math.radians(60.0)  # Max servo rotation SPEED (~45 deg/s) - Tune based on hardware
+        MAX_STEER_RAD_S = math.radians(90.0)  # Max servo rotation SPEED (~45 deg/s) - Tune based on hardware
         MAX_RPM_LIMIT = 30.0  # Limite de sécurité physique
         MAX_SPEED_MS = (MAX_RPM_LIMIT * 2.0 * math.pi * self.wheel_radius) / 60.0
         HARD_LIMIT_RAD = math.radians(80.0) # Limite physique de +-80 deg pour l'orientation des roues
