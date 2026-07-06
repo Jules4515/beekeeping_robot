@@ -26,6 +26,9 @@ def generate_launch_description():
     # Navigation launch file path
     navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation.launch.py')
 
+    # Caméra
+    camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
+
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -57,9 +60,27 @@ def generate_launch_description():
         ]
     )
 
-    camera_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'camera.launch.py')),
-        condition=UnlessCondition(is_sim)
+    camera_node = Node(
+        package='usb_cam',
+        executable='usb_cam_node_exe',
+        name='usb_cam',
+        namespace='camera',
+        output='screen',
+        parameters=[{
+            'video_device': '/dev/video0',
+            'framerate': 30.0,
+            'pixel_format': 'mjpeg2rgb',
+            'image_width': 640,
+            'image_height': 480,
+            'camera_frame_id': 'camera_link',
+            'camera_info_url': 'file://' + camera_info_yaml,
+            'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
+            'exposure_absolute': 20,
+            'gain': 10,
+            'qos_reliability': 'best_effort',
+            'qos_history': 'keep_last',
+            'qos_depth': 1,
+        }]
     )
 
     pid_tuner = Node(
@@ -151,7 +172,7 @@ def generate_launch_description():
         robot_state_publisher_node,
         #micro_ros_node,
         unitree_lidar_node,
-        #camera_launch,
+        #camera_node,
         aruco_tag_detector_node,
         pid_tuner,
         sim_bridge_node,

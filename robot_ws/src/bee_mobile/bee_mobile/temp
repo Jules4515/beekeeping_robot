@@ -1,333 +1,363 @@
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Joy, NavSatFix, Imu
+from std_msgs.msg import Int8
+from action_msgs.srv import CancelGoal
+from ament_index_python.packages import get_package_share_directory
 import math
-from std_msgs.msg import Float64MultiArray
-from rclpy.time import Time
-from rclpy.duration import Duration
+import os
+import threading
+import subprocess
+import signal
 
-def clamp_steering_angle(target_angle_deg, max_mechanical_angle_deg=90.0):
+class MuxJoystick(Node):
     """
-    Clamps any steering angle that exceeds the physical limits of the servomotors.
-    """
-    return max(min(target_angle_deg, max_mechanical_angle_deg), -max_mechanical_angle_deg)
-
-def normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms):
-    """
-    Normalizes any wheel steering angle to the allowable +/- 90° range.
-    If the raw angle is outside this range, flip the speed direction and add/subtract pi.
-    """
-    if raw_angle_deg > 90.0:
-        return raw_angle_deg - 180.0, -logical_speed_ms
-    elif raw_angle_deg < -90.0:
-        return raw_angle_deg + 180.0, -logical_speed_ms
-    return raw_angle_deg, logical_speed_ms
-
-def apply_stiction_mapping(logical_speed_ms, wheel_name):
-    """
-    Modèle de friction Coulomb asymétrique.
-    Découple la position physique de la roue de son vecteur cinématique.
-    """
-    V_MAX_MS = 0.67
-    V_MIN_NAV2_MS = 0.10
+    Reads a joystick and publishes /cmd_vel_joy for twist_mux.
+    Features: Asynchronous continuous smoothing, external process management, and Nav2 hooks.
     
-    abs_val_ms = abs(logical_speed_ms)
-    if abs_val_ms < 0.005: 
-        return 0.0
-    
-    sign = math.copysign(1.0, logical_speed_ms)
-        
-    # Application de la stiction selon l'asymétrie mécanique réelle
-    if 'left' in wheel_name:
-        if sign > 0:
-            # Le robot avance : le moteur gauche tourne en sens "matériel arrière" (moins performant)
-            v_min_motor_ms = 0.30  # Boost plus important pour compenser
-        else:
-            # Le robot recule : le moteur gauche tourne en sens "matériel avant" (performant)
-            v_min_motor_ms = 0.30  # Moins de friction à vaincre
-    else:
-        # Roues droites (montées à l'endroit)
-        if sign > 0:
-            # Le robot avance : le moteur droit tourne en sens "matériel avant" (performant)
-            v_min_motor_ms = 0.30  # Valeur standard de référence
-        else:
-            # Le robot recule : le moteur droit tourne en sens "matériel arrière" (moins performant)
-            v_min_motor_ms = 0.30  # Légère compensation nécessaire
-        
-    m = (V_MAX_MS - v_min_motor_ms) / (V_MAX_MS - V_MIN_NAV2_MS)
-    A = (2.0 * (v_min_motor_ms - m * V_MIN_NAV2_MS)) / math.sqrt(V_MIN_NAV2_MS)
-    B = 2.0 * m - (v_min_motor_ms / V_MIN_NAV2_MS)
-    
-    if abs_val_ms <= V_MIN_NAV2_MS:
-        mapped_ms = sign * (A * math.sqrt(abs_val_ms) + B * abs_val_ms)
-    else:
-        mapped_ms = sign * (m * (abs_val_ms - V_MIN_NAV2_MS) + v_min_motor_ms)
-        
-    return max(min(mapped_ms, V_MAX_MS), -V_MAX_MS)
+    Architectural Notes:
+    - Bottlenecks: None expected at 20Hz control loop.
+    - Race Conditions: Subprocess launching is debounced to prevent overlapping file writes.
+    - Memory Leaks: subprocess.wait() is strictly enforced to prevent zombie OS processes.
+    """
+    def __init__(self):
+        super().__init__('mux_joystick')
 
-def apply_steering_slew_rate(target_angle_deg, last_angle_deg, max_rate_deg_s=90.0, dt=0.05):
-    """
-    Limite la vitesse de rotation des modules de direction.
-    max_rate_deg_s : Vitesse angulaire maximale tolérée (ex: 180°/s).
-    dt : Période de la boucle de contrôle (20 Hz = 0.05s).
-    """
-    max_step = max_rate_deg_s * dt
-    error = target_angle_deg - last_angle_deg
-    
-    if abs(error) > max_step:
-        return last_angle_deg + math.copysign(max_step, error)
-    return target_angle_deg
+        # Axis mapping
+        self.declare_parameter('speed_axis', 1)
+        self.declare_parameter('steer_axis', 0)
+        self.declare_parameter('rotate_axis', 3)
+        self.declare_parameter('dpad_x_axis', 6)
+        self.declare_parameter('dpad_y_axis', 7)
+        self.declare_parameter('deadband', 0.1)
 
-def send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config, apply_stiction=True):
-    """
-    Applies stiction and clamping, converts kinematic commands to RPM and degrees,
-    and publishes the final commands to the ROS 2 hardware topics.
-
-    The published message is [rpm, steering_angle_deg].
-    """
-    
-    for name, config in wheels_config.items():
-        # .get() : sécurité si la clé name n'existe pas dans le dictionnaire target_angles met 0.0 en vitesse
-        raw_angle_deg = target_angles_deg.get(name, config.get('last_angle_deg', 0.0)) 
-        cmd_angle_deg = clamp_steering_angle(raw_angle_deg)
-        
-        cmd_angle_deg = apply_steering_slew_rate(cmd_angle_deg, config.get('last_angle_deg', cmd_angle_deg))
-
-        raw_speed_ms = target_speeds_ms.get(name, 0.0)
-
-        # BYPASS CONDITIONNEL
-        if apply_stiction:
-            physical_speed_ms = apply_stiction_mapping(raw_speed_ms, name)
-        else:
-            physical_speed_ms = raw_speed_ms
-        
-        # Conversion m/s vers RPM pour publication
-        rpm_final = (physical_speed_ms * 60.0) / (2.0 * math.pi * wheel_radius_m) * config['dir']
-        
-        config['last_angle_deg'] = cmd_angle_deg
-        config['last_speed_ms'] = raw_speed_ms
-        
-        msg = Float64MultiArray(data=[float(rpm_final), float(cmd_angle_deg)])
-        #print(name, msg)
-        wheel_pubs[name].publish(msg)
-        
-def is_steering_aligned(wheels_config, target_angles_deg, tolerance_deg=5.0):
-    """
-    Vérification linéaire simplifiée. Délègue la gestion circulaire et les limites 
-    au firmware des microcontrôleurs.
-    """
-    for name, config in wheels_config.items():
-        target_ang_deg = clamp_steering_angle(target_angles_deg.get(name, 0.0))
-        phys_angle_deg = config.get('current_angle_deg', 0.0)
-        
-        # Conversion temporaire en rad uniquement pour trigonométrie
-        delta_rad = math.radians(target_ang_deg - phys_angle_deg)
-        delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
-        delta_deg = math.degrees(delta_rad)
-        
-        if abs(delta_deg) > tolerance_deg:
-            return False
-            
-    return True
-
-def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=None):
-    """
-    Retrieves the global or historical transformation via TF2.
-    Includes a non-blocking check to ensure frames exist before querying.
-    """
-    time_to_query = query_time if query_time else Time()
-    
-    # --- LE WAIT : Vérifie si la transformation est physiquement possible ---
-    # Si les frames n'existent pas encore dans l'arbre, on n'appelle pas lookup_transform
-    if not tf_buffer.can_transform(parent_frame, child_frame, time_to_query, timeout=Duration(seconds=0.0)):
-        return None
-        
-    try:
-        trans = tf_buffer.lookup_transform(
-            parent_frame, 
-            child_frame, 
-            time_to_query, 
-            timeout=Duration(seconds=0.0) # Immédiat car can_transform a validé la présence
+        # Speed profile values for the three joystick speed modes
+        self.declare_parameter(
+            'speed_profiles',
+            [
+                0.15, 0.20,  # Slow mode: vx, wz
+                0.45, 0.45,  # Normal mode: vx, wz
+                0.70, 0.70,  # Fast mode: vx, wz
+            ]
         )
-        t = trans.transform.translation
-        r = trans.transform.rotation
+
+        # Explicit button mapping
+        self.declare_parameter('btn_straight', 0)        # A
+        self.declare_parameter('btn_zeroturn', 1)        # B
+        self.declare_parameter('btn_holonome', 2)        # X
+        self.declare_parameter('btn_crab', 3)            # Y
+        self.declare_parameter('btn_start_record', 4)    # L1 (New: Start recorder)
+        self.declare_parameter('btn_stop_record', 5)     # R1 (New: Stop recorder)
+        self.declare_parameter('btn_deadman', 5)         # R2/RT axis (Hardware trigger)
+        self.declare_parameter('btn_cancel_nav', 6)      # L2/LT button
+
+        # Fetch parameters
+        self.speed_axis = self.get_parameter('speed_axis').value
+        self.steer_axis = self.get_parameter('steer_axis').value
+        self.rotate_axis = self.get_parameter('rotate_axis').value
+        self.dpad_x_axis = self.get_parameter('dpad_x_axis').value
+        self.dpad_y_axis = self.get_parameter('dpad_y_axis').value
+        self.deadband = self.get_parameter('deadband').value
         
-        siny_cosp = 2.0 * (r.w * r.z + r.x * r.y)
-        cosy_cosp = 1.0 - 2.0 * (r.y * r.y + r.z * r.z)
-        yaw_rad = math.atan2(siny_cosp, cosy_cosp)
+        speed_values = self.get_parameter('speed_profiles').value
+        if len(speed_values) != 6:
+            raise RuntimeError('speed_profiles parameter must contain exactly 6 float values')
         
-        return {
-            'x_m': t.x, 'y_m': t.y, 'z_m': t.z,
-            'qx': r.x, 'qy': r.y, 'qz': r.z, 'qw': r.w,
-            'yaw_rad': yaw_rad,
-            'stamp': trans.header.stamp
-        }
-    except Exception as e:
-        # Ne s'exécutera que pour les vraies erreurs d'extrapolation temporelle
-        print(f"[TF2 EXTRAPOLATION DEBUG] : {str(e)}")
-        return None
+        self.speed_profiles = [
+            speed_values[0:2],
+            speed_values[2:4],
+            speed_values[4:6],
+        ]
+        self.speed_mode = 1
 
-def send_pulse(state, elapsed_s, pulse_duration_s, target_vx_ms, target_vy_ms, target_wz_rad_s,
-               filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s, alpha_v, alpha_wz,
-               wheels_config, wheel_pubs, wheel_radius_m):
+        self.btn_straight = self.get_parameter('btn_straight').value
+        self.btn_zeroturn = self.get_parameter('btn_zeroturn').value
+        self.btn_holonome = self.get_parameter('btn_holonome').value
+        self.btn_crab = self.get_parameter('btn_crab').value
+        self.btn_start_record = self.get_parameter('btn_start_record').value
+        self.btn_stop_record = self.get_parameter('btn_stop_record').value
+        self.btn_deadman = self.get_parameter('btn_deadman').value
+        self.btn_cancel_nav = self.get_parameter('btn_cancel_nav').value
 
-    """
-    Evaluates the pulse-wait sequence with exponential filtering.
-    Optimized to compute orientation and velocities based on exclusive active modes.
-    """
-    # Create targets using previous memory to prevent empty dicts between cycles
-    target_angles_deg = {}
+        # Path configuration for manual waypoint saving (D-Pad Right)
+        pkg_share = get_package_share_directory('bee_mobile')
+        self.yaml_path = os.path.join(pkg_share, 'config', 'waypoints_GPS.yaml')
+        self.waypoint_counter = 1
+        
+        # Exponential Smoothing Filter Coefficients
+        self.declare_parameter('alpha_filter', 0.10)
+        self.declare_parameter('alpha_filter_wz', 0.05)
+        self.alpha = self.get_parameter('alpha_filter').value
+        self.alpha_wz = self.get_parameter('alpha_filter_wz').value
 
-    for name, config in wheels_config.items():
-        logical_speed_ms = 0.0
-        #print(f"target_vx_ms={target_vx_ms:.1f}, target_vy_ms={target_vy_ms:.1f}, target_wz_rad_s={target_wz_rad_s:.1f}")
+        self.filtered_joy_x = 0.0
+        self.filtered_joy_y = 0.0
+        self.filtered_joy_z = 0.0
 
-        if abs(target_wz_rad_s) > 0.0:
-            # Conversion temporaire post-trigonométrie
-            raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
-            wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
-            logical_speed_ms = wheel_radius_from_center_m * target_wz_rad_s
-        elif abs(target_vy_ms) > 0.0:
-            if name in ['front_right', 'rear_left']:
-                raw_angle_deg = 90.0
-            else:
-                raw_angle_deg = -90.0
-        else:
-            raw_angle_deg = 0.0
+        # Subprocess Management & Input State
+        self.recorder_process = None
+        self.last_record_btns = [0, 0]
+        self.last_dpad_x = 0.0
+        self.last_dpad_y = 0.0
+        self.last_l2 = 0
+        self.last_buttons = []
+        self.current_mode = 0 
 
-        target_angle_deg, logical_speed_ms = normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms)
-        target_angles_deg[name] = target_angle_deg
-        #print(f"target_angle_deg={target_angle_deg:.1f}")
+        # Target velocities (used to bridge the async hardware callback and the control loop)
+        self.target_joy_x = 0.0
+        self.target_joy_y = 0.0
+        self.target_joy_z = 0.0
+        self.deadman_active = False
+
+        # Thread-safe GPS storage
+        self.gps_lock = threading.Lock()
+        self.latest_fix = None
+        self.latest_imu = None
+
+        # Fixed frequency control loop (20Hz) guarantees deceleration curve when hardware topic stops updating
+        self.control_timer = self.create_timer(0.05, self.control_loop)
+
+        # Publishers / Subscribers
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_joy', 10)
+        self.mode_pub = self.create_publisher(Int8, '/joystick_control_mode', 10)
+        
+        self.joy_sub = self.create_subscription(Joy, 'joy', self.joy_callback, 10)
+        self.fix_sub = self.create_subscription(NavSatFix, '/fix', self.fix_callback, 10)
+        self.heading_sub = self.create_subscription(Imu, '/heading_imu', self.imu_callback, 10)
+        
+        self.cancel_client = self.create_client(CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+
+    def fix_callback(self, msg):
+        with self.gps_lock:
+            self.latest_fix = msg
     
-    zero_speeds_ms = {k: 0.0 for k in wheels_config.keys()}
+    def imu_callback(self, msg):
+        with self.gps_lock:
+            self.latest_imu = msg
 
-    if state == 'WAITING':
-        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
-        state = 'WAITING_WHEEL_ORIENTATION'
+    def euler_from_quaternion(self, q):
+        # Extracts physical yaw to store human-readable data in the YAML file
+        siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+        yaw = math.atan2(siny_cosp, cosy_cosp)
+        return 0.0, 0.0, math.degrees(yaw) # Only Yaw is relevant for manual D-Pad logging here
 
-    elif state == 'WAITING_WHEEL_ORIENTATION':
-        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
-        if is_steering_aligned(wheels_config, target_angles_deg):
-            state = 'SENDING_PULSE'
+    def save_gps_waypoint(self):
+        """Manual single-point logger. Executed outside of the continuous spatial recorder."""
+        with self.gps_lock:
+            if not self.latest_fix or not self.latest_imu:
+                self.get_logger().error("Cannot save: missing /fix or /heading_imu.")
+                return
+            lat = self.latest_fix.latitude
+            lon = self.latest_fix.longitude
+            _, _, yaw = self.euler_from_quaternion(self.latest_imu.orientation)
 
-    elif state == 'SENDING_PULSE':
-        if elapsed_s < pulse_duration_s:
-            filtered_vx_ms = (alpha_v * target_vx_ms) + ((1.0 - alpha_v) * filtered_vx_ms)
-            filtered_vy_ms = (alpha_v * target_vy_ms) + ((1.0 - alpha_v) * filtered_vy_ms)
-            filtered_wz_rad_s = (alpha_wz * target_wz_rad_s) + ((1.0 - alpha_wz) * filtered_wz_rad_s)
+        try:
+            os.makedirs(os.path.dirname(self.yaml_path), exist_ok=True)
 
-            target_speeds_ms = {}
-            for name, config in wheels_config.items():
-                if abs(target_wz_rad_s) > 0.0:
-                    wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
-                    raw_speed = wheel_radius_from_center_m * filtered_wz_rad_s
-                    # Conversion temporaire post-trigonométrie
-                    raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
-                    _, ideal_speed = normalize_steering_angle_and_speed(raw_angle_deg, raw_speed)
-                    target_speeds_ms[name] = ideal_speed
-                elif abs(target_vy_ms) > 0.0:
-                    # Le sens de la vitesse s'adapte à l'angle pour un vecteur de poussée unifié
-                    target_speeds_ms[name] = filtered_vy_ms if target_angles_deg[name] > 0.0 else -filtered_vy_ms
-                else:
-                    target_speeds_ms[name] = filtered_vx_ms
+            if not os.path.exists(self.yaml_path):
+                with open(self.yaml_path, 'w') as f:
+                    f.write("waypoints_GPS:\n\n")
 
-            send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config, )
+            with open(self.yaml_path, 'rb') as f:
+                f.seek(0, os.SEEK_END)
+                if f.tell() > 0:
+                    f.seek(-1, os.SEEK_END)
+                    last_char = f.read(1)
+            
+            if last_char != b'\n':
+                with open(self.yaml_path, 'a') as f:
+                    f.write('\n')
 
-        else:
-            send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
-            state = 'WAITING'
+            with open(self.yaml_path, 'a') as f:
+                f.write(f"- name      : WP_MANUAL_{self.waypoint_counter}\n")
+                f.write(f"  latitude  : {lat:.7f}\n")
+                f.write(f"  longitude : {lon:.7f}\n")
+                f.write(f"  yaw       : {yaw:.2f}\n")
+                f.write(f"  wait_time : 0.0\n\n")
 
-    return state, filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s
+            self.get_logger().info(f"Manual WP saved: {lat:.7f}, {lon:.7f}")
+            self.waypoint_counter += 1
 
-def send_pulse_smooth(state, elapsed_s, pulse_duration_s,
-                       target_vx_ms, target_vy_ms, target_wz_rad_s,
-                       filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s,
-                       alpha_v, alpha_wz, mode, dt,
-                       wheels_config, wheel_pubs, wheel_radius_m):
-    """
-    Same kinematic structure as send_pulse, but replaces the abrupt
-    end-of-pulse cutoff with a smooth deceleration ramp.
-      mode 1 : RC discharge
-      mode 2 : exact mirror of the acceleration curve (zero jerk both ends)
+        except IOError as e:
+            self.get_logger().error(f"YAML Write Error: {e}")
 
-    IMPORTANT: dt must be the REAL control loop period — not a guessed
-    constant — otherwise the Vmax-at-T/2 guarantee silently breaks.
-    """
-    half_time_s = pulse_duration_s / 2.0
-    half_steps = max(1.0, round(half_time_s / dt))
+    def cancel_nav2_goal(self):
+        """Issues an empty goal list cancelation, forcing Nav2 to immediately abort the current trajectory."""
+        self.get_logger().warn("Nav2 abort requested.")
+        if not self.cancel_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().error("Nav2 cancel service unavailable.")
+            return
 
-    # Amplification so the charging curve lands exactly on `target` at T/2
-    amp_v  = 1.0 / (1.0 - math.pow(1.0 - alpha_v,  half_steps))
-    amp_wz = 1.0 / (1.0 - math.pow(1.0 - alpha_wz, half_steps))
+        req = CancelGoal.Request()
+        future = self.cancel_client.call_async(req)
+        future.add_done_callback(self.cancel_response_callback)
 
-    # ── Angle targets — identical to send_pulse (geometry + fixed-diagonal
-    #    crab trick, no unnecessary 180° reorientation on direction flip) ──
-    target_angles_deg = {}
-    for name, config in wheels_config.items():
-        logical_speed_ms = 0.0
-        if abs(target_wz_rad_s) > 0.0:
-            raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
-            r = math.hypot(config['x'], config['y'])
-            logical_speed_ms = r * target_wz_rad_s
-        elif abs(target_vy_ms) > 0.0:
-            raw_angle_deg = 90.0 if name in ['front_right', 'rear_left'] else -90.0
-        else:
-            raw_angle_deg = 0.0
+    def cancel_response_callback(self, future):
+        try:
+            res = future.result()
+            if res.return_code == 0:
+                self.get_logger().info("Nav2 halted successfully.")
+        except Exception as e:
+            self.get_logger().error(f"Abort failed: {e}")
 
-        target_angle_deg, _ = normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms)
-        target_angles_deg[name] = target_angle_deg
+    def joy_callback(self, msg):
+        """Hardware interrupt logic. Extracts data and updates state variables, but does NOT compute kinematics."""
+        joy_x = msg.axes[self.speed_axis]
+        joy_y = msg.axes[self.steer_axis]
+        joy_z = msg.axes[self.rotate_axis]
+        
+        dpad_x = msg.axes[self.dpad_x_axis] if len(msg.axes) > self.dpad_x_axis else 0.0
+        dpad_y = msg.axes[self.dpad_y_axis] if len(msg.axes) > self.dpad_y_axis else 0.0
+        l2_pressed = msg.buttons[self.btn_cancel_nav] if len(msg.buttons) > self.btn_cancel_nav else 0
 
-    zero_speeds_ms = {k: 0.0 for k in wheels_config.keys()}
+        # Mechanical sensor noise rejection
+        if abs(joy_x) < self.deadband: joy_x = 0.0
+        if abs(joy_y) < self.deadband: joy_y = 0.0
+        if abs(joy_z) < self.deadband: joy_z = 0.0
 
-    if state == 'WAITING':
-        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
-        state = 'WAITING_WHEEL_ORIENTATION'
+        # --- L1/R1 LOGIC: TRAJECTORY RECORDING (SUBPROCESS MANAGEMENT) ---
+        btn_l1 = msg.buttons[self.btn_start_record] if len(msg.buttons) > self.btn_start_record else 0
+        btn_r1 = msg.buttons[self.btn_stop_record] if len(msg.buttons) > self.btn_stop_record else 0
 
-    elif state == 'WAITING_WHEEL_ORIENTATION':
-        send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config)
-        if is_steering_aligned(wheels_config, target_angles_deg):
-            state = 'SENDING_PULSE'
-
-    elif state == 'SENDING_PULSE':
-        if elapsed_s <= half_time_s:
-            # Phase 1 — acceleration (same for both modes)
-            filtered_vx_ms    = alpha_v  * (target_vx_ms    * amp_v)  + (1.0 - alpha_v)  * filtered_vx_ms
-            filtered_vy_ms    = alpha_v  * (target_vy_ms    * amp_v)  + (1.0 - alpha_v)  * filtered_vy_ms
-            filtered_wz_rad_s = alpha_wz * (target_wz_rad_s * amp_wz) + (1.0 - alpha_wz) * filtered_wz_rad_s
-
-        elif elapsed_s <= pulse_duration_s:
-            if mode == 1:
-                # Phase 2, mode 1 — RC discharge toward zero
-                filtered_vx_ms    = (1.0 - alpha_v)  * filtered_vx_ms
-                filtered_vy_ms    = (1.0 - alpha_v)  * filtered_vy_ms
-                filtered_wz_rad_s = (1.0 - alpha_wz) * filtered_wz_rad_s
+        # Start Recording
+        if btn_l1 == 1 and self.last_record_btns[0] == 0:
+            if self.recorder_process is None:
+                self.get_logger().info("Starting spatial trajectory recorder...")
+                self.recorder_process = subprocess.Popen(['ros2', 'run', 'bee_mobile', 'spatial_trajectory_recorder'])
             else:
-                # Phase 2, mode 2 — exact mirror of the charging curve
-                current_step = int(round(elapsed_s / dt))
-                total_steps  = int(round(pulse_duration_s / dt))
-                mirror_step  = max(0, total_steps - current_step)
+                self.get_logger().warn("Recorder is already running.")
 
-                decay_v  = 1.0 - math.pow(1.0 - alpha_v,  mirror_step)
-                decay_wz = 1.0 - math.pow(1.0 - alpha_wz, mirror_step)
+        # Stop Recording
+        if btn_r1 == 1 and self.last_record_btns[1] == 0:
+            if self.recorder_process is not None:
+                self.get_logger().info("Gracefully stopping trajectory recorder...")
+                self.recorder_process.send_signal(signal.SIGINT)
+                # .wait() ensures the kernel cleans up the PID, preventing memory leaks (zombie processes)
+                self.recorder_process.wait()
+                self.recorder_process = None
+            else:
+                self.get_logger().warn("No recording to stop.")
 
-                filtered_vx_ms    = target_vx_ms    * amp_v  * decay_v
-                filtered_vy_ms    = target_vy_ms    * amp_v  * decay_v
-                filtered_wz_rad_s = target_wz_rad_s * amp_wz * decay_wz
+        self.last_record_btns = [btn_l1, btn_r1]
 
-            target_speeds_ms = {}
-            for name, config in wheels_config.items():
-                if abs(target_wz_rad_s) > 0.0:
-                    r = math.hypot(config['x'], config['y'])
-                    raw_speed = r * filtered_wz_rad_s
-                    raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
-                    _, ideal_speed = normalize_steering_angle_and_speed(raw_angle_deg, raw_speed)
-                    target_speeds_ms[name] = ideal_speed
-                elif abs(target_vy_ms) > 0.0:
-                    target_speeds_ms[name] = filtered_vy_ms if target_angles_deg[name] > 0.0 else -filtered_vy_ms
-                else:
-                    target_speeds_ms[name] = filtered_vx_ms
+        # --- D-PAD LOGIC: SPEED MODES & MANUAL GPS ---
+        if dpad_y == 1.0 and self.last_dpad_y != 1.0:
+            self.speed_mode = 0
+            self.get_logger().info("Speed Mode 1: Slow")
+        elif dpad_x == -1.0 and self.last_dpad_x != -1.0:
+            self.speed_mode = 1
+            self.get_logger().info("Speed Mode 2: Normal")
+        elif dpad_y == -1.0 and self.last_dpad_y != -1.0:
+            self.speed_mode = 2
+            self.get_logger().info("Speed Mode 3: Fast")
+            
+        if dpad_x == 1.0 and self.last_dpad_x != 1.0:
+            self.save_gps_waypoint()
 
-            send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel_radius_m, wheels_config, apply_stiction=False)
+        self.last_dpad_x = dpad_x
+        self.last_dpad_y = dpad_y
 
-        else:
-            send_hardware_command(wheel_pubs, target_angles_deg, zero_speeds_ms, wheel_radius_m, wheels_config, apply_stiction=False)
-            state = 'WAITING'
+        # --- L2 LOGIC: CANCEL NAV2 ---
+        if l2_pressed == 1 and self.last_l2 == 0:
+            self.cancel_nav2_goal()
+        self.last_l2 = l2_pressed
 
-    return state, filtered_vx_ms, filtered_vy_ms, filtered_wz_rad_s
+        # --- MODE SELECTION ---
+        buttons = msg.buttons
+        if not self.last_buttons:
+            self.last_buttons = [0] * len(buttons)
+
+        max_btn_index = max(self.btn_straight, self.btn_crab, self.btn_zeroturn, self.btn_holonome)
+        if len(buttons) > max_btn_index:
+            if buttons[self.btn_holonome] and not self.last_buttons[self.btn_holonome]:
+                self.current_mode = 0
+                self.get_logger().info("Mode: Holonome")
+            elif buttons[self.btn_straight] and not self.last_buttons[self.btn_straight]:
+                self.current_mode = 1
+                self.get_logger().info("Mode: Straight")
+            elif buttons[self.btn_crab] and not self.last_buttons[self.btn_crab]:
+                self.current_mode = 2
+                self.get_logger().info("Mode: Crab")
+            elif buttons[self.btn_zeroturn] and not self.last_buttons[self.btn_zeroturn]:
+                self.current_mode = 3
+                self.get_logger().info("Mode: Zero Turn")
+
+        self.last_buttons = list(buttons)
+
+        # --- TARGET ASSIGNMENT ---
+        # Update targets instead of calculating direct velocities to allow the control loop to apply the curve
+        self.target_joy_x = joy_x
+        self.target_joy_y = joy_y
+        self.target_joy_z = joy_z
+
+        self.deadman_active = (msg.axes[self.btn_deadman] < 0.0)
+        
+        if self.deadman_active:
+            mode_msg = Int8()
+            mode_msg.data = self.current_mode
+            self.mode_pub.publish(mode_msg)
+
+    def control_loop(self):
+        """
+        Runs asynchronously at 20Hz. Ensures smooth acceleration/deceleration by applying an exponential 
+        moving average even when the joystick hardware topic halts publication.
+        """
+        # Triggers a mathematical deceleration toward zero if the deadman switch is released
+        if not self.deadman_active:
+            self.target_joy_x = 0.0
+            self.target_joy_y = 0.0
+            self.target_joy_z = 0.0
+
+        # Exponential Smoothing (Low-Pass Filter)
+        self.filtered_joy_x = (self.alpha * self.target_joy_x) + ((1.0 - self.alpha) * self.filtered_joy_x)
+        self.filtered_joy_y = (self.alpha * self.target_joy_y) + ((1.0 - self.alpha) * self.filtered_joy_y)
+        self.filtered_joy_z = (self.alpha_wz * self.target_joy_z) + ((1.0 - self.alpha_wz) * self.filtered_joy_z)
+
+        # Truncation limits hardware whining noise from motors receiving micro-voltages near 0
+        if abs(self.filtered_joy_x) < 0.001: self.filtered_joy_x = 0.0
+        if abs(self.filtered_joy_y) < 0.001: self.filtered_joy_y = 0.0
+        if abs(self.filtered_joy_z) < 0.001: self.filtered_joy_z = 0.0
+
+        current_max_lin = self.speed_profiles[self.speed_mode][0]
+        current_max_ang = self.speed_profiles[self.speed_mode][1]
+
+        twist = Twist()
+
+        # Kinematic Mode Enforcement
+        if self.current_mode == 1: # Straight
+            twist.linear.x = self.filtered_joy_x * current_max_lin
+            twist.angular.z = self.filtered_joy_z * current_max_ang
+        elif self.current_mode == 2: # Crab
+            twist.linear.x = self.filtered_joy_x * current_max_lin
+            twist.linear.y = self.filtered_joy_y * current_max_lin
+        elif self.current_mode == 3: # Zero-Turn
+            twist.angular.z = self.filtered_joy_z * current_max_ang
+        else: # Holonomic (Mode 0)
+            twist.linear.x = self.filtered_joy_x * current_max_lin
+            twist.linear.y = self.filtered_joy_y * current_max_lin
+            twist.angular.z = self.filtered_joy_z * current_max_ang
+    
+        self.cmd_vel_pub.publish(twist)
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = MuxJoystick()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        # Failsafe cleanup to prevent lingering background recorders on forceful node shutdown
+        if node.recorder_process is not None:
+            node.recorder_process.send_signal(signal.SIGINT)
+            node.recorder_process.wait()
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()

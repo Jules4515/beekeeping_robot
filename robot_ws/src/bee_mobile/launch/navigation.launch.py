@@ -210,9 +210,3 @@ def generate_launch_description():
         gps_health_monitor,                              # gps_health_monitor
         nav2_bringup,
     ])
-
-# on utilise pour avoir des infos/action dans un terminal :
-# gps_heading_display.py
-# gps_health_monitor.py
-# previsualisation_gps.py
-# pid_tuner.py

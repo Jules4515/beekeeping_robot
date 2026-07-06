@@ -16,8 +16,6 @@ Panels:
         - /LaserScan1/Topic1
         - /Map1
         - /Map1/Topic1
-        - /Camera1
-        - /Camera1/Visibility1
         - /Image1
         - /Image1/Topic1
         - /Map2
@@ -33,8 +31,10 @@ Panels:
         - /Polygon1/Topic1
         - /TF2
         - /TF2/Frames1
+        - /MarkerArray2
+        - /MarkerArray2/Topic1
       Splitter Ratio: 0.48467153310775757
-    Tree Height: 561
+    Tree Height: 755
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -61,11 +61,11 @@ Visualization Manager:
     - Alpha: 0.5
       Cell Size: 1
       Class: rviz_default_plugins/Grid
-      Color: 160; 160; 164
+      Color: 224; 27; 36
       Enabled: true
       Line Style:
         Line Width: 0.029999999329447746
-        Value: Lines
+        Value: Billboards
       Name: Grid
       Normal Cell Count: 0
       Offset:
@@ -134,6 +134,11 @@ Visualization Manager:
           Show Trail: false
           Value: true
         front_right_steering_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gps_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -208,69 +213,9 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        aruco_marker_0:
-          Value: true
-        aruco_marker_1002:
-          Value: true
-        aruco_marker_1008:
-          Value: true
-        aruco_marker_1013:
-          Value: true
-        aruco_marker_1020:
-          Value: true
-        aruco_marker_1023:
-          Value: true
-        aruco_marker_21:
-          Value: true
-        aruco_marker_255:
-          Value: true
-        aruco_marker_27:
-          Value: true
-        aruco_marker_3:
-          Value: true
-        aruco_marker_320:
-          Value: true
-        aruco_marker_336:
-          Value: true
-        aruco_marker_340:
-          Value: true
-        aruco_marker_341:
-          Value: true
-        aruco_marker_351:
-          Value: true
-        aruco_marker_5:
-          Value: true
-        aruco_marker_511:
-          Value: true
-        aruco_marker_512:
-          Value: true
-        aruco_marker_63:
-          Value: true
-        aruco_marker_645:
-          Value: true
-        aruco_marker_672:
-          Value: true
-        aruco_marker_682:
-          Value: true
-        aruco_marker_80:
-          Value: true
-        aruco_marker_831:
-          Value: true
-        aruco_marker_85:
-          Value: true
-        aruco_marker_90:
-          Value: true
-        aruco_marker_91:
-          Value: true
-        aruco_marker_960:
-          Value: true
-        aruco_marker_976:
-          Value: true
         base_footprint:
           Value: false
         base_link:
-          Value: true
-        camera_link:
           Value: true
         camera_link:
           Value: false
@@ -286,9 +231,13 @@ Visualization Manager:
           Value: false
         front_right_steering_link:
           Value: false
+        gps_link:
+          Value: true
         laser_frame:
           Value: false
         map:
+          Value: true
+        map__identity:
           Value: true
         odom:
           Value: true
@@ -323,65 +272,6 @@ Visualization Manager:
             base_footprint:
               base_link:
                 camera_link:
-                  aruco_marker_0:
-                    {}
-                  aruco_marker_1002:
-                    {}
-                  aruco_marker_1008:
-                    {}
-                  aruco_marker_1013:
-                    {}
-                  aruco_marker_1020:
-                    {}
-                  aruco_marker_1023:
-                    {}
-                  aruco_marker_21:
-                    {}
-                  aruco_marker_255:
-                    {}
-                  aruco_marker_27:
-                    {}
-                  aruco_marker_3:
-                    {}
-                  aruco_marker_320:
-                    {}
-                  aruco_marker_336:
-                    {}
-                  aruco_marker_340:
-                    {}
-                  aruco_marker_341:
-                    {}
-                  aruco_marker_351:
-                    {}
-                  aruco_marker_5:
-                    {}
-                  aruco_marker_511:
-                    {}
-                  aruco_marker_512:
-                    {}
-                  aruco_marker_63:
-                    {}
-                  aruco_marker_645:
-                    {}
-                  aruco_marker_672:
-                    {}
-                  aruco_marker_682:
-                    {}
-                  aruco_marker_80:
-                    {}
-                  aruco_marker_831:
-                    {}
-                  aruco_marker_85:
-                    {}
-                  aruco_marker_90:
-                    {}
-                  aruco_marker_91:
-                    {}
-                  aruco_marker_960:
-                    {}
-                  aruco_marker_976:
-                    {}
-                camera_link:
                   {}
                 front_left_steering_link:
                   front_left_link:
@@ -389,6 +279,8 @@ Visualization Manager:
                 front_right_steering_link:
                   front_right_link:
                     {}
+                gps_link:
+                  {}
                 laser_frame:
                   {}
                 rear_left_steering_link:
@@ -407,6 +299,8 @@ Visualization Manager:
                               {}
                             finger_2_link:
                               {}
+        map__identity:
+          {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -466,33 +360,6 @@ Visualization Manager:
         Value: /map_updates
       Use Timestamp: false
       Value: true
-    - Class: rviz_default_plugins/Camera
-      Enabled: false
-      Far Plane Distance: 100
-      Image Rendering: background and overlay
-      Name: Camera
-      Overlay Alpha: 1
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /camera/image_raw
-      Value: false
-      Visibility:
-        Grid: true
-        Image: true
-        LaserScan: true
-        Map: true
-        MarkerArray: true
-        Odometry: true
-        Path: true
-        Polygon: true
-        Pose: true
-        RobotModel: true
-        TF: true
-        Value: true
-      Zoom Factor: 1
     - Class: rviz_default_plugins/Image
       Enabled: false
       Max Value: 1
@@ -505,7 +372,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /camera/image_raw
+        Value: /camera/image_raw/compressed
       Value: false
     - Alpha: 0.699999988079071
       Binary representation: false
@@ -575,7 +442,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: true
+      Enabled: false
       Keep: 1
       Name: Odometry
       Position Tolerance: 0.10000000149011612
@@ -596,7 +463,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /odom
-      Value: true
+      Value: false
     - Alpha: 1
       Axes Length: 1
       Axes Radius: 0.10000000149011612
@@ -700,69 +567,9 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        aruco_marker_0:
-          Value: true
-        aruco_marker_1002:
-          Value: true
-        aruco_marker_1008:
-          Value: true
-        aruco_marker_1013:
-          Value: true
-        aruco_marker_1020:
-          Value: true
-        aruco_marker_1023:
-          Value: true
-        aruco_marker_21:
-          Value: true
-        aruco_marker_255:
-          Value: true
-        aruco_marker_27:
-          Value: true
-        aruco_marker_3:
-          Value: true
-        aruco_marker_320:
-          Value: true
-        aruco_marker_336:
-          Value: true
-        aruco_marker_340:
-          Value: true
-        aruco_marker_341:
-          Value: true
-        aruco_marker_351:
-          Value: true
-        aruco_marker_5:
-          Value: true
-        aruco_marker_511:
-          Value: true
-        aruco_marker_512:
-          Value: true
-        aruco_marker_63:
-          Value: true
-        aruco_marker_645:
-          Value: true
-        aruco_marker_672:
-          Value: true
-        aruco_marker_682:
-          Value: true
-        aruco_marker_80:
-          Value: true
-        aruco_marker_831:
-          Value: true
-        aruco_marker_85:
-          Value: true
-        aruco_marker_90:
-          Value: true
-        aruco_marker_91:
-          Value: true
-        aruco_marker_960:
-          Value: true
-        aruco_marker_976:
-          Value: true
         base_footprint:
           Value: false
         base_link:
-          Value: true
-        camera_link:
           Value: true
         camera_link:
           Value: false
@@ -778,10 +585,14 @@ Visualization Manager:
           Value: false
         front_right_steering_link:
           Value: false
+        gps_link:
+          Value: true
         laser_frame:
           Value: false
         map:
           Value: false
+        map__identity:
+          Value: true
         odom:
           Value: false
         rear_left_link:
@@ -815,65 +626,6 @@ Visualization Manager:
             base_footprint:
               base_link:
                 camera_link:
-                  aruco_marker_0:
-                    {}
-                  aruco_marker_1002:
-                    {}
-                  aruco_marker_1008:
-                    {}
-                  aruco_marker_1013:
-                    {}
-                  aruco_marker_1020:
-                    {}
-                  aruco_marker_1023:
-                    {}
-                  aruco_marker_21:
-                    {}
-                  aruco_marker_255:
-                    {}
-                  aruco_marker_27:
-                    {}
-                  aruco_marker_3:
-                    {}
-                  aruco_marker_320:
-                    {}
-                  aruco_marker_336:
-                    {}
-                  aruco_marker_340:
-                    {}
-                  aruco_marker_341:
-                    {}
-                  aruco_marker_351:
-                    {}
-                  aruco_marker_5:
-                    {}
-                  aruco_marker_511:
-                    {}
-                  aruco_marker_512:
-                    {}
-                  aruco_marker_63:
-                    {}
-                  aruco_marker_645:
-                    {}
-                  aruco_marker_672:
-                    {}
-                  aruco_marker_682:
-                    {}
-                  aruco_marker_80:
-                    {}
-                  aruco_marker_831:
-                    {}
-                  aruco_marker_85:
-                    {}
-                  aruco_marker_90:
-                    {}
-                  aruco_marker_91:
-                    {}
-                  aruco_marker_960:
-                    {}
-                  aruco_marker_976:
-                    {}
-                camera_link:
                   {}
                 front_left_steering_link:
                   front_left_link:
@@ -881,6 +633,8 @@ Visualization Manager:
                 front_right_steering_link:
                   front_right_link:
                     {}
+                gps_link:
+                  {}
                 laser_frame:
                   {}
                 rear_left_steering_link:
@@ -899,7 +653,21 @@ Visualization Manager:
                               {}
                             finger_2_link:
                               {}
+        map__identity:
+          {}
       Update Interval: 0
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        waypoints: true
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep All
+        Reliability Policy: Best Effort
+        Value: /points_visuels
       Value: true
   Enabled: true
   Global Options:
@@ -947,25 +715,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 4.439920425415039
+      Distance: 18.454322814941406
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.02232208102941513
-        Y: -1.0189498662948608
-        Z: -0.08725343644618988
+        X: 3.0611653327941895
+        Y: -4.731517791748047
+        Z: 0.1805313378572464
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5597963333129883
+      Pitch: 0.8697969913482666
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.3825957775115967
+      Yaw: 0.5257738828659058
     Saved:
       - Class: rviz_default_plugins/Orbit
         Distance: 7.1439690589904785
@@ -988,18 +756,16 @@ Visualization Manager:
         Value: Orbit (rviz)
         Yaw: 0.12539514899253845
 Window Geometry:
-  Camera:
-    collapsed: false
   Displays:
     collapsed: false
-  Height: 799
+  Height: 993
   Hide Left Dock: false
   Hide Right Dock: false
   Image:
     collapsed: false
   Navigation 2:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000029c00000275fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000004300000275000000da00fffffffa000000010100000002fb0000000a0049006d00610067006502000001c9000001430000029c000001f1fb000000100044006900730070006c00610079007301000000000000029c0000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000c00430061006d00650072006100000001c9000000ef0000001900fffffffb00000018004e0061007600690067006100740069006f006e002000320000000169000002110000021100ffffff000000010000010f0000029dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f0000029d000000b400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000488000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005a000000040fc0100000002fb0000000800540069006d00650100000000000005a00000029400fffffffb0000000800540069006d00650100000000000004500000000000000000000002fe0000027500000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000029c00000337fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000004300000337000000da00fffffffa000000010100000002fb0000000a0049006d00610067006502000001c9000001430000029c000001f1fb000000100044006900730070006c00610079007301000000000000029c0000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000c00430061006d00650072006100000001c9000000ef0000001900fffffffb00000018004e0061007600690067006100740069006f006e002000320000000169000002110000021100ffffff000000010000010f0000029dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f0000029d000000b400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000488000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000078000000040fc0100000002fb0000000800540069006d00650100000000000007800000029400fffffffb0000000800540069006d00650100000000000004500000000000000000000004de0000033700000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -1008,6 +774,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1440
-  X: 220
-  Y: 68
+  Width: 1920
+  X: 0
+  Y: 0
