@@ -48,19 +48,6 @@ def generate_launch_description():
     # ============================================
     # PHASE 1 : Capteurs de base (démarrage immédiat)
     # ============================================
-    
-    # # GPS Driver
-    # nmea_driver = Node(
-    #     package='nmea_navsat_driver',
-    #     executable='nmea_serial_driver',
-    #     name='nmea_serial_driver',
-    #     output='screen',
-    #     parameters=[{
-    #         'port': '/dev/ttyUSB_GPS',
-    #         'baud': 115200,
-    #         'publish_nmea_sentence': True,
-    #     }]
-    # )
 
     custom_gps_driver = Node(
         package='bee_mobile',
@@ -72,25 +59,6 @@ def generate_launch_description():
             'baud': 115200,
         }]
     )
-    
-    # # Heading Publisher
-    # heading_publisher = Node(
-    #     package='bee_mobile',
-    #     executable='heading_publisher',
-    #     name='heading_publisher',
-    #     output='screen',
-    # )
-
-    # ============================================
-    # VIRTUAL LIDAR - LiDAR fantôme pour le collision monitor
-    # ============================================
-    # virtual_lidar = Node(
-    #     package='bee_mobile',
-    #     executable='virtual_lidar',
-    #     name='virtual_lidar',
-    #     output='screen',
-    #     parameters=[{'publish_rate': 1.0}]
-    # )
 
     # ============================================
     # PHASE 2 : Localisation (après 2 secondes)
@@ -165,17 +133,6 @@ def generate_launch_description():
         ]
     )
 
-    # gps_corrector = Node(
-    #     package='bee_mobile',
-    #     executable='gps_corrector',
-    #     name='gps_corrector',
-    #     parameters=[{
-    #         'offset_x': -0.64,  # Mesurez : distance centre → GPS vers l'AVANT
-    #         'offset_y': 0.0,   # Mesurez : distance centre → GPS vers la GAUCHE
-    #         'offset_z': 0.95,
-    #     }]
-    # )
-
     # Navsat transform qui attend que gps_tf soit prêt
     navsat_transform = TimerAction(
         period=4.0,
@@ -239,8 +196,6 @@ def generate_launch_description():
     return LaunchDescription([
         # Phase 1 : Immédiat
         custom_gps_driver,
-        #heading_publisher,                               # heading_publisher.py
-        #virtual_lidar,                                   # virtual_lidar.py
         
         # Phase 2 : Après délai
         ekf_local,
@@ -249,7 +204,6 @@ def generate_launch_description():
         
         # Phase 3 : GPS Transform
         initialize_origin,                               # pour mapviz
-        # gps_corrector,
         navsat_transform,
         
         # Phase 4 : Services et Navigation

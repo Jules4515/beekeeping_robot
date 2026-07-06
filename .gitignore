@@ -1,9 +1,7 @@
 robot_ws/build
 robot_ws/install
 robot_ws/log
-rplidar_ws/build
-rplidar_ws/install
-rplidar_ws/log
+robot_ws/interp_env
 microros_ws/build
 microros_ws/install
 microros_ws/log
@@ -12,4 +10,3 @@ frames_temp/
 robot_ws/src/bee_mobile/bee_mobile/__pycache__
 robot_ws/src/bee_mobile/temp
 .vscode/
-robot_ws/src/bee_mobile/sakai_base_j/

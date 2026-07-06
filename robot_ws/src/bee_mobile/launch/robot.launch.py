@@ -23,6 +23,9 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
+    # Navigation launch file path
+    navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation.launch.py')
+
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -40,9 +43,18 @@ def generate_launch_description():
         condition=UnlessCondition(is_sim)
     )
 
-    lidar_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'lidar.launch.py')),
-        condition=UnlessCondition(is_sim)
+    unitree_lidar_node = Node(
+        package='unitree_lidar_ros2',
+        executable='unitree_lidar_ros2_node',
+        name='unitree_lidar',
+        parameters=[{
+            'cloud_frame': 'unilidar_lidar',
+            'imu_frame': 'unilidar_imu',
+        }],
+        remappings=[
+            ('/tf', '/tf_unitree_ignored'),
+            ('/tf_static', '/tf_static_unitree_ignored')
+        ]
     )
 
     camera_launch = IncludeLaunchDescription(
@@ -128,11 +140,17 @@ def generate_launch_description():
         parameters=[os.path.join(pkg_share, 'config', 'twist_mux_topics.yaml')]
     )
 
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(navigation_launch_path),
+        # Prevents parent-child namespace collisions by explicitly passing arguments if required
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
+
     return LaunchDescription([
         sim_arg,
         robot_state_publisher_node,
         #micro_ros_node,
-        lidar_launch,
+        unitree_lidar_node,
         #camera_launch,
         aruco_tag_detector_node,
         pid_tuner,
@@ -144,4 +162,5 @@ def generate_launch_description():
         odometry_node,
         twist_mux_node,
         #docking_controller_node,
+        navigation_launch,
     ])

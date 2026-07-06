@@ -245,86 +245,7 @@ controller_server:
         max_angle_to_furthest: 0.25
         mode: 0
 
-# local_costmap:
-#   local_costmap:
-#     ros__parameters:
-#       update_frequency: 10.0
-#       publish_frequency: 2.0
-#       global_frame: odom
-#       robot_base_frame: base_footprint
-#       rolling_window: true
-#       width: 10
-#       height: 10
-#       resolution: 0.1
-#       transform_tolerance: 0.5
-#       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]'
-      
-#       # 1. Mise à jour de la liste des plugins
-#       plugins: ["obstacle_layer", "inflation_layer"]
-      
-#       inflation_layer:
-#         plugin: "nav2_costmap_2d::InflationLayer"
-#         cost_scaling_factor: 4.0
-#         inflation_radius: 1.05
-#       obstacle_layer:
-#         plugin: "nav2_costmap_2d::ObstacleLayer"
-#         enabled: True
-#         observation_sources: scan
-#         scan:
-#           topic: /scan
-#           max_obstacle_height: 2.0
-#           clearing: True   # Autorise le LiDAR à effacer les obstacles qui ont disparu
-#           marking: True    # Autorise le LiDAR à dessiner de nouveaux obstacles
-#           raytrace_max_range: 10.0 # Distance max pour "nettoyer" l'espace libre
-#           obstacle_max_range: 8.0  # Distance max pour imprimer un obstacle
-          
-#           # --- LE FILTRE D'AUTO-COLLISION ---
-#           # Ignore tout point laser rebondissant sur la structure physique du robot.
-#           # Calculé selon ton footprint massif (rayon de ~1.05m)
-#           obstacle_min_range: 1.05
-
-# global_costmap:
-#   global_costmap:
-#     ros__parameters:
-#       update_frequency: 1.0
-#       publish_frequency: 1.0
-#       global_frame: map
-#       robot_base_frame: base_footprint
-#       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]' 
-#       track_unknown_space: false
-#       transform_tolerance: 0.5
-#       rolling_window: true
-#       width: 40
-#       height: 40
-#       resolution: 0.2
-#       #plugins: ["static_layer", "obstacle_layer", "inflation_layer"] 
-#       #plugins: ["inflation_layer"] #nav GPS
-#       plugins: ["obstacle_layer", "inflation_layer"] # Réactivation de la couche obstacle
-#       static_layer:
-#         plugin: "nav2_costmap_2d::StaticLayer"
-#         map_subscribe_transient_local: True
-#         enabled: True  
-#       obstacle_layer:
-#         plugin: "nav2_costmap_2d::ObstacleLayer"
-#         enabled: True
-#         observation_sources: scan
-#         scan:
-#           topic: /scan
-#           max_obstacle_height: 2.0
-#           clearing: True   # Autorise le LiDAR à effacer les obstacles qui ont disparu
-#           marking: True    # Autorise le LiDAR à dessiner de nouveaux obstacles
-#           raytrace_max_range: 10.0 # Distance max pour "nettoyer" l'espace libre
-#           obstacle_max_range: 8.0  # Distance max pour imprimer un obstacle
-          
-#           # --- LE FILTRE D'AUTO-COLLISION ---
-#           # Ignore tout point laser rebondissant sur la structure physique du robot.
-#           # Calculé selon ton footprint massif (rayon de ~1.05m)
-#           obstacle_min_range: 1.05
-#       inflation_layer:
-#         plugin: "nav2_costmap_2d::InflationLayer"
-#         cost_scaling_factor: 1.0
-#         inflation_radius: 1.0
-
+# LIDAR ACTIVÉ
 local_costmap:
   local_costmap:
     ros__parameters:
@@ -336,16 +257,32 @@ local_costmap:
       width: 10
       height: 10
       resolution: 0.1
-      transform_tolerance: 1.0
+      transform_tolerance: 0.5
       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]'
       
-      track_unknown_space: false
-      plugins: ["inflation_layer"]
+      # 1. Mise à jour de la liste des plugins
+      plugins: ["obstacle_layer", "inflation_layer"]
       
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 4.0
         inflation_radius: 1.05
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True   # Autorise le LiDAR à effacer les obstacles qui ont disparu
+          marking: True    # Autorise le LiDAR à dessiner de nouveaux obstacles
+          raytrace_max_range: 10.0 # Distance max pour "nettoyer" l'espace libre
+          obstacle_max_range: 8.0  # Distance max pour imprimer un obstacle
+          
+          # --- LE FILTRE D'AUTO-COLLISION ---
+          # Ignore tout point laser rebondissant sur la structure physique du robot.
+          # Calculé selon ton footprint massif (rayon de ~1.05m)
+          obstacle_min_range: 1.05
 
 global_costmap:
   global_costmap:
@@ -361,13 +298,78 @@ global_costmap:
       width: 40
       height: 40
       resolution: 0.2
-      
-      plugins: ["inflation_layer"] 
-      
+      #plugins: ["static_layer", "obstacle_layer", "inflation_layer"] 
+      #plugins: ["inflation_layer"] #nav GPS
+      plugins: ["obstacle_layer", "inflation_layer"] # Réactivation de la couche obstacle
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+        enabled: True  
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True   # Autorise le LiDAR à effacer les obstacles qui ont disparu
+          marking: True    # Autorise le LiDAR à dessiner de nouveaux obstacles
+          raytrace_max_range: 10.0 # Distance max pour "nettoyer" l'espace libre
+          obstacle_max_range: 8.0  # Distance max pour imprimer un obstacle
+          
+          # --- LE FILTRE D'AUTO-COLLISION ---
+          # Ignore tout point laser rebondissant sur la structure physique du robot.
+          # Calculé selon ton footprint massif (rayon de ~1.05m)
+          obstacle_min_range: 1.05
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 1.0
         inflation_radius: 1.0
+
+# LIDAR DÉSACTIVÉ
+# local_costmap:
+#   local_costmap:
+#     ros__parameters:
+#       update_frequency: 10.0
+#       publish_frequency: 2.0
+#       global_frame: odom
+#       robot_base_frame: base_footprint
+#       rolling_window: true
+#       width: 10
+#       height: 10
+#       resolution: 0.1
+#       transform_tolerance: 1.0
+#       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]'
+      
+#       track_unknown_space: false
+#       plugins: ["inflation_layer"]
+      
+#       inflation_layer:
+#         plugin: "nav2_costmap_2d::InflationLayer"
+#         cost_scaling_factor: 4.0
+#         inflation_radius: 1.05
+
+# global_costmap:
+#   global_costmap:
+#     ros__parameters:
+#       update_frequency: 1.0
+#       publish_frequency: 1.0
+#       global_frame: map
+#       robot_base_frame: base_footprint
+#       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]' 
+#       track_unknown_space: false
+#       transform_tolerance: 0.5
+#       rolling_window: true
+#       width: 40
+#       height: 40
+#       resolution: 0.2
+      
+#       plugins: ["inflation_layer"] 
+      
+#       inflation_layer:
+#         plugin: "nav2_costmap_2d::InflationLayer"
+#         cost_scaling_factor: 1.0
+#         inflation_radius: 1.0
 
 map_saver:
   ros__parameters:

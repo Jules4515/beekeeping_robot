@@ -51,7 +51,6 @@ setup(
 
             # GPS
             'custom_gps_driver = bee_mobile.custom_gps_driver:main',
-            'virtual_lidar = bee_mobile.virtual_lidar:main',
             'robot_footprint_publisher = bee_mobile.robot_footprint_publisher:main',
             'gps_health_monitor = bee_mobile.gps_health_monitor:main',
             'environment_monitor = bee_mobile.environment_monitor:main',
