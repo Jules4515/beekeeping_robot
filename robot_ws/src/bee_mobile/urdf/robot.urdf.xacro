@@ -372,7 +372,7 @@
         <parent link="base_link" />
         <child link="unilidar_lidar" />
         <!-- Tes coordonnées de montage physique -->
-        <origin xyz="0.6889 0 0.09" rpy="0 0 0.45" />
+        <origin xyz="0.6889 0 0.09" rpy="1.5708 1.1208 1.5708" />
     </joint>
 
     <!-- 3. Déclaration du repère de l'IMU interne -->
@@ -383,7 +383,7 @@
     <joint name="lidar_to_imu_joint" type="fixed">
         <parent link="unilidar_lidar" />
         <child link="unilidar_imu" />
-        <origin xyz="-0.007698 -0.014655 0.00667" rpy="0 0 0" />
+        <origin xyz="-0.007698 -0.014655 0.00667" rpy="0.0 0.0 0.0" />
     </joint>
 
 

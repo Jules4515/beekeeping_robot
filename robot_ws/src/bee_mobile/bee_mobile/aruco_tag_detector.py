@@ -199,7 +199,7 @@ def main(args=None):
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         # Capture silencieuse du Ctrl+C et de l'arrêt externe
-        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         # Bloc exécuté dans 100% des cas, même en cas de crash interne
         node.destroy_node()

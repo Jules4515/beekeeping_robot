@@ -35,12 +35,12 @@ setup(
             'pid_tuner = bee_mobile.pid_tuner:main',
             'odometry = bee_mobile.odometry:main',
             'wheel_state_converter = bee_mobile.wheel_state_converter:main',
-            'sim_bridge = bee_mobile.sim_bridge:main',
             'mux_joystick = bee_mobile.mux_joystick:main',
-            'waypoint_commander = bee_mobile.waypoint_commander:main',
+            'unitree_imu_hotfix = bee_mobile.unitree_imu_hotfix:main',
             
             # Nav2
             'swerve_kinematics = bee_mobile.swerve_kinematics:main',
+            'new_swerve_kinematics = bee_mobile.new_swerve_kinematics:main',
             'goal_manager = bee_mobile.goal_manager:main',
 
             # Docking

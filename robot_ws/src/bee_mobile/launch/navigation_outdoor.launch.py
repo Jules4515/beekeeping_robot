@@ -1,34 +1,3 @@
-# import os
-# from ament_index_python.packages import get_package_share_directory
-# from launch import LaunchDescription
-# from launch.actions import IncludeLaunchDescription
-# from launch.launch_description_sources import PythonLaunchDescriptionSource
-
-# def generate_launch_description():
-#     pkg_share = get_package_share_directory('bee_mobile')
-#     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
-
-#     # Chemins fixes vers tes fichiers de configuration réels
-#     nav2_params = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
-#     map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
-#     sim_map_path = os.path.join(pkg_share, 'maps', 'tb3_sandbox_upscale.yaml')
-
-#     # Lancement Nav2 en mode Autonomie Réelle
-#     nav2_bringup = IncludeLaunchDescription(
-#         PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
-#         launch_arguments={
-#             'map': map_path, # MONDE RÉEL
-#             #'map': sim_map_path, # SIMULATION
-#             'params_file': nav2_params,
-#             'use_sim_time': 'False', # Crucial pour le matériel réel
-#             'slam': 'False',         # On utilise la map existante pour localiser
-#         }.items()
-#     )
-
-#     return LaunchDescription([
-#         nav2_bringup
-#     ])
-
 import os
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, TimerAction, RegisterEventHandler
@@ -41,7 +10,7 @@ def generate_launch_description():
     bee_mobile_dir = get_package_share_directory('bee_mobile')
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
     
-    nav2_params = os.path.join(bee_mobile_dir, 'config', 'nav2_params.yaml')
+    nav2_params = os.path.join(bee_mobile_dir, 'config', 'nav2_params_outdoor.yaml')
     map_file = os.path.join(bee_mobile_dir, 'maps', 'blank_small_map.yaml')
     ekf_config = os.path.join(bee_mobile_dir, 'config', 'ekf.yaml')
     

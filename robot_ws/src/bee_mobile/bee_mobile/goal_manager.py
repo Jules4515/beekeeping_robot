@@ -99,7 +99,7 @@ def main(args=None):
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         node.force_stop_motors()
-        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
         if rclpy.ok():

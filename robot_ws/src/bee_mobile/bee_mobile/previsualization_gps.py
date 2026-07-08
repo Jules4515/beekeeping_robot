@@ -260,7 +260,7 @@ def main(args=None):
     try:
         node.execute_mission()
     except (KeyboardInterrupt, ExternalShutdownException):
-        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user. Canceling current goal...")
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user. Canceling current goal...")
         
         # 1. Appel natif du cancel via l'ActionClient du Navigator
         # Si tu utilises le BasicNavigator standard de Nav2, il possède un attribut 'nav_to_pose_client'

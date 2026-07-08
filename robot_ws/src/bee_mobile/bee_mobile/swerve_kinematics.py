@@ -164,7 +164,6 @@ class SwerveKinematics(Node):
             # Application finale à la consigne de vitesse LOGIQUE
             logical_target_speed = ideal_speed * speed_multiplier
             
-            V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
             V_MAX_PHYSICAL = 0.70  # Ta vitesse maximale
             
             logical_target_speed = max(min(logical_target_speed, V_MAX_PHYSICAL), -V_MAX_PHYSICAL)
@@ -239,7 +238,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
-        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
         if rclpy.ok():

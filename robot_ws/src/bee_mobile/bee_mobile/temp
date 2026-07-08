@@ -226,8 +226,8 @@ class MuxJoystick(Node):
         # Start Recording
         if btn_l1 == 1 and self.last_record_btns[0] == 0:
             if self.recorder_process is None:
-                self.get_logger().info("Starting spatial trajectory recorder...")
-                self.recorder_process = subprocess.Popen(['ros2', 'run', 'bee_mobile', 'spatial_trajectory_recorder'])
+                self.get_logger().info("Starting trajectory recorder...")
+                self.recorder_process = subprocess.Popen(['ros2', 'run', 'bee_mobile', 'trajectory_recorder'])
             else:
                 self.get_logger().warn("Recorder is already running.")
 

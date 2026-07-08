@@ -55,7 +55,6 @@ class TrajectoryRecorder(Node):
         
         self.get_logger().info("=== SPATIAL TRAJECTORY RECORDER INITIALIZED ===")
         self.get_logger().info(f"Paramètres : Delta D = {self.delta_d}m | Delta Theta = {self.delta_theta}°")
-        self.get_logger().info(f"Cible      : {self.yaml_path}")
 
     def fix_callback(self, msg):
         with self.gps_lock:
@@ -67,11 +66,20 @@ class TrajectoryRecorder(Node):
 
     @staticmethod
     def euler_from_quaternion(q):
-        """Converts quaternion to euler angles (ZYX order) to extract physical yaw."""
+        """Converts quaternion to euler angles (ZYX order) in degrees."""
+        sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
+        cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y)
+        roll = math.atan2(sinr_cosp, cosr_cosp)
+
+        sinp = math.sqrt(1 + 2 * (q.w * q.y - q.x * q.z))
+        cosp = math.sqrt(1 - 2 * (q.w * q.y - q.x * q.z))
+        pitch = 2 * math.atan2(sinp, cosp) - math.pi / 2
+
         siny_cosp = 2 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
         yaw = math.atan2(siny_cosp, cosy_cosp)
-        return math.degrees(yaw)
+
+        return math.degrees(roll), math.degrees(pitch), math.degrees(yaw)
 
     @staticmethod
     def calculate_haversine_distance(lat1, lon1, lat2, lon2):
@@ -147,8 +155,10 @@ def main(args=None):
     node = TrajectoryRecorder()
     try:
         rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        node.get_logger().info("\nArrêt de l'enregistrement. Trajectoire finale sauvegardée.")
+    except KeyboardInterrupt:
+        # Utilisation stricte de print() pour éviter le crash du contexte /rosout
+        print(f"[INFO] [trajectory_recorder]: Trajectory saved to {node.yaml_path}")
+        print("[INFO] [trajectory_recorder]: Stopping")
     finally:
         node.destroy_node()
         if rclpy.ok():

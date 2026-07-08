@@ -5,6 +5,8 @@ from rclpy.executors import ExternalShutdownException
 import math
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64MultiArray
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
 
 class OdometryNode(Node):
     def __init__(self):
@@ -23,6 +25,12 @@ class OdometryNode(Node):
         self.odom_y = 0.0
         self.odom_theta = 0.0
         self.last_time = self.get_clock().now()
+
+        # Paramètre pour activer/désactiver la TF
+        self.declare_parameter('publish_odom_tf', False)
+        self.publish_odom_tf = self.get_parameter('publish_odom_tf').value
+        
+        self.tf_broadcaster = TransformBroadcaster(self)
 
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
         # SUPPRESSION DU TF BROADCASTER (C'est l'EKF qui gère ça maintenant)
@@ -127,13 +135,33 @@ class OdometryNode(Node):
         
         self.odom_pub.publish(odom)
 
+        # ==========================================================
+        # PUBLICATION TF (Optionnelle)
+        # ==========================================================
+        if self.publish_odom_tf:
+            t = TransformStamped()
+            t.header.stamp = current_time.to_msg()
+            t.header.frame_id = 'odom'
+            t.child_frame_id = 'base_footprint'
+            
+            t.transform.translation.x = self.odom_x
+            t.transform.translation.y = self.odom_y
+            t.transform.translation.z = 0.0
+            
+            t.transform.rotation.x = 0.0
+            t.transform.rotation.y = 0.0
+            t.transform.rotation.z = sy
+            t.transform.rotation.w = cy
+            
+            self.tf_broadcaster.sendTransform(t)
+
 def main(args=None):
     rclpy.init(args=args)
     node = OdometryNode()
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
-        print(f"\n[INFO] [{node.get_name()}]: Shutdown requested by user.")
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
         if rclpy.ok():

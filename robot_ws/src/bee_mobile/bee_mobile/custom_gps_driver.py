@@ -252,7 +252,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
-        print("\n[INFO] Arrêt du noeud GPS demandé.")
+        print("[INFO] Arrêt du noeud GPS demandé.")
     finally:
         node.destroy_node()
         if rclpy.ok():

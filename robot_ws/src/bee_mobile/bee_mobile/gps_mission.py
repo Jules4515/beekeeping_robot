@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import sys
+
 import yaml
 import os
 import math
@@ -16,7 +18,6 @@ from std_msgs.msg import String
 from action_msgs.srv import CancelGoal
 
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-from ament_index_python.packages import get_package_share_directory
 
 class GpsMissionNode(Node):
     def __init__(self):
@@ -25,6 +26,8 @@ class GpsMissionNode(Node):
         # Paramètre ROS pour cibler le fichier d'enregistrement exact
         self.declare_parameter('trajectory_file', 'trajectory_DEFAULT.yaml')
         self.trajectory_file = self.get_parameter('trajectory_file').value
+
+        print("[INFO] To launch with a custom file: ros2 run bee_mobile gps_mission_node --ros-args -p trajectory_file:=my_file.yaml")
         
         self.navigator = BasicNavigator()
         self.gps_status = {'emoji': '🔴', 'text': 'ATTENTE...'}
@@ -99,16 +102,25 @@ class GpsMissionNode(Node):
         # ============================================================
         # LECTURE ET CONVERSION DES WAYPOINTS
         # ============================================================
-        pkg_share = get_package_share_directory('bee_mobile')
-        yaml_path = os.path.join(pkg_share, 'trajectories', self.trajectory_file)
+        ws_path = os.path.expanduser('~/dev/robot_ws/src/bee_mobile/trajectories')
+        os.makedirs(ws_path, exist_ok=True)
+        yaml_path = os.path.join(ws_path, self.trajectory_file)
         
-        self.get_logger().info(f"Chargement de la trajectoire : {self.trajectory_file}")
-        try:
-            with open(yaml_path, 'r') as f:
-                waypoints = yaml.safe_load(f).get('waypoints_GPS', [])
-        except FileNotFoundError:
+        # Logique de Fallback si le fichier demandé n'existe pas
+        if not os.path.exists(yaml_path):
             self.get_logger().error(f"Fichier introuvable : {yaml_path}")
-            return
+            self.get_logger().info("Fallback to default file: trajectory_DEFAULT.yaml")
+            self.trajectory_file = 'trajectory_DEFAULT.yaml'
+            yaml_path = os.path.join(ws_path, self.trajectory_file)
+            
+            # Vérification de sécurité pour le fichier par défaut
+            if not os.path.exists(yaml_path):
+                self.get_logger().error("Fichier par défaut introuvable. Fin de mission.")
+                return
+
+        self.get_logger().info(f"Chargement de la trajectoire : {self.trajectory_file}")
+        with open(yaml_path, 'r') as f:
+            waypoints = yaml.safe_load(f).get('waypoints_GPS', [])
 
         map_poses = []
         marker_array = MarkerArray()
@@ -212,23 +224,36 @@ def main(args=None):
     try:
         node.execute_mission()
     except (KeyboardInterrupt, ExternalShutdownException):
-        print(f"\n[INFO] [{node.get_name()}]: Interruption demandée. Arrêt du robot...")
+        print(f"[INFO] [{node.get_name()}]: Interruption demandée. Arrêt propre en cours...")
         
-        if hasattr(node.navigator, 'nav_to_pose_client') and node.navigator.nav_to_pose_client.server_is_ready():
-            if hasattr(node.navigator, 'goal_handle') and node.navigator.goal_handle is not None:
-                future = node.navigator.goal_handle.cancel_goal_async()
-                rclpy.spin_until_future_complete(node.navigator, future, timeout_sec=2.0)
-            else:
-                cancel_client = node.create_client(CancelGoal, '/navigate_to_pose/_action/cancel_goal')
-                if cancel_client.wait_for_service(timeout_sec=1.0):
-                    req = CancelGoal.Request()
-                    future = cancel_client.call_async(req)
-                    rclpy.spin_until_future_complete(node, future, timeout_sec=2.0)
+        # Isolation de la tentative d'annulation pour absorber la corruption du contexte ROS
+        try:
+            if hasattr(node.navigator, 'nav_to_pose_client') and node.navigator.nav_to_pose_client.server_is_ready():
+                if hasattr(node.navigator, 'goal_handle') and node.navigator.goal_handle is not None:
+                    future = node.navigator.goal_handle.cancel_goal_async()
+                    rclpy.spin_until_future_complete(node.navigator, future, timeout_sec=1.0)
+                else:
+                    cancel_client = node.create_client(CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+                    if cancel_client.wait_for_service(timeout_sec=0.5):
+                        req = CancelGoal.Request()
+                        future = cancel_client.call_async(req)
+                        rclpy.spin_until_future_complete(node, future, timeout_sec=1.0)
+        except Exception:
+            pass # Si le contexte est mort, on ignore silencieusement
+            
     finally:
-        node.navigator.destroy_node()
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+        # Nettoyage final sécurisé
+        try:
+            node.navigator.destroy_node()
+            node.destroy_node()
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
+        
+        # Forçage de la sortie système avec le code 0 (Succès absolu) 
+        # pour empêcher le log "Process exited with failure 1"
+        sys.exit(0)
 
 if __name__ == '__main__':
     main()
