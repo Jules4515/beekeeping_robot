@@ -16,8 +16,8 @@ def generate_launch_description():
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
     # Navigation launch file path
-    #navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')
-    navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')
+    navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')
+    #navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')
 
     # Caméra
     camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
@@ -50,6 +50,31 @@ def generate_launch_description():
             ('/tf', '/tf_unitree_ignored'),
             ('/tf_static', '/tf_static_unitree_ignored')
         ]
+    )
+
+    pointcloud_to_scan_node = Node(
+        package='pointcloud_to_laserscan',
+        executable='pointcloud_to_laserscan_node',
+        name='pointcloud_to_laserscan',
+        output='screen',
+        remappings=[
+            ('cloud_in', '/unilidar/cloud'),
+            ('scan', '/scan')
+        ],
+        parameters=[{
+            'target_frame': 'base_link',
+            'transform_tolerance': 0.05,
+            'min_height': 0.15,
+            'max_height': 0.80,
+            'angle_min': -3.14159,
+            'angle_max': 3.14159,
+            'angle_increment': 0.0087,
+            'scan_time': 0.05,
+            'range_min': 0.30,
+            'range_max': 15.0,
+            'use_inf': True,
+            'inf_epsilon': 1.0,
+        }]
     )
 
     camera_node = Node(
@@ -152,6 +177,7 @@ def generate_launch_description():
         robot_state_publisher_node,
         #micro_ros_node,
         unitree_lidar_node,
+        pointcloud_to_scan_node,
         #camera_node,
         aruco_tag_detector_node,
         pid_tuner,

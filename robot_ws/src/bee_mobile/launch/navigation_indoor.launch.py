@@ -30,32 +30,7 @@ def generate_launch_description():
             )
         ]
     )
-
-    pointcloud_to_scan_node = Node(
-        package='pointcloud_to_laserscan',
-        executable='pointcloud_to_laserscan_node',
-        name='pointcloud_to_laserscan',
-        output='screen',
-        remappings=[
-            ('cloud_in', '/unilidar/cloud'),
-            ('scan', '/scan')
-        ],
-        parameters=[{
-            'target_frame': 'base_link',
-            'transform_tolerance': 0.05,
-            'min_height': 0.15,
-            'max_height': 0.80,
-            'angle_min': -3.14159,
-            'angle_max': 3.14159,
-            'angle_increment': 0.0087,
-            'scan_time': 0.05,
-            'range_min': 0.30,
-            'range_max': 15.0,
-            'use_inf': True,
-            'inf_epsilon': 1.0,
-        }]
-    )
-
+    
     # Déclaration du noeud EKF Local
     ekf_node = Node(
         package='robot_localization',
@@ -67,6 +42,5 @@ def generate_launch_description():
 
     return LaunchDescription([
         nav2_bringup,
-        pointcloud_to_scan_node,
         ekf_node,
     ])

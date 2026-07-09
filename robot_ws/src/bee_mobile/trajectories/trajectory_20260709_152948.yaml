@@ -1,0 +1,10 @@
+waypoints_GPS:
+
+- name      : WP_1
+  latitude  : 36.3058846
+  longitude : 120.4968643
+  altitude  : 61.96
+  roll      : -0.00
+  pitch     : 0.32
+  yaw       : -41.03
+

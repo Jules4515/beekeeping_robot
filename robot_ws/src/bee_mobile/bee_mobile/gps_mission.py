@@ -11,7 +11,7 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 from rclpy.executors import ExternalShutdownException
 from tf2_ros import Buffer, TransformListener
 
-from geometry_msgs.msg import PoseStamped, Quaternion
+from geometry_msgs.msg import PoseStamped, Quaternion, Twist
 from visualization_msgs.msg import Marker, MarkerArray
 from robot_localization.srv import FromLL
 from std_msgs.msg import String
@@ -24,7 +24,7 @@ class GpsMissionNode(Node):
         super().__init__('gps_mission_node')
         
         # Paramètre ROS pour cibler le fichier d'enregistrement exact
-        self.declare_parameter('trajectory_file', 'trajectory_DEFAULT.yaml')
+        self.declare_parameter('trajectory_file', 'trajectory_20260709_113555.yaml')
         self.trajectory_file = self.get_parameter('trajectory_file').value
 
         print("[INFO] To launch with a custom file: ros2 run bee_mobile gps_mission_node --ros-args -p trajectory_file:=my_file.yaml")
@@ -43,6 +43,8 @@ class GpsMissionNode(Node):
         
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel_nav', 10)
 
     def gps_status_callback(self, msg):
         data = msg.data
@@ -178,44 +180,133 @@ class GpsMissionNode(Node):
         self.marker_pub.publish(marker_array)
         time.sleep(0.5)
 
+        # # ============================================================
+        # # EXÉCUTION TRONÇON PAR TRONÇON
+        # # ============================================================
+        # print("\n" + "="*50)
+        # print("DÉMARRAGE DE LA MISSION")
+        # self.print_gps_banner()
+        # print("="*50)
+        # input(f"\n> {len(map_poses)} points chargés. ENTRÉE pour lancer le robot... (Ctrl+C pour annuler)")
+
+        # for i in range(len(map_poses)):
+        #     target_pose = map_poses[i]
+        #     wp_name = waypoints[i]['name']
+
+        #     print(f"\n---> Cible : [{wp_name}] | GPS: {self.gps_status['emoji']} {self.gps_status['text']}")
+            
+        #     if 'RTK_FIXED' not in self.gps_status['text'] and 'DGPS' not in self.gps_status['text'] and i > 0:
+        #         print(f"     ⚠️  Alerte de dégradation GPS : {self.gps_status['text']}")
+
+        #     self.navigator.goToPose(target_pose)
+
+        #     # Boucle d'attente silencieuse (sans spam d'estimation de distance)
+        #     while not self.navigator.isTaskComplete():
+        #         rclpy.spin_once(self, timeout_sec=0.1)
+
+        #     # Analyse du résultat
+        #     result = self.navigator.getResult()
+        #     if result == TaskResult.SUCCEEDED:
+        #         print(f"  [SUCCÈS] {wp_name} atteint. Attitude respectée.")
+        #     elif result == TaskResult.CANCELED:
+        #         print(f"  [ANNULÉ] Ordre d'arrêt reçu.")
+        #         break
+        #     elif result == TaskResult.FAILED:
+        #         print(f"  [ÉCHEC] Cible inatteignable (Obstacle / Échec du planificateur).")
+
         # ============================================================
-        # EXÉCUTION TRONÇON PAR TRONÇON
+        # EXÉCUTION EN MODE PRÉEMPTION (FLY-BY)
         # ============================================================
         print("\n" + "="*50)
-        print("DÉMARRAGE DE LA MISSION")
+        print("DÉMARRAGE DE LA MISSION (MODE FLY-BY)")
         self.print_gps_banner()
         print("="*50)
         input(f"\n> {len(map_poses)} points chargés. ENTRÉE pour lancer le robot... (Ctrl+C pour annuler)")
 
+        # Rayon de validation à la volée (en mètres)
+        # Plus c'est grand, plus le robot passera au point suivant tôt.
+        FLY_BY_RADIUS = 0.5
+
+        # Ce qui marche le mieux
+
+        # for i in range(len(map_poses)):
+        #     target_pose = map_poses[i]
+        #     wp_name = waypoints[i]['name']
+        #     is_last_point = (i == len(map_poses) - 1)
+
+        #     print(f"\n---> En route vers : [{wp_name}]")
+        #     self.navigator.goToPose(target_pose)
+
+        #     while not self.navigator.isTaskComplete():
+        #         feedback = self.navigator.getFeedback()
+                
+        #         # Vérification de la distance restante en temps réel
+        #         if feedback and hasattr(feedback, 'distance_remaining'):
+        #             if not is_last_point and feedback.distance_remaining < FLY_BY_RADIUS:
+        #                 print(f"  [FLY-BY] Zone d'approche de {FLY_BY_RADIUS}m atteinte. Envoi du point suivant !")
+        #                 break # Casse le "while", empêche le freinage et lance l'itération suivante de la boucle "for"
+
+        #         # Fréquence de vérification très rapide (20Hz) pour ne pas rater le point
+        #         rclpy.spin_once(self, timeout_sec=0.05)
+
+        #     # Gestion de la fin de trajectoire ou des échecs
+        #     if is_last_point:
+        #         result = self.navigator.getResult()
+        #         if result == TaskResult.SUCCEEDED:
+        #             print(f"  [SUCCÈS] Destination finale {wp_name} atteinte.")
+        #         elif result == TaskResult.FAILED:
+        #             print(f"  [ÉCHEC] Destination finale inatteignable.")
+
+        # À tester
+
         for i in range(len(map_poses)):
             target_pose = map_poses[i]
             wp_name = waypoints[i]['name']
+            is_last_point = (i == len(map_poses) - 1)
 
-            print(f"\n---> Cible : [{wp_name}] | GPS: {self.gps_status['emoji']} {self.gps_status['text']}")
-            
-            if 'RTK_FIXED' not in self.gps_status['text'] and 'DGPS' not in self.gps_status['text'] and i > 0:
-                print(f"     ⚠️  Alerte de dégradation GPS : {self.gps_status['text']}")
-
+            print(f"\n---> En route vers : [{wp_name}]")
             self.navigator.goToPose(target_pose)
 
-            # Boucle d'attente silencieuse (sans spam d'estimation de distance)
-            while not self.navigator.isTaskComplete():
-                rclpy.spin_once(self, timeout_sec=0.1)
+            # =========================================================
+            # MITIGATION DE LA CONDITION DE COURSE (Le délai aveugle)
+            # =========================================================
+            # On ignore volontairement le feedback pendant 1.0 seconde. Cela donne le temps à Nav2 d'écraser l'ancien feedback 
+            # (< 0.5m) par la distance du nouveau point (ex: 5.0m).
+            if not is_last_point and i > 0:
+                blind_timeout = time.time() + 1.0
+                while time.time() < blind_timeout:
+                    rclpy.spin_once(self, timeout_sec=0.05)
 
-            # Analyse du résultat
-            result = self.navigator.getResult()
-            if result == TaskResult.SUCCEEDED:
-                print(f"  [SUCCÈS] {wp_name} atteint. Attitude respectée.")
-            elif result == TaskResult.CANCELED:
-                print(f"  [ANNULÉ] Ordre d'arrêt reçu.")
-                break
-            elif result == TaskResult.FAILED:
-                print(f"  [ÉCHEC] Cible inatteignable (Obstacle / Échec du planificateur).")
+            # =========================================================
+            # BOUCLE DE VÉRIFICATION STANDARD
+            # =========================================================
+            while not self.navigator.isTaskComplete():
+                feedback = self.navigator.getFeedback()
+                
+                if feedback and hasattr(feedback, 'distance_remaining'):
+                    # La distance lue ici est garantie d'être celle du nouveau point
+                    if not is_last_point and feedback.distance_remaining < FLY_BY_RADIUS:
+                        print(f"  [FLY-BY] Zone de {FLY_BY_RADIUS}m atteinte. Skip !")
+                        break
+
+                rclpy.spin_once(self, timeout_sec=0.05)
+
+            # Gestion de la fin de mission
+            if is_last_point:
+                result = self.navigator.getResult()
+                if result == TaskResult.SUCCEEDED:
+                    print(f"  [SUCCÈS] Destination finale atteinte.")
 
         print("\n" + "="*50)
         print("FIN DE MISSION !")
         self.print_gps_banner()
         print("="*50)
+        
+        # Failsafe : Inonder le contrôleur de commandes nulles pour garantir l'arrêt physique
+        stop_msg = Twist()
+        for _ in range(3):
+            self.cmd_vel_pub.publish(stop_msg)
+            time.sleep(0.1)
 
 def main(args=None):
     rclpy.init(args=args)

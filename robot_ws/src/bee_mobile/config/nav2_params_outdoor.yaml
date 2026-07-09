@@ -138,11 +138,25 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.50     # Rayon de validation de 50 cm (adapté à l'extérieur)
-      yaw_goal_tolerance: 3.14159 # Tolérance de Pi radians (180°). Le robot valide le point peu importe où il regarde.
+      yaw_goal_tolerance: 0.52 #pi/6
       #stateful_timeout: 10.0
 
     FollowPath:
+      # # 1. On remplace le plugin MPPI direct par le Shim Controller
+      # plugin: "nav2_rotation_shim_controller::RotationShimController"
+      
+      # # 2. On déclare le MPPI comme sous-contrôleur
+      # primary_controller: "nav2_mppi_controller::MPPIController"
+      
+      # # --- Paramètres du Shim Controller (Alignement) ---
+      # angular_dist_threshold: 0.523  # Tolérance d'alignement en radians (ici ~30 degrés). En dessous, le MPPI démarre direct.
+      # forward_sampling_distance: 0.5 # À quelle distance (en mètres) sur le chemin le plugin calcule-t-il la tangente cible ?
+      # rotate_to_heading_angular_vel: 0.5 # Vitesse angulaire (wz) envoyée à ton mode PIVOT pendant l'alignement
+      # max_angular_accel: 1.0         # Accélération angulaire de l'alignement
+      # simulate_ahead_time: 1.0       # Temps de simulation pour la prédiction de collision pendant la rotation
+
       plugin: "nav2_mppi_controller::MPPIController"
+      # --- Paramètres du MPPI ---
       time_steps: 40  # Nombre de pas de temps simulés dans le futur pour évaluer les trajectoires
       model_dt: 0.10  # Pas de temps entre chaque évaluation physique des trajectoires
       batch_size: 200 # Nombre de trajectoires simulées à chaque itération (dt) pour trouver la meilleure trajectoire à suivre
@@ -266,24 +280,26 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 4.0
-        inflation_radius: 1.05
+        inflation_radius: 1.5
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
         observation_sources: scan
         scan:
           topic: /scan
-          max_obstacle_height: 2.0
-          clearing: True   # Autorise le LiDAR à effacer les obstacles qui ont disparu
-          marking: True    # Autorise le LiDAR à dessiner de nouveaux obstacles
-          raytrace_max_range: 10.0 # Distance max pour "nettoyer" l'espace libre
-          obstacle_max_range: 8.0  # Distance max pour imprimer un obstacle
+          data_type: "LaserScan"
+          # 1. LE MOTEUR D'EFFACEMENT : Valide les rayons pointant vers le vide
+          inf_is_valid: True 
           
-          # --- LE FILTRE D'AUTO-COLLISION ---
-          # Ignore tout point laser rebondissant sur la structure physique du robot.
-          # Calculé selon ton footprint massif (rayon de ~1.05m)
+          # 2. RAYTRACE > OBSTACLE_MAX_RANGE : Le rayon de nettoyage doit aller plus loin que la zone de marquage
+          raytrace_max_range: 12.0 
+          obstacle_max_range: 8.0
+          
           obstacle_min_range: 1.05
-
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+      
 global_costmap:
   global_costmap:
     ros__parameters:
