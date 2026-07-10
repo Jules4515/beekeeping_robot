@@ -1,0 +1,322 @@
+waypoints_GPS:
+
+- name      : WP_1
+  latitude  : 36.3068722
+  longitude : 120.4977251
+  altitude  : 58.95
+  roll      : 0.00
+  pitch     : -2.25
+  yaw       : 77.96
+
+- name      : WP_2
+  latitude  : 36.3068982
+  longitude : 120.4977347
+  altitude  : 60.60
+  roll      : 0.00
+  pitch     : 0.26
+  yaw       : 57.61
+
+- name      : WP_3
+  latitude  : 36.3069215
+  longitude : 120.4977523
+  altitude  : 60.60
+  roll      : 0.00
+  pitch     : -0.99
+  yaw       : 40.28
+
+- name      : WP_4
+  latitude  : 36.3069312
+  longitude : 120.4977632
+  altitude  : 60.59
+  roll      : 0.00
+  pitch     : -0.63
+  yaw       : 9.78
+
+- name      : WP_5
+  latitude  : 36.3069295
+  longitude : 120.4977974
+  altitude  : 60.59
+  roll      : -0.00
+  pitch     : 0.30
+  yaw       : -6.54
+
+- name      : WP_6
+  latitude  : 36.3069240
+  longitude : 120.4978302
+  altitude  : 60.61
+  roll      : -0.00
+  pitch     : 1.05
+  yaw       : -19.96
+
+- name      : WP_7
+  latitude  : 36.3069134
+  longitude : 120.4978612
+  altitude  : 60.61
+  roll      : 0.00
+  pitch     : 0.17
+  yaw       : -11.77
+
+- name      : WP_8
+  latitude  : 36.3069088
+  longitude : 120.4978947
+  altitude  : 60.67
+  roll      : -0.00
+  pitch     : -0.84
+  yaw       : -3.08
+
+- name      : WP_9
+  latitude  : 36.3069082
+  longitude : 120.4979283
+  altitude  : 60.65
+  roll      : 0.00
+  pitch     : -0.89
+  yaw       : 8.98
+
+- name      : WP_10
+  latitude  : 36.3069115
+  longitude : 120.4979423
+  altitude  : 60.65
+  roll      : 0.00
+  pitch     : 0.32
+  yaw       : -22.16
+
+- name      : WP_11
+  latitude  : 36.3068981
+  longitude : 120.4979720
+  altitude  : 60.59
+  roll      : 0.00
+  pitch     : -0.54
+  yaw       : -28.77
+
+- name      : WP_12
+  latitude  : 36.3068877
+  longitude : 120.4980032
+  altitude  : 60.67
+  roll      : 0.00
+  pitch     : -1.23
+  yaw       : -5.30
+
+- name      : WP_13
+  latitude  : 36.3068892
+  longitude : 120.4980373
+  altitude  : 60.61
+  roll      : 0.00
+  pitch     : 1.19
+  yaw       : 6.11
+
+- name      : WP_14
+  latitude  : 36.3068906
+  longitude : 120.4980715
+  altitude  : 60.65
+  roll      : -0.00
+  pitch     : 1.19
+  yaw       : -3.15
+
+- name      : WP_15
+  latitude  : 36.3068883
+  longitude : 120.4981051
+  altitude  : 60.67
+  roll      : 0.00
+  pitch     : 2.09
+  yaw       : -32.64
+
+- name      : WP_16
+  latitude  : 36.3068723
+  longitude : 120.4981324
+  altitude  : 60.74
+  roll      : 0.00
+  pitch     : -0.51
+  yaw       : -15.73
+
+- name      : WP_17
+  latitude  : 36.3068660
+  longitude : 120.4981652
+  altitude  : 60.79
+  roll      : -0.00
+  pitch     : 0.53
+  yaw       : 3.13
+
+- name      : WP_18
+  latitude  : 36.3068705
+  longitude : 120.4981983
+  altitude  : 60.75
+  roll      : -0.00
+  pitch     : -1.64
+  yaw       : -4.39
+
+- name      : WP_19
+  latitude  : 36.3068661
+  longitude : 120.4982318
+  altitude  : 60.73
+  roll      : 0.00
+  pitch     : 0.64
+  yaw       : -22.66
+
+- name      : WP_20
+  latitude  : 36.3068578
+  longitude : 120.4982496
+  altitude  : 60.71
+  roll      : 0.00
+  pitch     : 1.35
+  yaw       : -53.42
+
+- name      : WP_21
+  latitude  : 36.3068478
+  longitude : 120.4982594
+  altitude  : 60.76
+  roll      : -0.00
+  pitch     : 1.95
+  yaw       : -83.95
+
+- name      : WP_22
+  latitude  : 36.3068356
+  longitude : 120.4982615
+  altitude  : 60.82
+  roll      : 0.00
+  pitch     : 2.05
+  yaw       : -114.95
+
+- name      : WP_23
+  latitude  : 36.3068220
+  longitude : 120.4982524
+  altitude  : 60.88
+  roll      : 0.00
+  pitch     : 2.02
+  yaw       : -145.46
+
+- name      : WP_24
+  latitude  : 36.3068119
+  longitude : 120.4982206
+  altitude  : 61.04
+  roll      : 0.00
+  pitch     : 0.49
+  yaw       : -167.35
+
+- name      : WP_25
+  latitude  : 36.3068109
+  longitude : 120.4981868
+  altitude  : 61.01
+  roll      : -0.00
+  pitch     : -0.82
+  yaw       : 175.14
+
+- name      : WP_26
+  latitude  : 36.3068115
+  longitude : 120.4981530
+  altitude  : 60.99
+  roll      : 0.00
+  pitch     : 2.31
+  yaw       : -168.89
+
+- name      : WP_27
+  latitude  : 36.3068056
+  longitude : 120.4981201
+  altitude  : 61.02
+  roll      : 0.00
+  pitch     : 2.32
+  yaw       : -164.37
+
+- name      : WP_28
+  latitude  : 36.3067987
+  longitude : 120.4980870
+  altitude  : 61.11
+  roll      : -0.00
+  pitch     : 0.37
+  yaw       : -176.26
+
+- name      : WP_29
+  latitude  : 36.3067982
+  longitude : 120.4980530
+  altitude  : 61.12
+  roll      : 0.00
+  pitch     : -2.97
+  yaw       : 167.66
+
+- name      : WP_30
+  latitude  : 36.3068055
+  longitude : 120.4980203
+  altitude  : 61.01
+  roll      : 0.00
+  pitch     : -0.90
+  yaw       : 161.43
+
+- name      : WP_31
+  latitude  : 36.3068154
+  longitude : 120.4979883
+  altitude  : 60.84
+  roll      : -0.00
+  pitch     : -0.71
+  yaw       : 158.15
+
+- name      : WP_32
+  latitude  : 36.3068261
+  longitude : 120.4979570
+  altitude  : 60.77
+  roll      : 0.00
+  pitch     : -1.52
+  yaw       : 159.83
+
+- name      : WP_33
+  latitude  : 36.3068357
+  longitude : 120.4979257
+  altitude  : 60.86
+  roll      : 0.00
+  pitch     : 0.16
+  yaw       : 161.64
+
+- name      : WP_34
+  latitude  : 36.3068450
+  longitude : 120.4978936
+  altitude  : 60.81
+  roll      : 0.00
+  pitch     : -1.42
+  yaw       : 160.09
+
+- name      : WP_35
+  latitude  : 36.3068537
+  longitude : 120.4978613
+  altitude  : 60.80
+  roll      : 0.00
+  pitch     : 0.36
+  yaw       : 170.11
+
+- name      : WP_36
+  latitude  : 36.3068570
+  longitude : 120.4978275
+  altitude  : 60.77
+  roll      : 0.00
+  pitch     : -1.37
+  yaw       : 174.68
+
+- name      : WP_37
+  latitude  : 36.3068590
+  longitude : 120.4977941
+  altitude  : 60.69
+  roll      : 0.00
+  pitch     : -0.45
+  yaw       : -177.41
+
+- name      : WP_38
+  latitude  : 36.3068554
+  longitude : 120.4977607
+  altitude  : 60.68
+  roll      : 0.00
+  pitch     : -0.12
+  yaw       : 172.51
+
+- name      : WP_39
+  latitude  : 36.3068576
+  longitude : 120.4977462
+  altitude  : 60.69
+  roll      : 0.00
+  pitch     : -1.23
+  yaw       : 142.47
+
+- name      : WP_40
+  latitude  : 36.3068647
+  longitude : 120.4977338
+  altitude  : 60.63
+  roll      : 0.00
+  pitch     : -2.13
+  yaw       : 111.80
+

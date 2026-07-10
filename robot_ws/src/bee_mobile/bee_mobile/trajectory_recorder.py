@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from sensor_msgs.msg import NavSatFix, Imu
+from std_msgs.msg import Empty
 import math
 import os
 import threading
@@ -13,8 +14,8 @@ class TrajectoryRecorder(Node):
         super().__init__('trajectory_recorder')
 
         # Paramètres ROS 2 dynamiques (valeurs par défaut : 2.0m et 15.0°)
-        self.declare_parameter('delta_d', 2.0)
-        self.declare_parameter('delta_theta', 15.0)
+        self.declare_parameter('delta_d', 3.0)
+        self.declare_parameter('delta_theta', 30.0)
         
         self.delta_d = self.get_parameter('delta_d').value
         self.delta_theta = self.get_parameter('delta_theta').value
@@ -32,6 +33,10 @@ class TrajectoryRecorder(Node):
         self.last_saved_pitch = None
         self.last_saved_yaw = None
         self.waypoint_counter = 1
+        self.task_waypoint_counter = 1
+        
+        # Écoute du signal de la manette
+        self.task_sub = self.create_subscription(Empty, '/save_task_waypoint', self.task_callback, 10)
 
         # Configuration du fichier de sortie
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -124,11 +129,13 @@ class TrajectoryRecorder(Node):
         if dist >= self.delta_d or angle_diff >= self.delta_theta:
             self.save_to_disk(current_lat, current_lon, current_alt, current_roll, current_pitch, current_yaw)
 
-    def save_to_disk(self, lat, lon, alt, roll, pitch, yaw):
+    def save_to_disk(self, lat, lon, alt, roll, pitch, yaw, custom_name=None):
         """Écriture asynchrone sur le disque de la Pose 6DoF."""
+        wp_name = custom_name if custom_name else f"WP_{self.waypoint_counter}"
+        
         try:
             with open(self.yaml_path, 'a') as f:
-                f.write(f"- name      : WP_{self.waypoint_counter}\n")
+                f.write(f"- name      : {wp_name}\n")
                 f.write(f"  latitude  : {lat:.7f}\n")
                 f.write(f"  longitude : {lon:.7f}\n")
                 f.write(f"  altitude  : {alt:.2f}\n")
@@ -136,19 +143,37 @@ class TrajectoryRecorder(Node):
                 f.write(f"  pitch     : {pitch:.2f}\n")
                 f.write(f"  yaw       : {yaw:.2f}\n\n")
 
-            # Mise à jour du cache RAM
-            self.last_saved_lat = lat
-            self.last_saved_lon = lon
-            self.last_saved_alt = alt
-            self.last_saved_roll = roll
-            self.last_saved_pitch = pitch
-            self.last_saved_yaw = yaw
-            
-            self.get_logger().info(f"[WP_{self.waypoint_counter}] Enregistré | Dist: {self.delta_d}m ou Cap: {self.delta_theta}° franchi.")
-            self.waypoint_counter += 1
+            # Mise à jour du cache RAM (uniquement pour la trajectoire spatiale standard)
+            if not custom_name:
+                self.last_saved_lat = lat
+                self.last_saved_lon = lon
+                self.last_saved_alt = alt
+                self.last_saved_roll = roll
+                self.last_saved_pitch = pitch
+                self.last_saved_yaw = yaw
+                self.waypoint_counter += 1
+                self.get_logger().info(f"[{wp_name}] Enregistré | Dist: {self.delta_d}m ou Cap: {self.delta_theta}° franchi.")
 
         except IOError as e:
             self.get_logger().error(f"YAML Write Error: {e}")
+
+    def task_callback(self, msg):
+        """Déclenché par la manette pour sauvegarder un waypoint de tâche spécifique."""
+        with self.gps_lock:
+            if not self.latest_fix or not self.latest_imu:
+                self.get_logger().warn("Impossible d'enregistrer WP_TASK : GPS ou IMU manquant.")
+                return
+            
+            lat = self.latest_fix.latitude
+            lon = self.latest_fix.longitude
+            alt = self.latest_fix.altitude
+            roll, pitch, yaw = self.euler_from_quaternion(self.latest_imu.orientation)
+            
+        wp_name = f"WP_TASK_{self.task_waypoint_counter}"
+        self.save_to_disk(lat, lon, alt, roll, pitch, yaw, custom_name=wp_name)
+        
+        self.get_logger().info(f"[{wp_name}] Sauvegarde manuelle exécutée.")
+        self.task_waypoint_counter += 1
 
 def main(args=None):
     rclpy.init(args=args)

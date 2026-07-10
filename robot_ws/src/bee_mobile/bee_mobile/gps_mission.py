@@ -14,7 +14,7 @@ from tf2_ros import Buffer, TransformListener
 from geometry_msgs.msg import PoseStamped, Quaternion, Twist
 from visualization_msgs.msg import Marker, MarkerArray
 from robot_localization.srv import FromLL
-from std_msgs.msg import String
+from std_msgs.msg import String, Int32
 from action_msgs.srv import CancelGoal
 
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
@@ -27,6 +27,10 @@ class GpsMissionNode(Node):
         self.declare_parameter('trajectory_file', 'trajectory_20260709_113555.yaml')
         self.trajectory_file = self.get_parameter('trajectory_file').value
 
+        # Nouveau paramètre : Temps d'arrêt pour les points TASK
+        self.declare_parameter('task_wait_time', 5.0)
+        self.task_wait_time = self.get_parameter('task_wait_time').value
+
         print("[INFO] To launch with a custom file: ros2 run bee_mobile gps_mission_node --ros-args -p trajectory_file:=my_file.yaml")
         
         self.navigator = BasicNavigator()
@@ -38,6 +42,7 @@ class GpsMissionNode(Node):
         
         qos = QoSProfile(depth=10, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.marker_pub = self.create_publisher(MarkerArray, '/points_visuels', qos)
+        self.goal_num_pub = self.create_publisher(Int32, '/goal_number', 10)
         
         self.from_ll_client = self.create_client(FromLL, '/fromLL')
         
@@ -156,10 +161,13 @@ class GpsMissionNode(Node):
             marker_cyl.action = Marker.ADD
             marker_cyl.pose.position = pose.pose.position
             marker_cyl.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0) # Cylindre posé à plat
-            marker_cyl.scale.x = 0.2
-            marker_cyl.scale.y = 0.2
-            marker_cyl.scale.z = 0.05
-            marker_cyl.color.r, marker_cyl.color.g, marker_cyl.color.b, marker_cyl.color.a = 0.0, 0.5, 1.0, 0.8
+            marker_cyl.scale.x = 0.3
+            marker_cyl.scale.y = 0.3
+            marker_cyl.scale.z = 0.1
+            if 'TASK' in wp['name']:
+                marker_cyl.color.r, marker_cyl.color.g, marker_cyl.color.b, marker_cyl.color.a = 1.0, 0.0, 1.0, 0.8
+            else:
+                marker_cyl.color.r, marker_cyl.color.g, marker_cyl.color.b, marker_cyl.color.a = 0.0, 0.5, 1.0, 0.8
             marker_array.markers.append(marker_cyl)
 
             # Marqueur 2 : La Flèche Rouge (Attitude 6DoF)
@@ -173,6 +181,7 @@ class GpsMissionNode(Node):
             marker_arr.scale.x = 0.4  # Longueur
             marker_arr.scale.y = 0.05 # Épaisseur tige
             marker_arr.scale.z = 0.05 # Épaisseur tête
+            marker_arr.color.r, marker_arr.color.g, marker_arr.color.b, marker_arr.color.a = 1.0, 0.0, 0.0, 1.0
             marker_arr.color.r, marker_arr.color.g, marker_arr.color.b, marker_arr.color.a = 1.0, 0.0, 0.0, 1.0
             marker_array.markers.append(marker_arr)
 
@@ -225,7 +234,7 @@ class GpsMissionNode(Node):
 
         # Rayon de validation à la volée (en mètres)
         # Plus c'est grand, plus le robot passera au point suivant tôt.
-        FLY_BY_RADIUS = 0.5
+        FLY_BY_RADIUS = 1.0
 
         # Ce qui marche le mieux
 
@@ -258,20 +267,67 @@ class GpsMissionNode(Node):
         #             print(f"  [ÉCHEC] Destination finale inatteignable.")
 
         # À tester
+        # MARCHE dernier truc actif avant tests arbres
+        # for i in range(len(map_poses)):
+        #     target_pose = map_poses[i]
+        #     wp_name = waypoints[i]['name']
+        #     is_last_point = (i == len(map_poses) - 1)
+
+        #     goal_msg = Int32()
+        #     goal_msg.data = i + 1
+        #     self.goal_num_pub.publish(goal_msg)
+
+        #     print(f"\n---> En route vers : [{wp_name}]")
+        #     self.navigator.goToPose(target_pose)
+
+        #     # =========================================================
+        #     # MITIGATION DE LA CONDITION DE COURSE (Le délai aveugle)
+        #     # =========================================================
+        #     # On ignore volontairement le feedback pendant 1.0 seconde. Cela donne le temps à Nav2 d'écraser l'ancien feedback 
+        #     # (< 0.5m) par la distance du nouveau point (ex: 5.0m).
+        #     if not is_last_point and i > 0:
+        #         blind_timeout = time.time() + 1.0
+        #         while time.time() < blind_timeout:
+        #             rclpy.spin_once(self, timeout_sec=0.05)
+
+        #     # =========================================================
+        #     # BOUCLE DE VÉRIFICATION STANDARD
+        #     # =========================================================
+        #     while not self.navigator.isTaskComplete():
+        #         feedback = self.navigator.getFeedback()
+                
+        #         if feedback and hasattr(feedback, 'distance_remaining'):
+        #             # La distance lue ici est garantie d'être celle du nouveau point
+        #             if not is_last_point and feedback.distance_remaining < FLY_BY_RADIUS:
+        #                 print(f"  [FLY-BY] Zone de {FLY_BY_RADIUS}m atteinte. Skip !")
+        #                 break
+
+        #         rclpy.spin_once(self, timeout_sec=0.05)
+
+        #     # Gestion de la fin de mission
+        #     if is_last_point:
+        #         result = self.navigator.getResult()
+        #         if result == TaskResult.SUCCEEDED:
+        #             print(f"  [SUCCÈS] Destination finale atteinte.")
 
         for i in range(len(map_poses)):
             target_pose = map_poses[i]
             wp_name = waypoints[i]['name']
             is_last_point = (i == len(map_poses) - 1)
+            
+            # Discriminateur Sémantique
+            is_task_wp = 'TASK' in wp_name
+            
+            goal_msg = Int32()
+            goal_msg.data = i + 1
+            self.goal_num_pub.publish(goal_msg)
 
             print(f"\n---> En route vers : [{wp_name}]")
             self.navigator.goToPose(target_pose)
 
             # =========================================================
-            # MITIGATION DE LA CONDITION DE COURSE (Le délai aveugle)
+            # MITIGATION DE LA CONDITION DE COURSE
             # =========================================================
-            # On ignore volontairement le feedback pendant 1.0 seconde. Cela donne le temps à Nav2 d'écraser l'ancien feedback 
-            # (< 0.5m) par la distance du nouveau point (ex: 5.0m).
             if not is_last_point and i > 0:
                 blind_timeout = time.time() + 1.0
                 while time.time() < blind_timeout:
@@ -284,18 +340,42 @@ class GpsMissionNode(Node):
                 feedback = self.navigator.getFeedback()
                 
                 if feedback and hasattr(feedback, 'distance_remaining'):
-                    # La distance lue ici est garantie d'être celle du nouveau point
-                    if not is_last_point and feedback.distance_remaining < FLY_BY_RADIUS:
+                    # On exécute le Fly-By UNIQUEMENT si ce n'est pas un point TASK
+                    if not is_last_point and not is_task_wp and feedback.distance_remaining < FLY_BY_RADIUS:
                         print(f"  [FLY-BY] Zone de {FLY_BY_RADIUS}m atteinte. Skip !")
                         break
 
                 rclpy.spin_once(self, timeout_sec=0.05)
 
-            # Gestion de la fin de mission
-            if is_last_point:
+            # =========================================================
+            # GESTION DES ARÊTS (TASK & FIN DE MISSION)
+            # =========================================================
+            # Si on n'a pas fait de Fly-By, Nav2 a terminé sa trajectoire
+            if is_task_wp or is_last_point:
                 result = self.navigator.getResult()
+                
                 if result == TaskResult.SUCCEEDED:
-                    print(f"  [SUCCÈS] Destination finale atteinte.")
+                    if is_last_point:
+                        print(f"  [SUCCÈS] Destination finale atteinte.")
+                        
+                    if is_task_wp and not is_last_point:
+                        print(f"  [TASK] Point d'arrêt atteint. Début de la pause de {self.task_wait_time}s.")
+                        
+                        # Failsafe : Inonder de commandes nulles pour garantir le verrouillage moteur
+                        stop_msg = Twist()
+                        for _ in range(3):
+                            self.cmd_vel_pub.publish(stop_msg)
+                            time.sleep(0.1)
+                            
+                        # Attente non-bloquante (maintient la communication ROS 2)
+                        wait_timeout = time.time() + self.task_wait_time
+                        while time.time() < wait_timeout:
+                            rclpy.spin_once(self, timeout_sec=0.1)
+                            
+                        print(f"  [TASK] Fin de la pause. Reprise du mouvement.")
+                        
+                elif result == TaskResult.FAILED:
+                    print(f"  [ÉCHEC] Cible {wp_name} inatteignable.")
 
         print("\n" + "="*50)
         print("FIN DE MISSION !")

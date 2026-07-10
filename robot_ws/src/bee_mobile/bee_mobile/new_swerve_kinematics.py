@@ -18,17 +18,17 @@ class SwerveKinematics(Node):
 
     def _init_parameters(self):
         """Loads and converts ROS 2 parameters to class variables."""
-        self.declare_parameter('max_steer_deg_s', 60.0)
+        self.declare_parameter('max_steer_deg_s', 70.0)
         self.declare_parameter('hard_limit_deg', 50.0)
-        self.declare_parameter('v_max_physical', 0.60)
-        self.declare_parameter('v_min_moteur', 0.30)
+        self.declare_parameter('v_max_physical', 0.75)
+        self.declare_parameter('v_min_moteur', 0.40)
         self.declare_parameter('v_min_nav2', 0.10)
         self.declare_parameter('deadband_vx', 0.05)
         self.declare_parameter('deadband_wz', 0.05)
-        self.declare_parameter('opposite_max_angle_deg', 50.0)
+        self.declare_parameter('opposite_max_angle_deg', 40.0)
 
         # Tolérance d'alignement
-        self.declare_parameter('align_tolerance_deg', 5.0)
+        self.declare_parameter('align_tolerance_deg', 7.0)
         
         # Paramètres du Slew Rate Linéaire
         self.declare_parameter('enable_speed_slew_rate', True)
