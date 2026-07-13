@@ -12,7 +12,6 @@ def generate_launch_description():
     # Chemins fixes vers tes fichiers de configuration réels
     nav2_params = os.path.join(pkg_share, 'config', 'nav2_params_indoor.yaml')
     map_path = os.path.join(pkg_share, 'maps', 'carte_labo_2026-06-08_16.17.28.yaml')
-    sim_map_path = os.path.join(pkg_share, 'maps', 'tb3_sandbox_upscale.yaml')
 
     # Lancement Nav2 en mode Autonomie Réelle
     nav2_bringup = TimerAction(
@@ -22,7 +21,6 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
                 launch_arguments={
                     'map': map_path, # MONDE RÉEL
-                    #'map': sim_map_path, # SIMULATION
                     'params_file': nav2_params,
                     'use_sim_time': 'False', # Crucial pour le matériel réel
                     'slam': 'True',         # On utilise la map existante pour localiser

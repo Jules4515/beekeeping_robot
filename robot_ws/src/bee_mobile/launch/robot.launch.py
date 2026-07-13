@@ -2,9 +2,10 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
@@ -15,9 +16,26 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
-    # Navigation launch file path
-    navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')
-    #navigation_launch_path = os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')
+    # Declare mode launch argument (indoor or outdoor)
+    declare_mode = DeclareLaunchArgument(
+        'mode', default_value='outdoor', description='Navigation mode: indoor or outdoor'
+    )
+
+    mode = LaunchConfiguration('mode')
+
+    # Navigation launch include (outdoor)
+    navigation_outdoor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')),
+        condition=IfCondition(PythonExpression(["'", mode, "' == 'outdoor'"])),
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
+
+    # Navigation launch include (indoor)
+    navigation_indoor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')),
+        condition=IfCondition(PythonExpression(["'", mode, "' == 'indoor'"])),
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
 
     # Caméra
     camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
@@ -144,7 +162,7 @@ def generate_launch_description():
 
     swerve_kinematics_node = Node(
         package='bee_mobile',
-        executable='new_swerve_kinematics',
+        executable='swerve_kinematics',
         output='screen'
     )
 
@@ -167,13 +185,11 @@ def generate_launch_description():
         parameters=[os.path.join(pkg_share, 'config', 'twist_mux_topics.yaml')]
     )
 
-    navigation_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(navigation_launch_path),
-        # Prevents parent-child namespace collisions by explicitly passing arguments if required
-        launch_arguments={'use_sim_time': 'false'}.items()
-    )
+    # navigation_outdoor or navigation_indoor will be included based on `mode`
+    navigation_launch = (navigation_outdoor, navigation_indoor)
 
     return LaunchDescription([
+        declare_mode,
         robot_state_publisher_node,
         #micro_ros_node,
         unitree_lidar_node,
@@ -183,10 +199,12 @@ def generate_launch_description():
         pid_tuner,
         joy_node,
         mux_joystick_node,
-        #swerve_kinematics_node,
+        swerve_kinematics_node,
         odometry_node,
         unitree_imu_hotfix,
         twist_mux_node,
         #docking_controller_node,
-        navigation_launch,
+        # include chosen navigation launch(s)
+        navigation_outdoor,
+        navigation_indoor,
     ])

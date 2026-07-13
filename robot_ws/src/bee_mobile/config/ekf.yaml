@@ -111,6 +111,6 @@ navsat_transform_node:
     # On attend un datum fixe (origine de la carte) au lieu de prendre le premier signal GPS reçu.
     wait_for_datum: true
     #base_link_offset: [0.64, 0.0, 1.3]  # x, y, z du GPS dans base_link
-    #datum: [36.3058915, 120.4968436, 0.0] # Labo porte extérieure
-    #datum: [36.3068724, 120.4977261, 0.0] # Zone test arbres
-    datum: [36.3069306, 120.4974080, 0.0] # Zone test arbres
+    datum: [36.3058915, 120.4968436, 0.0] # Labo porte extérieure
+    #datum: [36.3068724, 120.4977261, 0.0] # Zone test arbres # TEMP
+    #datum: [36.3069306, 120.4974080, 0.0] # Zone test arbres

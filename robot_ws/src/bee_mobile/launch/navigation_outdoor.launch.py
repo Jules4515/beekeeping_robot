@@ -35,7 +35,7 @@ def generate_launch_description():
     
     # EKF Local (délai de 2s pour laisser les capteurs démarrer)
     ekf_local = TimerAction(
-        period=2.0,
+        period=3.0,
         actions=[
             Node(
                 package='robot_localization',
@@ -49,18 +49,13 @@ def generate_launch_description():
     
     # EKF Global (délai de 2.5s)
     ekf_global = TimerAction(
-        period=2.5,
+        period=3.0,
         actions=[
             Node(
                 package='robot_localization',
                 executable='ekf_node',
                 name='ekf_node_global',
                 output='screen',
-                parameters=[
-                    ekf_config
-                #     {
-                #     'odom0_pose': [0.64, 0.0, 0.5, 0.0, 0.0, 0.0],}
-                    ],
                 remappings=[
                     ('/odometry/filtered', '/odometry/global'),
                 ]
@@ -176,6 +171,6 @@ def generate_launch_description():
         navsat_transform,
         
         # Phase 4 : Services et Navigation
-        gps_health_monitor,                              # gps_health_monitor
+        gps_health_monitor,
         nav2_bringup,
     ])

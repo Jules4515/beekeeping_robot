@@ -63,33 +63,7 @@ class CustomGpsDriver(Node):
         except Exception:
             return False
 
-    def extract_ros_time(self, nmea_time_str, reception_time):
-        # """Convertit l'heure UTC du GPS en timestamp ROS, sinon utilise l'heure de réception."""
-        # if not nmea_time_str or len(nmea_time_str) < 6:
-        #     return reception_time.to_msg()
-            
-        # try:
-        #     now = datetime.now(timezone.utc)
-        #     hours = int(nmea_time_str[0:2])
-        #     minutes = int(nmea_time_str[2:4])
-        #     seconds = int(nmea_time_str[4:6])
-            
-        #     # Gestion des millisecondes s'il y en a (ex: 073632.50)
-        #     ms = 0
-        #     if '.' in nmea_time_str:
-        #         ms = int(float(nmea_time_str[4:]) * 1000) % 1000
-                
-        #     gps_time = datetime(now.year, now.month, now.day, hours, minutes, seconds, ms * 1000, tzinfo=timezone.utc)
-        #     unix_sec = gps_time.timestamp()
-            
-        #     # Évite les erreurs de changement de jour (minuit)
-        #     if abs(unix_sec - now.timestamp()) > 43200: 
-        #         return reception_time.to_msg()
-                
-        #     import rclpy.time
-        #     return rclpy.time.Time(seconds=unix_sec).to_msg()
-        # except Exception:
-        #     return reception_time.to_msg()
+    def extract_ros_time(self, reception_time):
         return reception_time.to_msg()
 
     def serial_thread_loop(self):

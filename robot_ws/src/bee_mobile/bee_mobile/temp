@@ -23,7 +23,7 @@ class MuxJoystick(Node):
 
         # Axis mapping (Left Joystick Only)
         self.declare_parameter('speed_axis', 1)  # Joystick Gauche Haut/Bas
-        self.declare_parameter('steer_axis', 3)  # Joystick Droit Gauche/Droite
+        self.declare_parameter('steer_axis', 0)  # Joystick Gauche Gauche/Droite
         self.declare_parameter('dpad_x_axis', 6)
         self.declare_parameter('dpad_y_axis', 7)
         self.declare_parameter('deadband', 0.1)

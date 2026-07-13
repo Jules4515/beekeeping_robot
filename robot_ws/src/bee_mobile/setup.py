@@ -40,7 +40,6 @@ setup(
             
             # Nav2
             'swerve_kinematics = bee_mobile.swerve_kinematics:main',
-            'new_swerve_kinematics = bee_mobile.new_swerve_kinematics:main',
             'goal_manager = bee_mobile.goal_manager:main',
 
             # Docking

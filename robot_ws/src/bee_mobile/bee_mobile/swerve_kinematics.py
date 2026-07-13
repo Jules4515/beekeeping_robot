@@ -125,7 +125,7 @@ class SwerveKinematics(Node):
                 
             self.current_mode = new_state
 
-        self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
+        #self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
 
         self._calculate_wheel_targets(self.current_mode, vx, wz, dt)
         is_aligned = self._check_alignment()
@@ -173,7 +173,7 @@ class SwerveKinematics(Node):
                 raw_speed = 0.0
                 if self.active_joy_mode == 3:
                     raw_angle = math.atan2(config['x'], -config['y'])
-                elif self.active_joy_mode in [1, 2]:
+                elif self.active_joy_mode == 1:
                     raw_angle = 0.0
                 else:
                     raw_angle = config['last_target_angle']

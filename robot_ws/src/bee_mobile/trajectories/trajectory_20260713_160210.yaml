@@ -1,0 +1,106 @@
+waypoints_GPS:
+
+- name      : WP_1
+  latitude  : 36.3058657
+  longitude : 120.4968142
+  altitude  : 60.35
+  roll      : 0.00
+  pitch     : -0.47
+  yaw       : 104.15
+
+- name      : WP_2
+  latitude  : 36.3058923
+  longitude : 120.4968078
+  altitude  : 60.47
+  roll      : 0.00
+  pitch     : -0.44
+  yaw       : 76.25
+
+- name      : WP_3
+  latitude  : 36.3059061
+  longitude : 120.4968095
+  altitude  : 60.58
+  roll      : -0.00
+  pitch     : 0.35
+  yaw       : 45.51
+
+- name      : WP_4
+  latitude  : 36.3059193
+  longitude : 120.4968277
+  altitude  : 60.80
+  roll      : 0.00
+  pitch     : 0.75
+  yaw       : 14.97
+
+- name      : WP_5
+  latitude  : 36.3059230
+  longitude : 120.4968404
+  altitude  : 60.75
+  roll      : 0.00
+  pitch     : 0.73
+  yaw       : -16.68
+
+- name      : WP_6
+  latitude  : 36.3059156
+  longitude : 120.4968548
+  altitude  : 61.33
+  roll      : 0.00
+  pitch     : 1.19
+  yaw       : -47.41
+
+- name      : WP_TASK_1
+  latitude  : 36.3058960
+  longitude : 120.4968636
+  altitude  : 61.99
+  roll      : 0.00
+  pitch     : 0.41
+  yaw       : -66.20
+
+- name      : WP_7
+  latitude  : 36.3058887
+  longitude : 120.4968606
+  altitude  : 62.79
+  roll      : 0.00
+  pitch     : 0.39
+  yaw       : -66.06
+
+- name      : WP_8
+  latitude  : 36.3058676
+  longitude : 120.4968684
+  altitude  : 63.09
+  roll      : 0.00
+  pitch     : -1.23
+  yaw       : -96.56
+
+- name      : WP_9
+  latitude  : 36.3058506
+  longitude : 120.4968661
+  altitude  : 62.96
+  roll      : 0.00
+  pitch     : 0.64
+  yaw       : -126.79
+
+- name      : WP_10
+  latitude  : 36.3058392
+  longitude : 120.4968555
+  altitude  : 62.80
+  roll      : 0.00
+  pitch     : -1.23
+  yaw       : -158.19
+
+- name      : WP_11
+  latitude  : 36.3058347
+  longitude : 120.4968441
+  altitude  : 62.82
+  roll      : -0.00
+  pitch     : -1.93
+  yaw       : 171.44
+
+- name      : WP_12
+  latitude  : 36.3058367
+  longitude : 120.4968289
+  altitude  : 62.64
+  roll      : 0.00
+  pitch     : -0.62
+  yaw       : 140.20
+
