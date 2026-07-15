@@ -63,9 +63,6 @@ class CustomGpsDriver(Node):
         except Exception:
             return False
 
-    def extract_ros_time(self, reception_time):
-        return reception_time.to_msg()
-
     def serial_thread_loop(self):
         """Boucle infinie bloquante s'exécutant dans son propre thread."""
         while rclpy.ok():
@@ -109,7 +106,7 @@ class CustomGpsDriver(Node):
             
         try:
             msg = NavSatFix()
-            msg.header.stamp = self.extract_ros_time(parts[1], reception_time)
+            msg.header.stamp = reception_time.to_msg()
             msg.header.frame_id = 'gps_link'
             
             status = int(parts[6]) if parts[6] else 0
@@ -200,7 +197,7 @@ class CustomGpsDriver(Node):
             sr = math.sin(roll_rad * 0.5)
             
             msg = Imu()
-            msg.header.stamp = self.extract_ros_time(parts[1], reception_time)
+            msg.header.stamp = reception_time.to_msg()
             msg.header.frame_id = 'gps_link'
             
             msg.orientation.w = cr * cp * cy + sr * sp * sy

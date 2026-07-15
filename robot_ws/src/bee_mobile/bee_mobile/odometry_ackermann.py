@@ -8,17 +8,15 @@ from std_msgs.msg import Float64MultiArray
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 
-class OdometryNode(Node):
+class OdometryAckermann(Node):
     def __init__(self):
-        super().__init__('odometry')
+        super().__init__('odometry_ackermann')
 
         self.wheel_radius = 0.215
         
         self.wheels = {
             'front_left':  {'x': 0.48,  'y': 0.4150,  'enc_dir': 1.0,  'current_rpm': 0.0, 'current_angle': 0.0},
             'front_right': {'x': 0.48,  'y': -0.4150, 'enc_dir': -1.0, 'current_rpm': 0.0, 'current_angle': 0.0},
-            'rear_left':   {'x': -0.48, 'y': 0.4150,  'enc_dir': 1.0,  'current_rpm': 0.0, 'current_angle': 0.0},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'enc_dir': -1.0, 'current_rpm': 0.0, 'current_angle': 0.0},
         }
 
         self.odom_x = 0.0
@@ -37,8 +35,6 @@ class OdometryNode(Node):
 
         self.create_subscription(Float64MultiArray, '/mobile/wheel_front_left/encoder_angle',  self.fl_callback, 10)
         self.create_subscription(Float64MultiArray, '/mobile/wheel_front_right/encoder_angle', self.fr_callback, 10)
-        self.create_subscription(Float64MultiArray, '/mobile/wheel_rear_left/encoder_angle',   self.rl_callback, 10)
-        self.create_subscription(Float64MultiArray, '/mobile/wheel_rear_right/encoder_angle',  self.rr_callback, 10)
 
         self.odom_timer = self.create_timer(0.02, self.compute_and_publish_odometry)
 
@@ -49,8 +45,6 @@ class OdometryNode(Node):
 
     def fl_callback(self, msg): self.update_wheel_state('front_left', msg)
     def fr_callback(self, msg): self.update_wheel_state('front_right', msg)
-    def rl_callback(self, msg): self.update_wheel_state('rear_left', msg)
-    def rr_callback(self, msg): self.update_wheel_state('rear_right', msg)
 
     def compute_and_publish_odometry(self):
         current_time = self.get_clock().now()
@@ -61,35 +55,35 @@ class OdometryNode(Node):
             return
 
         # ==========================================================
-        # PASS 1: Décomposition Vectorielle
+        # MODÈLE BICYCLETTE (Ackermann FWD projeté)
         # ==========================================================
-        vx_sum, vy_sum = 0.0, 0.0
+        L_empattement = 0.96  # Distance entre l'essieu arrière (fixe) et avant (directeur)
 
-        for config in self.wheels.values():
-            speed_ms = (config['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
-            angle_rad = math.radians(config['current_angle'])
-            
-            config['vx_w'] = speed_ms * math.cos(angle_rad)
-            config['vy_w'] = speed_ms * math.sin(angle_rad)
-            vx_sum += config['vx_w']
-            vy_sum += config['vy_w']
+        # 1. Extraction des vitesses et angles individuels des roues avant
+        v_fl = (self.wheels['front_left']['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
+        angle_fl = math.radians(self.wheels['front_left']['current_angle'])
+        
+        v_fr = (self.wheels['front_right']['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
+        angle_fr = math.radians(self.wheels['front_right']['current_angle'])
 
-        real_vx_robot = vx_sum / 4.0
-        real_vy_robot = vy_sum / 4.0
+        # 2. Projection des vecteurs cinématiques sur l'essieu avant
+        # On calcule la vitesse moyenne de l'essieu avant sur ses axes X et Y
+        v_xf = (v_fl * math.cos(angle_fl) + v_fr * math.cos(angle_fr)) / 2.0
+        v_yf = (v_fl * math.sin(angle_fl) + v_fr * math.sin(angle_fr)) / 2.0
+
+        # 3. Calcul de la cinématique globale du châssis
+        # La vitesse longitudinale du robot est dictée par l'avancement de l'essieu avant
+        real_vx_robot = v_xf
+        
+        # La rotation du châssis est créée par la vitesse latérale de l'essieu avant autour de l'essieu arrière
+        real_wz_robot = v_yf / L_empattement
+        
+        # Le repère base_footprint est au centre géométrique (à L/2 de l'essieu arrière)
+        # Il subit donc une dérive latérale lors d'un virage
+        real_vy_robot = real_wz_robot * (L_empattement / 2.0)
 
         # ==========================================================
-        # PASS 2: Calcul de la Vitesse Angulaire (wz)
-        # ==========================================================
-        wz_num, wz_den = 0.0, 0.0
-
-        for config in self.wheels.values():
-            wz_num += (config['x'] * (config['vy_w'] - real_vy_robot) - config['y'] * (config['vx_w'] - real_vx_robot))
-            wz_den += config['x']**2 + config['y']**2
-
-        real_wz_robot = wz_num / wz_den if wz_den > 0 else 0.0
-
-        # ==========================================================
-        # PASS 3: Intégration Spatiale
+        # Intégration Spatiale
         # ==========================================================
         delta_theta = real_wz_robot * dt
         theta_mid = self.odom_theta + delta_theta / 2.0 
@@ -99,16 +93,15 @@ class OdometryNode(Node):
         self.odom_theta += delta_theta
 
         # ==========================================================
-        # PUBLICATION: Odom Uniquement (avec incertitudes pour EKF)
+        # PUBLICATION: Odom (avec incertitudes pour EKF)
         # ==========================================================
         cy = math.cos(self.odom_theta * 0.5)
         sy = math.sin(self.odom_theta * 0.5)
 
         odom = Odometry()
-        # On utilise le temps exact actuel, pas de triche dans le futur
         odom.header.stamp = current_time.to_msg()
         odom.header.frame_id = 'odom'
-        odom.child_frame_id = 'base_link' # Redirigé vers la physique (base_link)
+        odom.child_frame_id = 'base_footprint' 
         
         # POSE
         odom.pose.pose.position.x = self.odom_x
@@ -121,7 +114,6 @@ class OdometryNode(Node):
         odom.twist.twist.linear.y = real_vy_robot
         odom.twist.twist.angular.z = real_wz_robot
 
-        # MATRICE DE COVARIANCE (Cruciale pour que l'EKF fusionne les données)
         covariance_matrix = [
             0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
             0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
@@ -154,10 +146,10 @@ class OdometryNode(Node):
             t.transform.rotation.w = cy
             
             self.tf_broadcaster.sendTransform(t)
-
+            
 def main(args=None):
     rclpy.init(args=args)
-    node = OdometryNode()
+    node = OdometryAckermann()
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):

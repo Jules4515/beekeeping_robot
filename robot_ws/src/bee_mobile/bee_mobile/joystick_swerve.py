@@ -6,20 +6,18 @@ from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy, NavSatFix, Imu
 from std_msgs.msg import Int8, Empty
-from ament_index_python.packages import get_package_share_directory
-import math
 import os
 import threading
 import subprocess
 import signal
 
-class MuxJoystick(Node):
+class JoystickSwerve(Node):
     """
     Reads a joystick and publishes /cmd_vel_joy for twist_mux.
     Features: Asynchronous continuous smoothing, external process management.
     """
     def __init__(self):
-        super().__init__('mux_joystick')
+        super().__init__('joystick_swerve')
 
         # Axis mapping (Left Joystick Only)
         self.declare_parameter('speed_axis', 1)  # Joystick Gauche Haut/Bas
@@ -263,7 +261,7 @@ class MuxJoystick(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MuxJoystick()
+    node = JoystickSwerve()
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):

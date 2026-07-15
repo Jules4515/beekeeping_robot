@@ -1,8 +1,8 @@
 import os
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction, RegisterEventHandler
-from launch.event_handlers import OnProcessStart
+from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -10,13 +10,31 @@ def generate_launch_description():
     bee_mobile_dir = get_package_share_directory('bee_mobile')
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
     
-    nav2_params = os.path.join(bee_mobile_dir, 'config', 'nav2_params_outdoor.yaml')
+    # ========================================================================
+    # 1. LAUNCH ARGUMENTS
+    # ========================================================================
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation (Gazebo) clock if true'
+    )
+
+    params_file_arg = DeclareLaunchArgument(
+        'params_file',
+        default_value=os.path.join(bee_mobile_dir, 'config', 'nav2_params_outdoor_swerve.yaml'),
+        description='Full path to the ROS 2 parameters file to use for all Nav2 nodes'
+    )
+
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    params_file = LaunchConfiguration('params_file')
+
+    # Fixed configuration paths 
     map_file = os.path.join(bee_mobile_dir, 'maps', 'blank_small_map.yaml')
     ekf_config = os.path.join(bee_mobile_dir, 'config', 'ekf.yaml')
     
-    # ============================================
-    # PHASE 1 : Capteurs de base (démarrage immédiat)
-    # ============================================
+    # ========================================================================
+    # PHASE 1: Base Sensors (Immediate start) 
+    # ========================================================================
 
     custom_gps_driver = Node(
         package='bee_mobile',
@@ -29,11 +47,11 @@ def generate_launch_description():
         }]
     )
 
-    # ============================================
-    # PHASE 2 : Localisation (après 2 secondes)
-    # ============================================
+    # ========================================================================
+    # PHASE 2: Localization (Starts after 3 seconds to let sensors boot) 
+    # ========================================================================
     
-    # EKF Local (délai de 2s pour laisser les capteurs démarrer)
+    # Local EKF 
     ekf_local = TimerAction(
         period=3.0,
         actions=[
@@ -47,7 +65,7 @@ def generate_launch_description():
         ]
     )
     
-    # EKF Global (délai de 2.5s)
+    # Global EKF 
     ekf_global = TimerAction(
         period=3.0,
         actions=[
@@ -62,42 +80,12 @@ def generate_launch_description():
             )
         ]
     )
-
-    robot_footprint = TimerAction(
-        period=4.0,
-        actions=[
-            Node(
-                package='bee_mobile',
-                executable='robot_footprint_publisher',
-                name='robot_footprint_publisher',
-                output='screen',
-            )
-        ]
-    )
     
-    # ============================================
-    # PHASE 3 : Transformation GPS (après 5 secondes)
-    # ============================================
-    
-    # Pour l'initialisation de mapviz
-    initialize_origin = TimerAction(
-        period=5.0,
-        actions=[
-            Node(
-                package='swri_transform_util',
-                executable='initialize_origin.py',
-                name='initialize_origin',
-                output='screen',
-                remappings=[('fix', '/fix')],
-                parameters=[{
-                    'local_xy_frame': 'map',
-                    'local_xy_origin': 'auto',
-                }]
-            )
-        ]
-    )
+    # ========================================================================
+    # PHASE 3: GPS Transformation (Starts after 4/5 seconds) 
+    # ========================================================================
 
-    # Navsat transform qui attend que gps_tf soit prêt
+    # Navsat transform (waits for gps_tf to be ready) 
     navsat_transform = TimerAction(
         period=4.0,
         actions=[
@@ -116,10 +104,9 @@ def generate_launch_description():
         ]
     )
             
-        
-    # ============================================
-    # PHASE 4 : Services et Navigation (après 8 secondes)
-    # ============================================
+    # ========================================================================
+    # PHASE 4: Services and Navigation (Starts after 7/10 seconds) 
+    # ========================================================================
     
     gps_health_monitor = TimerAction(
         period=7.0,
@@ -137,7 +124,7 @@ def generate_launch_description():
         ]
     )
     
-    # Nav2 Bringup (après 10 secondes, quand tout est stable)
+    # Nav2 Bringup (Waits until system is stable) 
     nav2_bringup = TimerAction(
         period=10.0,
         actions=[
@@ -147,8 +134,8 @@ def generate_launch_description():
                 ),
                 launch_arguments={
                     'map': map_file,
-                    'params_file': nav2_params,
-                    'use_sim_time': 'False',
+                    'params_file': params_file,
+                    'use_sim_time': use_sim_time,
                     'slam': 'False',
                     'amcl': 'False',
                     'run_amcl': 'False',
@@ -158,19 +145,20 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # Phase 1 : Immédiat
+        use_sim_time_arg,
+        params_file_arg,
+        
+        # Phase 1: Immediate 
         custom_gps_driver,
         
-        # Phase 2 : Après délai
+        # Phase 2: Delayed 
         ekf_local,
         ekf_global,
-        robot_footprint,                                 # robot_footprint_publisher.py
         
-        # Phase 3 : GPS Transform
-        initialize_origin,                               # pour mapviz
+        # Phase 3: GPS Transform 
         navsat_transform,
         
-        # Phase 4 : Services et Navigation
+        # Phase 4: Services & Navigation 
         gps_health_monitor,
         nav2_bringup,
     ])

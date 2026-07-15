@@ -3,12 +3,12 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64MultiArray, Float64, Int8
+from std_msgs.msg import Float64MultiArray, Int8
 import math
 
-class SwerveKinematics(Node):
+class KinematicsSwerve(Node):
     def __init__(self):
-        super().__init__('swerve_kinematics')
+        super().__init__('kinematics_swerve')
         
         # --- 1. INITIALISATION DES VARIABLES & PARAMÈTRES ---
         self._init_parameters()
@@ -125,7 +125,7 @@ class SwerveKinematics(Node):
                 
             self.current_mode = new_state
 
-        #self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
+        self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
 
         self._calculate_wheel_targets(self.current_mode, vx, wz, dt)
         is_aligned = self._check_alignment()
@@ -214,7 +214,6 @@ class SwerveKinematics(Node):
             config['temp_ideal_speed'] = ideal_speed
 
             
-        # Si aucune tra
     def _check_alignment(self):
         """Verifies strict alignment only when the wait flag is triggered by a major transition."""
             
@@ -303,7 +302,7 @@ class SwerveKinematics(Node):
             
 def main(args=None):
     rclpy.init(args=args)
-    node = SwerveKinematics()
+    node = KinematicsSwerve()
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
