@@ -1,0 +1,82 @@
+waypoints_GPS:
+
+- name      : WP_1
+  latitude  : 36.3069382
+  longitude : 120.4978621
+  altitude  : 59.06
+  roll      : 0.00
+  pitch     : -2.11
+  yaw       : -174.46
+
+- name      : WP_2
+  latitude  : 36.3069349
+  longitude : 120.4978281
+  altitude  : 59.05
+  roll      : 0.00
+  pitch     : 1.44
+  yaw       : -161.85
+
+- name      : WP_3
+  latitude  : 36.3069278
+  longitude : 120.4977967
+  altitude  : 59.00
+  roll      : 0.00
+  pitch     : 2.54
+  yaw       : -131.08
+
+- name      : WP_4
+  latitude  : 36.3069052
+  longitude : 120.4977775
+  altitude  : 59.08
+  roll      : 0.00
+  pitch     : 1.14
+  yaw       : -110.60
+
+- name      : WP_5
+  latitude  : 36.3068793
+  longitude : 120.4977676
+  altitude  : 59.10
+  roll      : -0.00
+  pitch     : 1.18
+  yaw       : -122.28
+
+- name      : WP_6
+  latitude  : 36.3068717
+  longitude : 120.4977635
+  altitude  : 59.13
+  roll      : 0.00
+  pitch     : 0.60
+  yaw       : -152.69
+
+- name      : WP_7
+  latitude  : 36.3068670
+  longitude : 120.4977568
+  altitude  : 59.13
+  roll      : 0.00
+  pitch     : 0.08
+  yaw       : 175.26
+
+- name      : WP_8
+  latitude  : 36.3068655
+  longitude : 120.4977482
+  altitude  : 59.13
+  roll      : 0.00
+  pitch     : -1.58
+  yaw       : 141.73
+
+- name      : WP_9
+  latitude  : 36.3068699
+  longitude : 120.4977393
+  altitude  : 59.10
+  roll      : 0.00
+  pitch     : -2.76
+  yaw       : 110.81
+
+- name      : WP_10
+  latitude  : 36.3068709
+  longitude : 120.4977259
+  altitude  : 59.14
+  roll      : 0.00
+  pitch     : -2.08
+  yaw       : 79.95
+

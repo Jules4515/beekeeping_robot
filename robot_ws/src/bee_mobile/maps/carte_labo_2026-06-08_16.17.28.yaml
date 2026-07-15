@@ -1,0 +1,7 @@
+image: carte_labo_2026-06-08_16.17.28.pgm
+mode: trinary
+resolution: 0.050
+origin: [-1.725, -6.220, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196

@@ -1,0 +1,84 @@
+waypoints_GPS:
+- name      : WP_1
+  latitude  : 36.3058665
+  longitude : 120.4968533
+  yaw       : -73.77
+  wait_time : 0.0
+
+- name      : WP_2
+  latitude  : 36.3058463
+  longitude : 120.4968599
+  yaw       : -77.90
+  wait_time : 0.0
+
+- name      : WP_3
+  latitude  : 36.3058213
+  longitude : 120.4968621
+  yaw       : -114.55
+  wait_time : 0.0
+
+- name      : WP_4
+  latitude  : 36.3057982
+  longitude : 120.4968438
+  yaw       : -167.20
+  wait_time : 0.0
+
+- name      : WP_5
+  latitude  : 36.3058009
+  longitude : 120.4968121
+  yaw       : 128.34
+  wait_time : 0.0
+
+- name      : WP_6
+  latitude  : 36.3058224
+  longitude : 120.4967971
+  yaw       : 112.76
+  wait_time : 0.0
+
+- name      : WP_7
+  latitude  : 36.3058445
+  longitude : 120.4967863
+  yaw       : 111.04
+  wait_time : 0.0
+
+- name      : WP_8
+  latitude  : 36.3058673
+  longitude : 120.4967784
+  yaw       : 92.69
+  wait_time : 0.0
+
+- name      : WP_9
+  latitude  : 36.3058918
+  longitude : 120.4967827
+  yaw       : 48.76
+  wait_time : 0.0
+
+- name      : WP_10
+  latitude  : 36.3059054
+  longitude : 120.4968088
+  yaw       : -15.27
+  wait_time : 0.0
+
+- name      : WP_11
+  latitude  : 36.3058951
+  longitude : 120.4968371
+  yaw       : -59.48
+  wait_time : 0.0
+
+- name      : WP_12
+  latitude  : 36.3058727
+  longitude : 120.4968499
+  yaw       : -67.24
+  wait_time : 0.0
+
+- name      : WP_13
+  latitude  : 36.3058705
+  longitude : 120.4968511
+  yaw       : -68.84
+  wait_time : 0.0
+- name      : WP_1
+  latitude  : 36.3058824
+  longitude : 120.4967868
+  yaw       : 48.86
+  wait_time : 0.0
+

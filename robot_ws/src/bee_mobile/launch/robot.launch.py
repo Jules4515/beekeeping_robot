@@ -1,90 +1,210 @@
 import os
-from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.actions import ExecuteProcess
+
 from ament_index_python.packages import get_package_share_directory
-
-from launch.actions import IncludeLaunchDescription
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-# from ros_ws.src.bee_robot.bee_robot import four_ws_controller, joystick_node
-
-
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
+from launch.conditions import IfCondition
+from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
-    # Path to the scripts folder (not strictly needed, we'll use console scripts)
     pkg_share = get_package_share_directory('bee_mobile')
 
-    # Include the lidar launch file
-    lidar = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'lidar.launch.py')
-        )
+    # --- URDF & Robot State (Always On) ---
+    xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
+    robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
+
+    # Declare mode launch argument (indoor or outdoor)
+    declare_mode = DeclareLaunchArgument(
+        'mode', default_value='outdoor', description='Navigation mode: indoor or outdoor'
     )
 
-    # 1. micro-ROS Agent (UDP, port 8888)
-    micro_ros_agent = Node(
+    mode = LaunchConfiguration('mode')
+
+    # Navigation launch include (outdoor)
+    navigation_outdoor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')),
+        condition=IfCondition(PythonExpression(["'", mode, "' == 'outdoor'"])),
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
+
+    # Navigation launch include (indoor)
+    navigation_indoor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')),
+        condition=IfCondition(PythonExpression(["'", mode, "' == 'indoor'"])),
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
+
+    # Caméra
+    camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
+
+    robot_state_publisher_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 15.0,}]
+    )
+
+    # --- Hardware Nodes (Real World Only) ---
+    micro_ros_node = Node(
         package='micro_ros_agent',
         executable='micro_ros_agent',
-        name='micro_ros_agent',
         output='screen',
+        arguments=['udp4', '--port', '8888'],
         # arguments=['udp4', '--port', '8888', '-v6']   # -v6 for verbose, optional
-        arguments=['udp4', '--port', '8888']
     )
 
-    # 2. joy_node (from the joy package)
-    joy_node = Node(
-        package='joy',
-        executable='joy_node',
-        name='joy_node',
-        output='screen'
+    unitree_lidar_node = Node(
+        package='unitree_lidar_ros2',
+        executable='unitree_lidar_ros2_node',
+        name='unitree_lidar',
+        parameters=[{
+            'cloud_frame': 'unilidar_lidar',
+            'imu_frame': 'unilidar_imu',
+        }],
+        remappings=[
+            ('/tf', '/tf_unitree_ignored'),
+            ('/tf_static', '/tf_static_unitree_ignored')
+        ]
     )
 
-    # 3. joystick node (console script)
-    joystick_node = Node(
-        package='bee_mobile',
-        executable='joystick_node',
-        name='joystick_node',
-        output='screen'
+    pointcloud_to_scan_node = Node(
+        package='pointcloud_to_laserscan',
+        executable='pointcloud_to_laserscan_node',
+        name='pointcloud_to_laserscan',
+        output='screen',
+        remappings=[
+            ('cloud_in', '/unilidar/cloud'),
+            ('scan', '/scan')
+        ],
+        parameters=[{
+            'target_frame': 'base_link',
+            'transform_tolerance': 0.05,
+            'min_height': 0.15,
+            'max_height': 0.80,
+            'angle_min': -3.14159,
+            'angle_max': 3.14159,
+            'angle_increment': 0.0087,
+            'scan_time': 0.05,
+            'range_min': 0.30,
+            'range_max': 15.0,
+            'use_inf': True,
+            'inf_epsilon': 1.0,
+        }]
     )
 
-    # 4. the four ws controller
-    four_ws_controller = Node(
-        package='bee_mobile',
-        executable='four_ws_controller',
-        name='four_ws_controller',
-        output='screen'
+    camera_node = Node(
+        package='usb_cam',
+        executable='usb_cam_node_exe',
+        name='usb_cam',
+        namespace='camera',
+        output='screen',
+        parameters=[{
+            'video_device': '/dev/video0',
+            'framerate': 30.0,
+            'pixel_format': 'mjpeg2rgb',
+            'image_width': 640,
+            'image_height': 480,
+            'camera_frame_id': 'camera_link',
+            'camera_info_url': 'file://' + camera_info_yaml,
+            'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
+            'exposure_absolute': 20,
+            'gain': 10,
+            'qos_reliability': 'best_effort',
+            'qos_history': 'keep_last',
+            'qos_depth': 1,
+        }]
     )
 
-    # 5. pid_tuner – optional
     pid_tuner = Node(
         package='bee_mobile',
         executable='pid_tuner',
-        name='pid_tuner',
+        output='screen',
+        parameters=[{
+            'interactive_mode': False
+        }]
+    )
+
+    aruco_tag_detector_node = Node(
+        package='bee_mobile', 
+        executable='aruco_tag_detector',
+        name='aruco_tag_detector',
+        namespace='camera',
+        output='screen',
+        parameters=[{
+            'marker_size': 0.068,
+            'image_topic': '/camera/image_raw/compressed',
+            'enable_debug': False,  # Force la désactivation complète du traitement d'image inutile
+            'publish_pose_array': False
+        }]
+    )
+
+    docking_controller_node = Node(
+        package='bee_mobile',
+        executable='docking_controller',
+        output='screen',
+    )
+
+    # --- Core Control Nodes (Always On) ---
+    joy_node = Node(
+        package='joy',
+        executable='joy_node',
         output='screen'
     )
 
-    # Include the SLAM launch file
-    slam = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'slam.launch.py')
-        )
+    mux_joystick_node = Node(
+        package='bee_mobile',
+        executable='mux_joystick',
+        output='screen'
     )
 
-    # Inside generate_launch_description(), add:
-    camera = IncludeLaunchDescription(
-     PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('bee_mobile'), 'launch', 'camera.launch.py')
-     )
-     
-)
+    swerve_kinematics_node = Node(
+        package='bee_mobile',
+        executable='swerve_kinematics',
+        output='screen'
+    )
+
+    odometry_node = Node(
+        package='bee_mobile',
+        executable='odometry',
+        output='screen'
+    )
+
+    unitree_imu_hotfix = Node(
+        package='bee_mobile',
+        executable='unitree_imu_hotfix',
+        output='screen'
+    )
+
+    twist_mux_node = Node(
+        package='twist_mux',
+        executable='twist_mux',
+        output='screen',
+        parameters=[os.path.join(pkg_share, 'config', 'twist_mux_topics.yaml')]
+    )
+
+    # navigation_outdoor or navigation_indoor will be included based on `mode`
+    navigation_launch = (navigation_outdoor, navigation_indoor)
 
     return LaunchDescription([
-        # micro_ros_agent,
-        joy_node,           # raw joystick driver
-        joystick_node,      # translates /joy → /cmd_vel + /mode_select
-        four_ws_controller, # kinematics + mode‑specific PID
-        lidar,
-        slam,
-        # camera,
-        # pid_tuner,          # remove this line if you prefer to start it manually
+        declare_mode,
+        robot_state_publisher_node,
+        #micro_ros_node,
+        unitree_lidar_node,
+        pointcloud_to_scan_node,
+        #camera_node,
+        aruco_tag_detector_node,
+        pid_tuner,
+        joy_node,
+        mux_joystick_node,
+        swerve_kinematics_node,
+        odometry_node,
+        unitree_imu_hotfix,
+        twist_mux_node,
+        #docking_controller_node,
+        # include chosen navigation launch(s)
+        navigation_outdoor,
+        navigation_indoor,
     ])

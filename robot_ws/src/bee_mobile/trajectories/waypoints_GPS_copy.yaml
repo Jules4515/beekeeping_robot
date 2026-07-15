@@ -1,0 +1,6001 @@
+waypoints_GPS:
+- name      : WP_1
+  latitude  : 36.3058634
+  longitude : 120.4968604
+  yaw       : -66.61
+  wait_time : 0.0
+
+- name      : WP_2
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.73
+  wait_time : 0.0
+
+- name      : WP_3
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.91
+  wait_time : 0.0
+
+- name      : WP_4
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.82
+  wait_time : 0.0
+
+- name      : WP_5
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.79
+  wait_time : 0.0
+
+- name      : WP_6
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.81
+  wait_time : 0.0
+
+- name      : WP_7
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.86
+  wait_time : 0.0
+
+- name      : WP_8
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.71
+  wait_time : 0.0
+
+- name      : WP_9
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.84
+  wait_time : 0.0
+
+- name      : WP_10
+  latitude  : 36.3058634
+  longitude : 120.4968603
+  yaw       : -66.83
+  wait_time : 0.0
+
+- name      : WP_11
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.75
+  wait_time : 0.0
+
+- name      : WP_12
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.73
+  wait_time : 0.0
+
+- name      : WP_13
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.66
+  wait_time : 0.0
+
+- name      : WP_14
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.65
+  wait_time : 0.0
+
+- name      : WP_15
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.69
+  wait_time : 0.0
+
+- name      : WP_16
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.76
+  wait_time : 0.0
+
+- name      : WP_17
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.80
+  wait_time : 0.0
+
+- name      : WP_18
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.85
+  wait_time : 0.0
+
+- name      : WP_19
+  latitude  : 36.3058634
+  longitude : 120.4968603
+  yaw       : -66.90
+  wait_time : 0.0
+
+- name      : WP_20
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.64
+  wait_time : 0.0
+
+- name      : WP_21
+  latitude  : 36.3058634
+  longitude : 120.4968603
+  yaw       : -66.75
+  wait_time : 0.0
+
+- name      : WP_22
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.80
+  wait_time : 0.0
+
+- name      : WP_23
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.69
+  wait_time : 0.0
+
+- name      : WP_24
+  latitude  : 36.3058634
+  longitude : 120.4968604
+  yaw       : -66.85
+  wait_time : 0.0
+
+- name      : WP_25
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.84
+  wait_time : 0.0
+
+- name      : WP_26
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.88
+  wait_time : 0.0
+
+- name      : WP_27
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.76
+  wait_time : 0.0
+
+- name      : WP_28
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.65
+  wait_time : 0.0
+
+- name      : WP_29
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.80
+  wait_time : 0.0
+
+- name      : WP_30
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.69
+  wait_time : 0.0
+
+- name      : WP_31
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.87
+  wait_time : 0.0
+
+- name      : WP_32
+  latitude  : 36.3058633
+  longitude : 120.4968603
+  yaw       : -66.74
+  wait_time : 0.0
+
+- name      : WP_33
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -66.76
+  wait_time : 0.0
+
+- name      : WP_34
+  latitude  : 36.3058633
+  longitude : 120.4968604
+  yaw       : -67.01
+  wait_time : 0.0
+
+- name      : WP_35
+  latitude  : 36.3058632
+  longitude : 120.4968605
+  yaw       : -67.76
+  wait_time : 0.0
+
+- name      : WP_36
+  latitude  : 36.3058631
+  longitude : 120.4968605
+  yaw       : -67.59
+  wait_time : 0.0
+
+- name      : WP_37
+  latitude  : 36.3058630
+  longitude : 120.4968606
+  yaw       : -67.57
+  wait_time : 0.0
+
+- name      : WP_38
+  latitude  : 36.3058630
+  longitude : 120.4968606
+  yaw       : -67.36
+  wait_time : 0.0
+
+- name      : WP_39
+  latitude  : 36.3058629
+  longitude : 120.4968606
+  yaw       : -67.23
+  wait_time : 0.0
+
+- name      : WP_40
+  latitude  : 36.3058627
+  longitude : 120.4968607
+  yaw       : -66.74
+  wait_time : 0.0
+
+- name      : WP_41
+  latitude  : 36.3058625
+  longitude : 120.4968608
+  yaw       : -67.24
+  wait_time : 0.0
+
+- name      : WP_42
+  latitude  : 36.3058622
+  longitude : 120.4968611
+  yaw       : -67.67
+  wait_time : 0.0
+
+- name      : WP_43
+  latitude  : 36.3058618
+  longitude : 120.4968613
+  yaw       : -67.92
+  wait_time : 0.0
+
+- name      : WP_44
+  latitude  : 36.3058615
+  longitude : 120.4968614
+  yaw       : -67.52
+  wait_time : 0.0
+
+- name      : WP_45
+  latitude  : 36.3058612
+  longitude : 120.4968614
+  yaw       : -67.01
+  wait_time : 0.0
+
+- name      : WP_46
+  latitude  : 36.3058610
+  longitude : 120.4968616
+  yaw       : -67.21
+  wait_time : 0.0
+
+- name      : WP_47
+  latitude  : 36.3058608
+  longitude : 120.4968618
+  yaw       : -67.49
+  wait_time : 0.0
+
+- name      : WP_48
+  latitude  : 36.3058605
+  longitude : 120.4968619
+  yaw       : -67.55
+  wait_time : 0.0
+
+- name      : WP_49
+  latitude  : 36.3058602
+  longitude : 120.4968620
+  yaw       : -67.57
+  wait_time : 0.0
+
+- name      : WP_50
+  latitude  : 36.3058599
+  longitude : 120.4968621
+  yaw       : -67.59
+  wait_time : 0.0
+
+- name      : WP_51
+  latitude  : 36.3058597
+  longitude : 120.4968624
+  yaw       : -67.87
+  wait_time : 0.0
+
+- name      : WP_52
+  latitude  : 36.3058594
+  longitude : 120.4968625
+  yaw       : -67.75
+  wait_time : 0.0
+
+- name      : WP_53
+  latitude  : 36.3058591
+  longitude : 120.4968627
+  yaw       : -67.90
+  wait_time : 0.0
+
+- name      : WP_54
+  latitude  : 36.3058588
+  longitude : 120.4968628
+  yaw       : -68.02
+  wait_time : 0.0
+
+- name      : WP_55
+  latitude  : 36.3058585
+  longitude : 120.4968629
+  yaw       : -68.09
+  wait_time : 0.0
+
+- name      : WP_56
+  latitude  : 36.3058583
+  longitude : 120.4968631
+  yaw       : -68.23
+  wait_time : 0.0
+
+- name      : WP_57
+  latitude  : 36.3058580
+  longitude : 120.4968632
+  yaw       : -68.20
+  wait_time : 0.0
+
+- name      : WP_58
+  latitude  : 36.3058577
+  longitude : 120.4968633
+  yaw       : -68.22
+  wait_time : 0.0
+
+- name      : WP_59
+  latitude  : 36.3058574
+  longitude : 120.4968635
+  yaw       : -68.53
+  wait_time : 0.0
+
+- name      : WP_60
+  latitude  : 36.3058571
+  longitude : 120.4968637
+  yaw       : -68.55
+  wait_time : 0.0
+
+- name      : WP_61
+  latitude  : 36.3058569
+  longitude : 120.4968638
+  yaw       : -68.53
+  wait_time : 0.0
+
+- name      : WP_62
+  latitude  : 36.3058566
+  longitude : 120.4968639
+  yaw       : -68.46
+  wait_time : 0.0
+
+- name      : WP_63
+  latitude  : 36.3058563
+  longitude : 120.4968641
+  yaw       : -68.69
+  wait_time : 0.0
+
+- name      : WP_64
+  latitude  : 36.3058561
+  longitude : 120.4968642
+  yaw       : -68.85
+  wait_time : 0.0
+
+- name      : WP_65
+  latitude  : 36.3058558
+  longitude : 120.4968644
+  yaw       : -69.09
+  wait_time : 0.0
+
+- name      : WP_66
+  latitude  : 36.3058555
+  longitude : 120.4968645
+  yaw       : -68.75
+  wait_time : 0.0
+
+- name      : WP_67
+  latitude  : 36.3058552
+  longitude : 120.4968646
+  yaw       : -68.95
+  wait_time : 0.0
+
+- name      : WP_68
+  latitude  : 36.3058550
+  longitude : 120.4968648
+  yaw       : -69.04
+  wait_time : 0.0
+
+- name      : WP_69
+  latitude  : 36.3058547
+  longitude : 120.4968650
+  yaw       : -69.40
+  wait_time : 0.0
+
+- name      : WP_70
+  latitude  : 36.3058544
+  longitude : 120.4968650
+  yaw       : -69.22
+  wait_time : 0.0
+
+- name      : WP_71
+  latitude  : 36.3058541
+  longitude : 120.4968652
+  yaw       : -69.09
+  wait_time : 0.0
+
+- name      : WP_72
+  latitude  : 36.3058538
+  longitude : 120.4968653
+  yaw       : -69.18
+  wait_time : 0.0
+
+- name      : WP_73
+  latitude  : 36.3058536
+  longitude : 120.4968655
+  yaw       : -69.28
+  wait_time : 0.0
+
+- name      : WP_74
+  latitude  : 36.3058533
+  longitude : 120.4968656
+  yaw       : -69.61
+  wait_time : 0.0
+
+- name      : WP_75
+  latitude  : 36.3058530
+  longitude : 120.4968657
+  yaw       : -69.77
+  wait_time : 0.0
+
+- name      : WP_76
+  latitude  : 36.3058527
+  longitude : 120.4968659
+  yaw       : -69.62
+  wait_time : 0.0
+
+- name      : WP_77
+  latitude  : 36.3058524
+  longitude : 120.4968660
+  yaw       : -69.50
+  wait_time : 0.0
+
+- name      : WP_78
+  latitude  : 36.3058522
+  longitude : 120.4968661
+  yaw       : -69.68
+  wait_time : 0.0
+
+- name      : WP_79
+  latitude  : 36.3058519
+  longitude : 120.4968663
+  yaw       : -69.81
+  wait_time : 0.0
+
+- name      : WP_80
+  latitude  : 36.3058516
+  longitude : 120.4968664
+  yaw       : -70.10
+  wait_time : 0.0
+
+- name      : WP_81
+  latitude  : 36.3058514
+  longitude : 120.4968665
+  yaw       : -69.88
+  wait_time : 0.0
+
+- name      : WP_82
+  latitude  : 36.3058511
+  longitude : 120.4968666
+  yaw       : -69.74
+  wait_time : 0.0
+
+- name      : WP_83
+  latitude  : 36.3058508
+  longitude : 120.4968668
+  yaw       : -70.20
+  wait_time : 0.0
+
+- name      : WP_84
+  latitude  : 36.3058503
+  longitude : 120.4968670
+  yaw       : -70.55
+  wait_time : 0.0
+
+- name      : WP_85
+  latitude  : 36.3058498
+  longitude : 120.4968672
+  yaw       : -70.06
+  wait_time : 0.0
+
+- name      : WP_86
+  latitude  : 36.3058493
+  longitude : 120.4968674
+  yaw       : -70.49
+  wait_time : 0.0
+
+- name      : WP_87
+  latitude  : 36.3058489
+  longitude : 120.4968676
+  yaw       : -70.41
+  wait_time : 0.0
+
+- name      : WP_88
+  latitude  : 36.3058484
+  longitude : 120.4968678
+  yaw       : -70.55
+  wait_time : 0.0
+
+- name      : WP_89
+  latitude  : 36.3058480
+  longitude : 120.4968680
+  yaw       : -70.63
+  wait_time : 0.0
+
+- name      : WP_90
+  latitude  : 36.3058476
+  longitude : 120.4968682
+  yaw       : -70.61
+  wait_time : 0.0
+
+- name      : WP_91
+  latitude  : 36.3058472
+  longitude : 120.4968684
+  yaw       : -70.90
+  wait_time : 0.0
+
+- name      : WP_92
+  latitude  : 36.3058468
+  longitude : 120.4968685
+  yaw       : -71.03
+  wait_time : 0.0
+
+- name      : WP_93
+  latitude  : 36.3058464
+  longitude : 120.4968687
+  yaw       : -71.02
+  wait_time : 0.0
+
+- name      : WP_94
+  latitude  : 36.3058459
+  longitude : 120.4968690
+  yaw       : -71.39
+  wait_time : 0.0
+
+- name      : WP_95
+  latitude  : 36.3058455
+  longitude : 120.4968691
+  yaw       : -71.28
+  wait_time : 0.0
+
+- name      : WP_96
+  latitude  : 36.3058451
+  longitude : 120.4968693
+  yaw       : -71.56
+  wait_time : 0.0
+
+- name      : WP_97
+  latitude  : 36.3058447
+  longitude : 120.4968695
+  yaw       : -71.70
+  wait_time : 0.0
+
+- name      : WP_98
+  latitude  : 36.3058443
+  longitude : 120.4968697
+  yaw       : -71.71
+  wait_time : 0.0
+
+- name      : WP_99
+  latitude  : 36.3058438
+  longitude : 120.4968699
+  yaw       : -71.81
+  wait_time : 0.0
+
+- name      : WP_100
+  latitude  : 36.3058434
+  longitude : 120.4968701
+  yaw       : -72.06
+  wait_time : 0.0
+
+- name      : WP_101
+  latitude  : 36.3058430
+  longitude : 120.4968703
+  yaw       : -72.05
+  wait_time : 0.0
+
+- name      : WP_102
+  latitude  : 36.3058425
+  longitude : 120.4968704
+  yaw       : -71.88
+  wait_time : 0.0
+
+- name      : WP_103
+  latitude  : 36.3058421
+  longitude : 120.4968706
+  yaw       : -72.00
+  wait_time : 0.0
+
+- name      : WP_104
+  latitude  : 36.3058417
+  longitude : 120.4968707
+  yaw       : -71.92
+  wait_time : 0.0
+
+- name      : WP_105
+  latitude  : 36.3058413
+  longitude : 120.4968709
+  yaw       : -72.06
+  wait_time : 0.0
+
+- name      : WP_106
+  latitude  : 36.3058408
+  longitude : 120.4968711
+  yaw       : -71.96
+  wait_time : 0.0
+
+- name      : WP_107
+  latitude  : 36.3058404
+  longitude : 120.4968712
+  yaw       : -71.62
+  wait_time : 0.0
+
+- name      : WP_108
+  latitude  : 36.3058400
+  longitude : 120.4968714
+  yaw       : -71.47
+  wait_time : 0.0
+
+- name      : WP_109
+  latitude  : 36.3058395
+  longitude : 120.4968715
+  yaw       : -71.61
+  wait_time : 0.0
+
+- name      : WP_110
+  latitude  : 36.3058391
+  longitude : 120.4968717
+  yaw       : -71.41
+  wait_time : 0.0
+
+- name      : WP_111
+  latitude  : 36.3058386
+  longitude : 120.4968718
+  yaw       : -71.12
+  wait_time : 0.0
+
+- name      : WP_112
+  latitude  : 36.3058382
+  longitude : 120.4968719
+  yaw       : -70.77
+  wait_time : 0.0
+
+- name      : WP_113
+  latitude  : 36.3058378
+  longitude : 120.4968722
+  yaw       : -70.80
+  wait_time : 0.0
+
+- name      : WP_114
+  latitude  : 36.3058373
+  longitude : 120.4968723
+  yaw       : -70.57
+  wait_time : 0.0
+
+- name      : WP_115
+  latitude  : 36.3058369
+  longitude : 120.4968724
+  yaw       : -70.25
+  wait_time : 0.0
+
+- name      : WP_116
+  latitude  : 36.3058365
+  longitude : 120.4968726
+  yaw       : -70.17
+  wait_time : 0.0
+
+- name      : WP_117
+  latitude  : 36.3058360
+  longitude : 120.4968728
+  yaw       : -70.12
+  wait_time : 0.0
+
+- name      : WP_118
+  latitude  : 36.3058356
+  longitude : 120.4968730
+  yaw       : -70.11
+  wait_time : 0.0
+
+- name      : WP_119
+  latitude  : 36.3058351
+  longitude : 120.4968731
+  yaw       : -70.11
+  wait_time : 0.0
+
+- name      : WP_120
+  latitude  : 36.3058347
+  longitude : 120.4968733
+  yaw       : -69.84
+  wait_time : 0.0
+
+- name      : WP_121
+  latitude  : 36.3058343
+  longitude : 120.4968735
+  yaw       : -69.67
+  wait_time : 0.0
+
+- name      : WP_122
+  latitude  : 36.3058339
+  longitude : 120.4968737
+  yaw       : -69.69
+  wait_time : 0.0
+
+- name      : WP_123
+  latitude  : 36.3058334
+  longitude : 120.4968738
+  yaw       : -69.49
+  wait_time : 0.0
+
+- name      : WP_124
+  latitude  : 36.3058330
+  longitude : 120.4968740
+  yaw       : -69.46
+  wait_time : 0.0
+
+- name      : WP_125
+  latitude  : 36.3058326
+  longitude : 120.4968742
+  yaw       : -69.29
+  wait_time : 0.0
+
+- name      : WP_126
+  latitude  : 36.3058321
+  longitude : 120.4968744
+  yaw       : -69.13
+  wait_time : 0.0
+
+- name      : WP_127
+  latitude  : 36.3058317
+  longitude : 120.4968746
+  yaw       : -69.15
+  wait_time : 0.0
+
+- name      : WP_128
+  latitude  : 36.3058313
+  longitude : 120.4968748
+  yaw       : -69.24
+  wait_time : 0.0
+
+- name      : WP_129
+  latitude  : 36.3058308
+  longitude : 120.4968750
+  yaw       : -69.21
+  wait_time : 0.0
+
+- name      : WP_130
+  latitude  : 36.3058304
+  longitude : 120.4968752
+  yaw       : -69.02
+  wait_time : 0.0
+
+- name      : WP_131
+  latitude  : 36.3058300
+  longitude : 120.4968754
+  yaw       : -68.96
+  wait_time : 0.0
+
+- name      : WP_132
+  latitude  : 36.3058295
+  longitude : 120.4968756
+  yaw       : -69.08
+  wait_time : 0.0
+
+- name      : WP_133
+  latitude  : 36.3058291
+  longitude : 120.4968758
+  yaw       : -69.00
+  wait_time : 0.0
+
+- name      : WP_134
+  latitude  : 36.3058287
+  longitude : 120.4968760
+  yaw       : -69.25
+  wait_time : 0.0
+
+- name      : WP_135
+  latitude  : 36.3058283
+  longitude : 120.4968762
+  yaw       : -69.31
+  wait_time : 0.0
+
+- name      : WP_136
+  latitude  : 36.3058278
+  longitude : 120.4968764
+  yaw       : -69.01
+  wait_time : 0.0
+
+- name      : WP_137
+  latitude  : 36.3058274
+  longitude : 120.4968766
+  yaw       : -68.83
+  wait_time : 0.0
+
+- name      : WP_138
+  latitude  : 36.3058269
+  longitude : 120.4968768
+  yaw       : -68.81
+  wait_time : 0.0
+
+- name      : WP_139
+  latitude  : 36.3058265
+  longitude : 120.4968770
+  yaw       : -69.05
+  wait_time : 0.0
+
+- name      : WP_140
+  latitude  : 36.3058261
+  longitude : 120.4968772
+  yaw       : -68.70
+  wait_time : 0.0
+
+- name      : WP_141
+  latitude  : 36.3058256
+  longitude : 120.4968774
+  yaw       : -68.71
+  wait_time : 0.0
+
+- name      : WP_142
+  latitude  : 36.3058251
+  longitude : 120.4968776
+  yaw       : -68.51
+  wait_time : 0.0
+
+- name      : WP_143
+  latitude  : 36.3058247
+  longitude : 120.4968778
+  yaw       : -68.74
+  wait_time : 0.0
+
+- name      : WP_144
+  latitude  : 36.3058243
+  longitude : 120.4968780
+  yaw       : -68.68
+  wait_time : 0.0
+
+- name      : WP_145
+  latitude  : 36.3058239
+  longitude : 120.4968782
+  yaw       : -68.63
+  wait_time : 0.0
+
+- name      : WP_146
+  latitude  : 36.3058234
+  longitude : 120.4968784
+  yaw       : -68.31
+  wait_time : 0.0
+
+- name      : WP_147
+  latitude  : 36.3058230
+  longitude : 120.4968785
+  yaw       : -67.89
+  wait_time : 0.0
+
+- name      : WP_148
+  latitude  : 36.3058225
+  longitude : 120.4968788
+  yaw       : -67.87
+  wait_time : 0.0
+
+- name      : WP_149
+  latitude  : 36.3058221
+  longitude : 120.4968790
+  yaw       : -67.27
+  wait_time : 0.0
+
+- name      : WP_150
+  latitude  : 36.3058216
+  longitude : 120.4968791
+  yaw       : -66.68
+  wait_time : 0.0
+
+- name      : WP_151
+  latitude  : 36.3058212
+  longitude : 120.4968793
+  yaw       : -66.48
+  wait_time : 0.0
+
+- name      : WP_152
+  latitude  : 36.3058208
+  longitude : 120.4968795
+  yaw       : -66.34
+  wait_time : 0.0
+
+- name      : WP_153
+  latitude  : 36.3058203
+  longitude : 120.4968797
+  yaw       : -65.88
+  wait_time : 0.0
+
+- name      : WP_154
+  latitude  : 36.3058198
+  longitude : 120.4968798
+  yaw       : -65.00
+  wait_time : 0.0
+
+- name      : WP_155
+  latitude  : 36.3058194
+  longitude : 120.4968800
+  yaw       : -64.37
+  wait_time : 0.0
+
+- name      : WP_156
+  latitude  : 36.3058189
+  longitude : 120.4968802
+  yaw       : -64.02
+  wait_time : 0.0
+
+- name      : WP_157
+  latitude  : 36.3058184
+  longitude : 120.4968803
+  yaw       : -63.46
+  wait_time : 0.0
+
+- name      : WP_158
+  latitude  : 36.3058180
+  longitude : 120.4968806
+  yaw       : -63.29
+  wait_time : 0.0
+
+- name      : WP_159
+  latitude  : 36.3058176
+  longitude : 120.4968807
+  yaw       : -62.66
+  wait_time : 0.0
+
+- name      : WP_160
+  latitude  : 36.3058172
+  longitude : 120.4968809
+  yaw       : -61.97
+  wait_time : 0.0
+
+- name      : WP_161
+  latitude  : 36.3058167
+  longitude : 120.4968812
+  yaw       : -61.41
+  wait_time : 0.0
+
+- name      : WP_162
+  latitude  : 36.3058163
+  longitude : 120.4968814
+  yaw       : -60.97
+  wait_time : 0.0
+
+- name      : WP_163
+  latitude  : 36.3058159
+  longitude : 120.4968816
+  yaw       : -60.64
+  wait_time : 0.0
+
+- name      : WP_164
+  latitude  : 36.3058154
+  longitude : 120.4968819
+  yaw       : -60.07
+  wait_time : 0.0
+
+- name      : WP_165
+  latitude  : 36.3058149
+  longitude : 120.4968821
+  yaw       : -59.59
+  wait_time : 0.0
+
+- name      : WP_166
+  latitude  : 36.3058145
+  longitude : 120.4968823
+  yaw       : -59.02
+  wait_time : 0.0
+
+- name      : WP_167
+  latitude  : 36.3058140
+  longitude : 120.4968826
+  yaw       : -58.66
+  wait_time : 0.0
+
+- name      : WP_168
+  latitude  : 36.3058136
+  longitude : 120.4968828
+  yaw       : -58.42
+  wait_time : 0.0
+
+- name      : WP_169
+  latitude  : 36.3058132
+  longitude : 120.4968831
+  yaw       : -57.95
+  wait_time : 0.0
+
+- name      : WP_170
+  latitude  : 36.3058127
+  longitude : 120.4968834
+  yaw       : -57.37
+  wait_time : 0.0
+
+- name      : WP_171
+  latitude  : 36.3058123
+  longitude : 120.4968836
+  yaw       : -57.05
+  wait_time : 0.0
+
+- name      : WP_172
+  latitude  : 36.3058119
+  longitude : 120.4968839
+  yaw       : -56.82
+  wait_time : 0.0
+
+- name      : WP_173
+  latitude  : 36.3058115
+  longitude : 120.4968842
+  yaw       : -56.23
+  wait_time : 0.0
+
+- name      : WP_174
+  latitude  : 36.3058110
+  longitude : 120.4968846
+  yaw       : -55.86
+  wait_time : 0.0
+
+- name      : WP_175
+  latitude  : 36.3058106
+  longitude : 120.4968849
+  yaw       : -55.72
+  wait_time : 0.0
+
+- name      : WP_176
+  latitude  : 36.3058103
+  longitude : 120.4968852
+  yaw       : -55.48
+  wait_time : 0.0
+
+- name      : WP_177
+  latitude  : 36.3058099
+  longitude : 120.4968855
+  yaw       : -55.61
+  wait_time : 0.0
+
+- name      : WP_178
+  latitude  : 36.3058094
+  longitude : 120.4968858
+  yaw       : -55.04
+  wait_time : 0.0
+
+- name      : WP_179
+  latitude  : 36.3058090
+  longitude : 120.4968862
+  yaw       : -55.11
+  wait_time : 0.0
+
+- name      : WP_180
+  latitude  : 36.3058086
+  longitude : 120.4968865
+  yaw       : -54.82
+  wait_time : 0.0
+
+- name      : WP_181
+  latitude  : 36.3058082
+  longitude : 120.4968867
+  yaw       : -54.98
+  wait_time : 0.0
+
+- name      : WP_182
+  latitude  : 36.3058078
+  longitude : 120.4968871
+  yaw       : -54.66
+  wait_time : 0.0
+
+- name      : WP_183
+  latitude  : 36.3058074
+  longitude : 120.4968874
+  yaw       : -54.52
+  wait_time : 0.0
+
+- name      : WP_184
+  latitude  : 36.3058069
+  longitude : 120.4968877
+  yaw       : -54.19
+  wait_time : 0.0
+
+- name      : WP_185
+  latitude  : 36.3058065
+  longitude : 120.4968880
+  yaw       : -54.11
+  wait_time : 0.0
+
+- name      : WP_186
+  latitude  : 36.3058062
+  longitude : 120.4968884
+  yaw       : -54.24
+  wait_time : 0.0
+
+- name      : WP_187
+  latitude  : 36.3058058
+  longitude : 120.4968887
+  yaw       : -54.29
+  wait_time : 0.0
+
+- name      : WP_188
+  latitude  : 36.3058053
+  longitude : 120.4968891
+  yaw       : -54.35
+  wait_time : 0.0
+
+- name      : WP_189
+  latitude  : 36.3058050
+  longitude : 120.4968894
+  yaw       : -54.13
+  wait_time : 0.0
+
+- name      : WP_190
+  latitude  : 36.3058046
+  longitude : 120.4968898
+  yaw       : -54.48
+  wait_time : 0.0
+
+- name      : WP_191
+  latitude  : 36.3058042
+  longitude : 120.4968902
+  yaw       : -54.55
+  wait_time : 0.0
+
+- name      : WP_192
+  latitude  : 36.3058038
+  longitude : 120.4968905
+  yaw       : -54.67
+  wait_time : 0.0
+
+- name      : WP_193
+  latitude  : 36.3058034
+  longitude : 120.4968909
+  yaw       : -54.92
+  wait_time : 0.0
+
+- name      : WP_194
+  latitude  : 36.3058029
+  longitude : 120.4968913
+  yaw       : -55.06
+  wait_time : 0.0
+
+- name      : WP_195
+  latitude  : 36.3058025
+  longitude : 120.4968916
+  yaw       : -55.50
+  wait_time : 0.0
+
+- name      : WP_196
+  latitude  : 36.3058021
+  longitude : 120.4968920
+  yaw       : -55.65
+  wait_time : 0.0
+
+- name      : WP_197
+  latitude  : 36.3058017
+  longitude : 120.4968924
+  yaw       : -56.26
+  wait_time : 0.0
+
+- name      : WP_198
+  latitude  : 36.3058014
+  longitude : 120.4968928
+  yaw       : -56.82
+  wait_time : 0.0
+
+- name      : WP_199
+  latitude  : 36.3058010
+  longitude : 120.4968932
+  yaw       : -57.56
+  wait_time : 0.0
+
+- name      : WP_200
+  latitude  : 36.3058006
+  longitude : 120.4968936
+  yaw       : -57.73
+  wait_time : 0.0
+
+- name      : WP_201
+  latitude  : 36.3058003
+  longitude : 120.4968939
+  yaw       : -58.13
+  wait_time : 0.0
+
+- name      : WP_202
+  latitude  : 36.3057999
+  longitude : 120.4968943
+  yaw       : -58.25
+  wait_time : 0.0
+
+- name      : WP_203
+  latitude  : 36.3057995
+  longitude : 120.4968947
+  yaw       : -58.75
+  wait_time : 0.0
+
+- name      : WP_204
+  latitude  : 36.3057991
+  longitude : 120.4968951
+  yaw       : -59.23
+  wait_time : 0.0
+
+- name      : WP_205
+  latitude  : 36.3057987
+  longitude : 120.4968955
+  yaw       : -59.77
+  wait_time : 0.0
+
+- name      : WP_206
+  latitude  : 36.3057983
+  longitude : 120.4968958
+  yaw       : -59.81
+  wait_time : 0.0
+
+- name      : WP_207
+  latitude  : 36.3057979
+  longitude : 120.4968962
+  yaw       : -60.49
+  wait_time : 0.0
+
+- name      : WP_208
+  latitude  : 36.3057975
+  longitude : 120.4968965
+  yaw       : -60.97
+  wait_time : 0.0
+
+- name      : WP_209
+  latitude  : 36.3057970
+  longitude : 120.4968969
+  yaw       : -61.48
+  wait_time : 0.0
+
+- name      : WP_210
+  latitude  : 36.3057966
+  longitude : 120.4968972
+  yaw       : -61.67
+  wait_time : 0.0
+
+- name      : WP_211
+  latitude  : 36.3057961
+  longitude : 120.4968975
+  yaw       : -61.84
+  wait_time : 0.0
+
+- name      : WP_212
+  latitude  : 36.3057957
+  longitude : 120.4968979
+  yaw       : -62.52
+  wait_time : 0.0
+
+- name      : WP_213
+  latitude  : 36.3057953
+  longitude : 120.4968981
+  yaw       : -62.37
+  wait_time : 0.0
+
+- name      : WP_214
+  latitude  : 36.3057948
+  longitude : 120.4968985
+  yaw       : -62.66
+  wait_time : 0.0
+
+- name      : WP_215
+  latitude  : 36.3057945
+  longitude : 120.4968988
+  yaw       : -63.41
+  wait_time : 0.0
+
+- name      : WP_216
+  latitude  : 36.3057940
+  longitude : 120.4968992
+  yaw       : -63.52
+  wait_time : 0.0
+
+- name      : WP_217
+  latitude  : 36.3057937
+  longitude : 120.4968995
+  yaw       : -64.01
+  wait_time : 0.0
+
+- name      : WP_218
+  latitude  : 36.3057933
+  longitude : 120.4968998
+  yaw       : -64.32
+  wait_time : 0.0
+
+- name      : WP_219
+  latitude  : 36.3057928
+  longitude : 120.4969001
+  yaw       : -65.00
+  wait_time : 0.0
+
+- name      : WP_220
+  latitude  : 36.3057924
+  longitude : 120.4969004
+  yaw       : -65.13
+  wait_time : 0.0
+
+- name      : WP_221
+  latitude  : 36.3057920
+  longitude : 120.4969007
+  yaw       : -64.84
+  wait_time : 0.0
+
+- name      : WP_222
+  latitude  : 36.3057915
+  longitude : 120.4969009
+  yaw       : -65.15
+  wait_time : 0.0
+
+- name      : WP_223
+  latitude  : 36.3057911
+  longitude : 120.4969012
+  yaw       : -65.65
+  wait_time : 0.0
+
+- name      : WP_224
+  latitude  : 36.3057906
+  longitude : 120.4969015
+  yaw       : -66.22
+  wait_time : 0.0
+
+- name      : WP_225
+  latitude  : 36.3057902
+  longitude : 120.4969018
+  yaw       : -66.42
+  wait_time : 0.0
+
+- name      : WP_226
+  latitude  : 36.3057897
+  longitude : 120.4969021
+  yaw       : -66.56
+  wait_time : 0.0
+
+- name      : WP_227
+  latitude  : 36.3057893
+  longitude : 120.4969024
+  yaw       : -66.78
+  wait_time : 0.0
+
+- name      : WP_228
+  latitude  : 36.3057889
+  longitude : 120.4969027
+  yaw       : -67.61
+  wait_time : 0.0
+
+- name      : WP_229
+  latitude  : 36.3057884
+  longitude : 120.4969029
+  yaw       : -67.40
+  wait_time : 0.0
+
+- name      : WP_230
+  latitude  : 36.3057880
+  longitude : 120.4969032
+  yaw       : -68.01
+  wait_time : 0.0
+
+- name      : WP_231
+  latitude  : 36.3057875
+  longitude : 120.4969035
+  yaw       : -68.78
+  wait_time : 0.0
+
+- name      : WP_232
+  latitude  : 36.3057871
+  longitude : 120.4969038
+  yaw       : -69.25
+  wait_time : 0.0
+
+- name      : WP_233
+  latitude  : 36.3057867
+  longitude : 120.4969041
+  yaw       : -70.07
+  wait_time : 0.0
+
+- name      : WP_234
+  latitude  : 36.3057862
+  longitude : 120.4969044
+  yaw       : -70.60
+  wait_time : 0.0
+
+- name      : WP_235
+  latitude  : 36.3057857
+  longitude : 120.4969047
+  yaw       : -71.27
+  wait_time : 0.0
+
+- name      : WP_236
+  latitude  : 36.3057853
+  longitude : 120.4969049
+  yaw       : -71.73
+  wait_time : 0.0
+
+- name      : WP_237
+  latitude  : 36.3057848
+  longitude : 120.4969053
+  yaw       : -72.26
+  wait_time : 0.0
+
+- name      : WP_238
+  latitude  : 36.3057844
+  longitude : 120.4969056
+  yaw       : -73.27
+  wait_time : 0.0
+
+- name      : WP_239
+  latitude  : 36.3057839
+  longitude : 120.4969059
+  yaw       : -74.53
+  wait_time : 0.0
+
+- name      : WP_240
+  latitude  : 36.3057834
+  longitude : 120.4969061
+  yaw       : -75.05
+  wait_time : 0.0
+
+- name      : WP_241
+  latitude  : 36.3057829
+  longitude : 120.4969064
+  yaw       : -75.81
+  wait_time : 0.0
+
+- name      : WP_242
+  latitude  : 36.3057824
+  longitude : 120.4969066
+  yaw       : -76.56
+  wait_time : 0.0
+
+- name      : WP_243
+  latitude  : 36.3057819
+  longitude : 120.4969069
+  yaw       : -77.38
+  wait_time : 0.0
+
+- name      : WP_244
+  latitude  : 36.3057815
+  longitude : 120.4969071
+  yaw       : -77.87
+  wait_time : 0.0
+
+- name      : WP_245
+  latitude  : 36.3057810
+  longitude : 120.4969073
+  yaw       : -78.36
+  wait_time : 0.0
+
+- name      : WP_246
+  latitude  : 36.3057805
+  longitude : 120.4969075
+  yaw       : -78.88
+  wait_time : 0.0
+
+- name      : WP_247
+  latitude  : 36.3057800
+  longitude : 120.4969077
+  yaw       : -79.60
+  wait_time : 0.0
+
+- name      : WP_248
+  latitude  : 36.3057796
+  longitude : 120.4969079
+  yaw       : -80.42
+  wait_time : 0.0
+
+- name      : WP_249
+  latitude  : 36.3057791
+  longitude : 120.4969081
+  yaw       : -81.18
+  wait_time : 0.0
+
+- name      : WP_250
+  latitude  : 36.3057786
+  longitude : 120.4969083
+  yaw       : -81.49
+  wait_time : 0.0
+
+- name      : WP_251
+  latitude  : 36.3057781
+  longitude : 120.4969083
+  yaw       : -81.44
+  wait_time : 0.0
+
+- name      : WP_252
+  latitude  : 36.3057776
+  longitude : 120.4969085
+  yaw       : -81.73
+  wait_time : 0.0
+
+- name      : WP_253
+  latitude  : 36.3057772
+  longitude : 120.4969087
+  yaw       : -82.27
+  wait_time : 0.0
+
+- name      : WP_254
+  latitude  : 36.3057767
+  longitude : 120.4969088
+  yaw       : -82.85
+  wait_time : 0.0
+
+- name      : WP_255
+  latitude  : 36.3057762
+  longitude : 120.4969090
+  yaw       : -83.32
+  wait_time : 0.0
+
+- name      : WP_256
+  latitude  : 36.3057757
+  longitude : 120.4969090
+  yaw       : -83.09
+  wait_time : 0.0
+
+- name      : WP_257
+  latitude  : 36.3057751
+  longitude : 120.4969091
+  yaw       : -83.20
+  wait_time : 0.0
+
+- name      : WP_258
+  latitude  : 36.3057747
+  longitude : 120.4969093
+  yaw       : -84.31
+  wait_time : 0.0
+
+- name      : WP_259
+  latitude  : 36.3057741
+  longitude : 120.4969094
+  yaw       : -84.78
+  wait_time : 0.0
+
+- name      : WP_260
+  latitude  : 36.3057736
+  longitude : 120.4969095
+  yaw       : -84.93
+  wait_time : 0.0
+
+- name      : WP_261
+  latitude  : 36.3057731
+  longitude : 120.4969095
+  yaw       : -84.75
+  wait_time : 0.0
+
+- name      : WP_262
+  latitude  : 36.3057726
+  longitude : 120.4969097
+  yaw       : -85.39
+  wait_time : 0.0
+
+- name      : WP_263
+  latitude  : 36.3057721
+  longitude : 120.4969098
+  yaw       : -85.74
+  wait_time : 0.0
+
+- name      : WP_264
+  latitude  : 36.3057715
+  longitude : 120.4969098
+  yaw       : -85.95
+  wait_time : 0.0
+
+- name      : WP_265
+  latitude  : 36.3057710
+  longitude : 120.4969099
+  yaw       : -86.37
+  wait_time : 0.0
+
+- name      : WP_266
+  latitude  : 36.3057705
+  longitude : 120.4969100
+  yaw       : -86.83
+  wait_time : 0.0
+
+- name      : WP_267
+  latitude  : 36.3057700
+  longitude : 120.4969101
+  yaw       : -87.54
+  wait_time : 0.0
+
+- name      : WP_268
+  latitude  : 36.3057694
+  longitude : 120.4969101
+  yaw       : -87.59
+  wait_time : 0.0
+
+- name      : WP_269
+  latitude  : 36.3057689
+  longitude : 120.4969101
+  yaw       : -87.74
+  wait_time : 0.0
+
+- name      : WP_270
+  latitude  : 36.3057683
+  longitude : 120.4969102
+  yaw       : -88.17
+  wait_time : 0.0
+
+- name      : WP_271
+  latitude  : 36.3057678
+  longitude : 120.4969103
+  yaw       : -88.58
+  wait_time : 0.0
+
+- name      : WP_272
+  latitude  : 36.3057672
+  longitude : 120.4969103
+  yaw       : -89.08
+  wait_time : 0.0
+
+- name      : WP_273
+  latitude  : 36.3057666
+  longitude : 120.4969103
+  yaw       : -89.32
+  wait_time : 0.0
+
+- name      : WP_274
+  latitude  : 36.3057661
+  longitude : 120.4969104
+  yaw       : -89.35
+  wait_time : 0.0
+
+- name      : WP_275
+  latitude  : 36.3057656
+  longitude : 120.4969105
+  yaw       : -89.78
+  wait_time : 0.0
+
+- name      : WP_276
+  latitude  : 36.3057651
+  longitude : 120.4969105
+  yaw       : -90.28
+  wait_time : 0.0
+
+- name      : WP_277
+  latitude  : 36.3057646
+  longitude : 120.4969106
+  yaw       : -90.95
+  wait_time : 0.0
+
+- name      : WP_278
+  latitude  : 36.3057641
+  longitude : 120.4969107
+  yaw       : -91.68
+  wait_time : 0.0
+
+- name      : WP_279
+  latitude  : 36.3057635
+  longitude : 120.4969108
+  yaw       : -92.18
+  wait_time : 0.0
+
+- name      : WP_280
+  latitude  : 36.3057630
+  longitude : 120.4969108
+  yaw       : -92.46
+  wait_time : 0.0
+
+- name      : WP_281
+  latitude  : 36.3057625
+  longitude : 120.4969109
+  yaw       : -92.92
+  wait_time : 0.0
+
+- name      : WP_282
+  latitude  : 36.3057620
+  longitude : 120.4969110
+  yaw       : -94.08
+  wait_time : 0.0
+
+- name      : WP_283
+  latitude  : 36.3057615
+  longitude : 120.4969110
+  yaw       : -94.96
+  wait_time : 0.0
+
+- name      : WP_284
+  latitude  : 36.3057609
+  longitude : 120.4969111
+  yaw       : -95.59
+  wait_time : 0.0
+
+- name      : WP_285
+  latitude  : 36.3057604
+  longitude : 120.4969112
+  yaw       : -96.62
+  wait_time : 0.0
+
+- name      : WP_286
+  latitude  : 36.3057599
+  longitude : 120.4969112
+  yaw       : -97.60
+  wait_time : 0.0
+
+- name      : WP_287
+  latitude  : 36.3057593
+  longitude : 120.4969112
+  yaw       : -98.02
+  wait_time : 0.0
+
+- name      : WP_288
+  latitude  : 36.3057587
+  longitude : 120.4969112
+  yaw       : -98.98
+  wait_time : 0.0
+
+- name      : WP_289
+  latitude  : 36.3057582
+  longitude : 120.4969112
+  yaw       : -99.92
+  wait_time : 0.0
+
+- name      : WP_290
+  latitude  : 36.3057576
+  longitude : 120.4969112
+  yaw       : -100.77
+  wait_time : 0.0
+
+- name      : WP_291
+  latitude  : 36.3057571
+  longitude : 120.4969112
+  yaw       : -101.38
+  wait_time : 0.0
+
+- name      : WP_292
+  latitude  : 36.3057565
+  longitude : 120.4969111
+  yaw       : -102.34
+  wait_time : 0.0
+
+- name      : WP_293
+  latitude  : 36.3057560
+  longitude : 120.4969110
+  yaw       : -102.97
+  wait_time : 0.0
+
+- name      : WP_294
+  latitude  : 36.3057555
+  longitude : 120.4969110
+  yaw       : -103.45
+  wait_time : 0.0
+
+- name      : WP_295
+  latitude  : 36.3057550
+  longitude : 120.4969110
+  yaw       : -104.27
+  wait_time : 0.0
+
+- name      : WP_296
+  latitude  : 36.3057544
+  longitude : 120.4969109
+  yaw       : -105.36
+  wait_time : 0.0
+
+- name      : WP_297
+  latitude  : 36.3057539
+  longitude : 120.4969108
+  yaw       : -106.00
+  wait_time : 0.0
+
+- name      : WP_298
+  latitude  : 36.3057533
+  longitude : 120.4969107
+  yaw       : -106.88
+  wait_time : 0.0
+
+- name      : WP_299
+  latitude  : 36.3057528
+  longitude : 120.4969107
+  yaw       : -107.79
+  wait_time : 0.0
+
+- name      : WP_300
+  latitude  : 36.3057523
+  longitude : 120.4969105
+  yaw       : -108.43
+  wait_time : 0.0
+
+- name      : WP_301
+  latitude  : 36.3057518
+  longitude : 120.4969105
+  yaw       : -109.33
+  wait_time : 0.0
+
+- name      : WP_302
+  latitude  : 36.3057513
+  longitude : 120.4969103
+  yaw       : -110.08
+  wait_time : 0.0
+
+- name      : WP_303
+  latitude  : 36.3057508
+  longitude : 120.4969102
+  yaw       : -110.95
+  wait_time : 0.0
+
+- name      : WP_304
+  latitude  : 36.3057502
+  longitude : 120.4969101
+  yaw       : -112.09
+  wait_time : 0.0
+
+- name      : WP_305
+  latitude  : 36.3057497
+  longitude : 120.4969100
+  yaw       : -113.26
+  wait_time : 0.0
+
+- name      : WP_306
+  latitude  : 36.3057492
+  longitude : 120.4969098
+  yaw       : -114.13
+  wait_time : 0.0
+
+- name      : WP_307
+  latitude  : 36.3057486
+  longitude : 120.4969096
+  yaw       : -114.73
+  wait_time : 0.0
+
+- name      : WP_308
+  latitude  : 36.3057481
+  longitude : 120.4969095
+  yaw       : -115.60
+  wait_time : 0.0
+
+- name      : WP_309
+  latitude  : 36.3057476
+  longitude : 120.4969093
+  yaw       : -116.58
+  wait_time : 0.0
+
+- name      : WP_310
+  latitude  : 36.3057470
+  longitude : 120.4969091
+  yaw       : -116.94
+  wait_time : 0.0
+
+- name      : WP_311
+  latitude  : 36.3057465
+  longitude : 120.4969088
+  yaw       : -117.65
+  wait_time : 0.0
+
+- name      : WP_312
+  latitude  : 36.3057460
+  longitude : 120.4969086
+  yaw       : -118.48
+  wait_time : 0.0
+
+- name      : WP_313
+  latitude  : 36.3057455
+  longitude : 120.4969083
+  yaw       : -118.72
+  wait_time : 0.0
+
+- name      : WP_314
+  latitude  : 36.3057451
+  longitude : 120.4969082
+  yaw       : -119.36
+  wait_time : 0.0
+
+- name      : WP_315
+  latitude  : 36.3057446
+  longitude : 120.4969079
+  yaw       : -119.82
+  wait_time : 0.0
+
+- name      : WP_316
+  latitude  : 36.3057441
+  longitude : 120.4969076
+  yaw       : -120.18
+  wait_time : 0.0
+
+- name      : WP_317
+  latitude  : 36.3057436
+  longitude : 120.4969073
+  yaw       : -120.82
+  wait_time : 0.0
+
+- name      : WP_318
+  latitude  : 36.3057432
+  longitude : 120.4969071
+  yaw       : -121.52
+  wait_time : 0.0
+
+- name      : WP_319
+  latitude  : 36.3057427
+  longitude : 120.4969068
+  yaw       : -121.95
+  wait_time : 0.0
+
+- name      : WP_320
+  latitude  : 36.3057422
+  longitude : 120.4969065
+  yaw       : -122.11
+  wait_time : 0.0
+
+- name      : WP_321
+  latitude  : 36.3057418
+  longitude : 120.4969062
+  yaw       : -122.25
+  wait_time : 0.0
+
+- name      : WP_322
+  latitude  : 36.3057413
+  longitude : 120.4969059
+  yaw       : -122.89
+  wait_time : 0.0
+
+- name      : WP_323
+  latitude  : 36.3057408
+  longitude : 120.4969056
+  yaw       : -123.61
+  wait_time : 0.0
+
+- name      : WP_324
+  latitude  : 36.3057403
+  longitude : 120.4969053
+  yaw       : -124.21
+  wait_time : 0.0
+
+- name      : WP_325
+  latitude  : 36.3057399
+  longitude : 120.4969049
+  yaw       : -124.12
+  wait_time : 0.0
+
+- name      : WP_326
+  latitude  : 36.3057395
+  longitude : 120.4969047
+  yaw       : -124.58
+  wait_time : 0.0
+
+- name      : WP_327
+  latitude  : 36.3057390
+  longitude : 120.4969044
+  yaw       : -125.43
+  wait_time : 0.0
+
+- name      : WP_328
+  latitude  : 36.3057385
+  longitude : 120.4969041
+  yaw       : -126.25
+  wait_time : 0.0
+
+- name      : WP_329
+  latitude  : 36.3057380
+  longitude : 120.4969038
+  yaw       : -127.12
+  wait_time : 0.0
+
+- name      : WP_330
+  latitude  : 36.3057376
+  longitude : 120.4969034
+  yaw       : -127.56
+  wait_time : 0.0
+
+- name      : WP_331
+  latitude  : 36.3057371
+  longitude : 120.4969031
+  yaw       : -128.45
+  wait_time : 0.0
+
+- name      : WP_332
+  latitude  : 36.3057366
+  longitude : 120.4969028
+  yaw       : -129.46
+  wait_time : 0.0
+
+- name      : WP_333
+  latitude  : 36.3057361
+  longitude : 120.4969024
+  yaw       : -130.37
+  wait_time : 0.0
+
+- name      : WP_334
+  latitude  : 36.3057356
+  longitude : 120.4969021
+  yaw       : -131.53
+  wait_time : 0.0
+
+- name      : WP_335
+  latitude  : 36.3057352
+  longitude : 120.4969018
+  yaw       : -132.63
+  wait_time : 0.0
+
+- name      : WP_336
+  latitude  : 36.3057347
+  longitude : 120.4969015
+  yaw       : -133.48
+  wait_time : 0.0
+
+- name      : WP_337
+  latitude  : 36.3057343
+  longitude : 120.4969011
+  yaw       : -134.51
+  wait_time : 0.0
+
+- name      : WP_338
+  latitude  : 36.3057338
+  longitude : 120.4969007
+  yaw       : -135.77
+  wait_time : 0.0
+
+- name      : WP_339
+  latitude  : 36.3057333
+  longitude : 120.4969004
+  yaw       : -137.41
+  wait_time : 0.0
+
+- name      : WP_340
+  latitude  : 36.3057328
+  longitude : 120.4969001
+  yaw       : -138.67
+  wait_time : 0.0
+
+- name      : WP_341
+  latitude  : 36.3057324
+  longitude : 120.4968998
+  yaw       : -139.73
+  wait_time : 0.0
+
+- name      : WP_342
+  latitude  : 36.3057319
+  longitude : 120.4968994
+  yaw       : -141.32
+  wait_time : 0.0
+
+- name      : WP_343
+  latitude  : 36.3057314
+  longitude : 120.4968989
+  yaw       : -142.55
+  wait_time : 0.0
+
+- name      : WP_344
+  latitude  : 36.3057310
+  longitude : 120.4968985
+  yaw       : -143.82
+  wait_time : 0.0
+
+- name      : WP_345
+  latitude  : 36.3057306
+  longitude : 120.4968980
+  yaw       : -144.79
+  wait_time : 0.0
+
+- name      : WP_346
+  latitude  : 36.3057302
+  longitude : 120.4968976
+  yaw       : -145.94
+  wait_time : 0.0
+
+- name      : WP_347
+  latitude  : 36.3057298
+  longitude : 120.4968970
+  yaw       : -147.00
+  wait_time : 0.0
+
+- name      : WP_348
+  latitude  : 36.3057294
+  longitude : 120.4968966
+  yaw       : -148.17
+  wait_time : 0.0
+
+- name      : WP_349
+  latitude  : 36.3057290
+  longitude : 120.4968961
+  yaw       : -149.31
+  wait_time : 0.0
+
+- name      : WP_350
+  latitude  : 36.3057286
+  longitude : 120.4968956
+  yaw       : -150.67
+  wait_time : 0.0
+
+- name      : WP_351
+  latitude  : 36.3057282
+  longitude : 120.4968950
+  yaw       : -151.68
+  wait_time : 0.0
+
+- name      : WP_352
+  latitude  : 36.3057279
+  longitude : 120.4968945
+  yaw       : -152.52
+  wait_time : 0.0
+
+- name      : WP_353
+  latitude  : 36.3057275
+  longitude : 120.4968939
+  yaw       : -153.90
+  wait_time : 0.0
+
+- name      : WP_354
+  latitude  : 36.3057272
+  longitude : 120.4968934
+  yaw       : -154.82
+  wait_time : 0.0
+
+- name      : WP_355
+  latitude  : 36.3057269
+  longitude : 120.4968929
+  yaw       : -155.72
+  wait_time : 0.0
+
+- name      : WP_356
+  latitude  : 36.3057265
+  longitude : 120.4968924
+  yaw       : -156.67
+  wait_time : 0.0
+
+- name      : WP_357
+  latitude  : 36.3057261
+  longitude : 120.4968917
+  yaw       : -157.93
+  wait_time : 0.0
+
+- name      : WP_358
+  latitude  : 36.3057259
+  longitude : 120.4968912
+  yaw       : -159.18
+  wait_time : 0.0
+
+- name      : WP_359
+  latitude  : 36.3057255
+  longitude : 120.4968906
+  yaw       : -160.44
+  wait_time : 0.0
+
+- name      : WP_360
+  latitude  : 36.3057252
+  longitude : 120.4968899
+  yaw       : -161.45
+  wait_time : 0.0
+
+- name      : WP_361
+  latitude  : 36.3057249
+  longitude : 120.4968892
+  yaw       : -162.50
+  wait_time : 0.0
+
+- name      : WP_362
+  latitude  : 36.3057248
+  longitude : 120.4968888
+  yaw       : -163.13
+  wait_time : 0.0
+
+- name      : WP_363
+  latitude  : 36.3057244
+  longitude : 120.4968882
+  yaw       : -164.71
+  wait_time : 0.0
+
+- name      : WP_364
+  latitude  : 36.3057241
+  longitude : 120.4968876
+  yaw       : -166.25
+  wait_time : 0.0
+
+- name      : WP_365
+  latitude  : 36.3057239
+  longitude : 120.4968868
+  yaw       : -167.45
+  wait_time : 0.0
+
+- name      : WP_366
+  latitude  : 36.3057237
+  longitude : 120.4968863
+  yaw       : -168.56
+  wait_time : 0.0
+
+- name      : WP_367
+  latitude  : 36.3057235
+  longitude : 120.4968856
+  yaw       : -169.76
+  wait_time : 0.0
+
+- name      : WP_368
+  latitude  : 36.3057233
+  longitude : 120.4968850
+  yaw       : -170.68
+  wait_time : 0.0
+
+- name      : WP_369
+  latitude  : 36.3057230
+  longitude : 120.4968843
+  yaw       : -171.89
+  wait_time : 0.0
+
+- name      : WP_370
+  latitude  : 36.3057229
+  longitude : 120.4968836
+  yaw       : -172.85
+  wait_time : 0.0
+
+- name      : WP_371
+  latitude  : 36.3057227
+  longitude : 120.4968829
+  yaw       : -174.18
+  wait_time : 0.0
+
+- name      : WP_372
+  latitude  : 36.3057225
+  longitude : 120.4968822
+  yaw       : -175.43
+  wait_time : 0.0
+
+- name      : WP_373
+  latitude  : 36.3057223
+  longitude : 120.4968816
+  yaw       : -176.39
+  wait_time : 0.0
+
+- name      : WP_374
+  latitude  : 36.3057221
+  longitude : 120.4968808
+  yaw       : -177.76
+  wait_time : 0.0
+
+- name      : WP_375
+  latitude  : 36.3057220
+  longitude : 120.4968801
+  yaw       : -178.96
+  wait_time : 0.0
+
+- name      : WP_376
+  latitude  : 36.3057219
+  longitude : 120.4968793
+  yaw       : -179.94
+  wait_time : 0.0
+
+- name      : WP_377
+  latitude  : 36.3057217
+  longitude : 120.4968785
+  yaw       : 178.66
+  wait_time : 0.0
+
+- name      : WP_378
+  latitude  : 36.3057215
+  longitude : 120.4968777
+  yaw       : 176.93
+  wait_time : 0.0
+
+- name      : WP_379
+  latitude  : 36.3057214
+  longitude : 120.4968770
+  yaw       : 175.81
+  wait_time : 0.0
+
+- name      : WP_380
+  latitude  : 36.3057214
+  longitude : 120.4968762
+  yaw       : 174.27
+  wait_time : 0.0
+
+- name      : WP_381
+  latitude  : 36.3057213
+  longitude : 120.4968754
+  yaw       : 173.14
+  wait_time : 0.0
+
+- name      : WP_382
+  latitude  : 36.3057212
+  longitude : 120.4968746
+  yaw       : 171.66
+  wait_time : 0.0
+
+- name      : WP_383
+  latitude  : 36.3057211
+  longitude : 120.4968738
+  yaw       : 170.41
+  wait_time : 0.0
+
+- name      : WP_384
+  latitude  : 36.3057211
+  longitude : 120.4968730
+  yaw       : 168.96
+  wait_time : 0.0
+
+- name      : WP_385
+  latitude  : 36.3057211
+  longitude : 120.4968723
+  yaw       : 168.09
+  wait_time : 0.0
+
+- name      : WP_386
+  latitude  : 36.3057211
+  longitude : 120.4968716
+  yaw       : 166.22
+  wait_time : 0.0
+
+- name      : WP_387
+  latitude  : 36.3057211
+  longitude : 120.4968708
+  yaw       : 165.42
+  wait_time : 0.0
+
+- name      : WP_388
+  latitude  : 36.3057212
+  longitude : 120.4968701
+  yaw       : 164.14
+  wait_time : 0.0
+
+- name      : WP_389
+  latitude  : 36.3057212
+  longitude : 120.4968693
+  yaw       : 162.80
+  wait_time : 0.0
+
+- name      : WP_390
+  latitude  : 36.3057212
+  longitude : 120.4968686
+  yaw       : 161.06
+  wait_time : 0.0
+
+- name      : WP_391
+  latitude  : 36.3057213
+  longitude : 120.4968679
+  yaw       : 160.27
+  wait_time : 0.0
+
+- name      : WP_392
+  latitude  : 36.3057214
+  longitude : 120.4968670
+  yaw       : 159.21
+  wait_time : 0.0
+
+- name      : WP_393
+  latitude  : 36.3057215
+  longitude : 120.4968663
+  yaw       : 158.10
+  wait_time : 0.0
+
+- name      : WP_394
+  latitude  : 36.3057215
+  longitude : 120.4968655
+  yaw       : 156.72
+  wait_time : 0.0
+
+- name      : WP_395
+  latitude  : 36.3057217
+  longitude : 120.4968648
+  yaw       : 155.55
+  wait_time : 0.0
+
+- name      : WP_396
+  latitude  : 36.3057219
+  longitude : 120.4968641
+  yaw       : 154.45
+  wait_time : 0.0
+
+- name      : WP_397
+  latitude  : 36.3057221
+  longitude : 120.4968634
+  yaw       : 153.37
+  wait_time : 0.0
+
+- name      : WP_398
+  latitude  : 36.3057222
+  longitude : 120.4968627
+  yaw       : 152.00
+  wait_time : 0.0
+
+- name      : WP_399
+  latitude  : 36.3057223
+  longitude : 120.4968620
+  yaw       : 150.93
+  wait_time : 0.0
+
+- name      : WP_400
+  latitude  : 36.3057226
+  longitude : 120.4968613
+  yaw       : 149.66
+  wait_time : 0.0
+
+- name      : WP_401
+  latitude  : 36.3057228
+  longitude : 120.4968607
+  yaw       : 148.14
+  wait_time : 0.0
+
+- name      : WP_402
+  latitude  : 36.3057229
+  longitude : 120.4968599
+  yaw       : 146.93
+  wait_time : 0.0
+
+- name      : WP_403
+  latitude  : 36.3057232
+  longitude : 120.4968594
+  yaw       : 146.18
+  wait_time : 0.0
+
+- name      : WP_404
+  latitude  : 36.3057234
+  longitude : 120.4968586
+  yaw       : 144.78
+  wait_time : 0.0
+
+- name      : WP_405
+  latitude  : 36.3057237
+  longitude : 120.4968579
+  yaw       : 143.40
+  wait_time : 0.0
+
+- name      : WP_406
+  latitude  : 36.3057240
+  longitude : 120.4968573
+  yaw       : 141.77
+  wait_time : 0.0
+
+- name      : WP_407
+  latitude  : 36.3057242
+  longitude : 120.4968566
+  yaw       : 141.05
+  wait_time : 0.0
+
+- name      : WP_408
+  latitude  : 36.3057245
+  longitude : 120.4968560
+  yaw       : 139.64
+  wait_time : 0.0
+
+- name      : WP_409
+  latitude  : 36.3057248
+  longitude : 120.4968554
+  yaw       : 138.77
+  wait_time : 0.0
+
+- name      : WP_410
+  latitude  : 36.3057251
+  longitude : 120.4968547
+  yaw       : 137.39
+  wait_time : 0.0
+
+- name      : WP_411
+  latitude  : 36.3057254
+  longitude : 120.4968541
+  yaw       : 136.17
+  wait_time : 0.0
+
+- name      : WP_412
+  latitude  : 36.3057258
+  longitude : 120.4968535
+  yaw       : 135.04
+  wait_time : 0.0
+
+- name      : WP_413
+  latitude  : 36.3057262
+  longitude : 120.4968529
+  yaw       : 133.81
+  wait_time : 0.0
+
+- name      : WP_414
+  latitude  : 36.3057266
+  longitude : 120.4968525
+  yaw       : 133.12
+  wait_time : 0.0
+
+- name      : WP_415
+  latitude  : 36.3057269
+  longitude : 120.4968519
+  yaw       : 131.31
+  wait_time : 0.0
+
+- name      : WP_416
+  latitude  : 36.3057273
+  longitude : 120.4968514
+  yaw       : 130.24
+  wait_time : 0.0
+
+- name      : WP_417
+  latitude  : 36.3057277
+  longitude : 120.4968508
+  yaw       : 129.55
+  wait_time : 0.0
+
+- name      : WP_418
+  latitude  : 36.3057281
+  longitude : 120.4968504
+  yaw       : 128.56
+  wait_time : 0.0
+
+- name      : WP_419
+  latitude  : 36.3057285
+  longitude : 120.4968499
+  yaw       : 127.22
+  wait_time : 0.0
+
+- name      : WP_420
+  latitude  : 36.3057290
+  longitude : 120.4968494
+  yaw       : 125.97
+  wait_time : 0.0
+
+- name      : WP_421
+  latitude  : 36.3057294
+  longitude : 120.4968490
+  yaw       : 125.41
+  wait_time : 0.0
+
+- name      : WP_422
+  latitude  : 36.3057298
+  longitude : 120.4968485
+  yaw       : 124.82
+  wait_time : 0.0
+
+- name      : WP_423
+  latitude  : 36.3057303
+  longitude : 120.4968480
+  yaw       : 123.10
+  wait_time : 0.0
+
+- name      : WP_424
+  latitude  : 36.3057307
+  longitude : 120.4968476
+  yaw       : 122.42
+  wait_time : 0.0
+
+- name      : WP_425
+  latitude  : 36.3057312
+  longitude : 120.4968471
+  yaw       : 121.81
+  wait_time : 0.0
+
+- name      : WP_426
+  latitude  : 36.3057317
+  longitude : 120.4968468
+  yaw       : 121.43
+  wait_time : 0.0
+
+- name      : WP_427
+  latitude  : 36.3057321
+  longitude : 120.4968463
+  yaw       : 120.63
+  wait_time : 0.0
+
+- name      : WP_428
+  latitude  : 36.3057326
+  longitude : 120.4968459
+  yaw       : 119.87
+  wait_time : 0.0
+
+- name      : WP_429
+  latitude  : 36.3057331
+  longitude : 120.4968455
+  yaw       : 119.59
+  wait_time : 0.0
+
+- name      : WP_430
+  latitude  : 36.3057336
+  longitude : 120.4968451
+  yaw       : 119.17
+  wait_time : 0.0
+
+- name      : WP_431
+  latitude  : 36.3057340
+  longitude : 120.4968447
+  yaw       : 118.98
+  wait_time : 0.0
+
+- name      : WP_432
+  latitude  : 36.3057345
+  longitude : 120.4968444
+  yaw       : 118.54
+  wait_time : 0.0
+
+- name      : WP_433
+  latitude  : 36.3057350
+  longitude : 120.4968440
+  yaw       : 118.26
+  wait_time : 0.0
+
+- name      : WP_434
+  latitude  : 36.3057355
+  longitude : 120.4968437
+  yaw       : 117.88
+  wait_time : 0.0
+
+- name      : WP_435
+  latitude  : 36.3057360
+  longitude : 120.4968433
+  yaw       : 117.45
+  wait_time : 0.0
+
+- name      : WP_436
+  latitude  : 36.3057365
+  longitude : 120.4968430
+  yaw       : 117.24
+  wait_time : 0.0
+
+- name      : WP_437
+  latitude  : 36.3057369
+  longitude : 120.4968426
+  yaw       : 116.44
+  wait_time : 0.0
+
+- name      : WP_438
+  latitude  : 36.3057374
+  longitude : 120.4968423
+  yaw       : 116.41
+  wait_time : 0.0
+
+- name      : WP_439
+  latitude  : 36.3057379
+  longitude : 120.4968419
+  yaw       : 115.80
+  wait_time : 0.0
+
+- name      : WP_440
+  latitude  : 36.3057384
+  longitude : 120.4968416
+  yaw       : 115.64
+  wait_time : 0.0
+
+- name      : WP_441
+  latitude  : 36.3057389
+  longitude : 120.4968413
+  yaw       : 115.34
+  wait_time : 0.0
+
+- name      : WP_442
+  latitude  : 36.3057394
+  longitude : 120.4968410
+  yaw       : 114.91
+  wait_time : 0.0
+
+- name      : WP_443
+  latitude  : 36.3057399
+  longitude : 120.4968407
+  yaw       : 114.72
+  wait_time : 0.0
+
+- name      : WP_444
+  latitude  : 36.3057404
+  longitude : 120.4968404
+  yaw       : 114.47
+  wait_time : 0.0
+
+- name      : WP_445
+  latitude  : 36.3057409
+  longitude : 120.4968401
+  yaw       : 113.98
+  wait_time : 0.0
+
+- name      : WP_446
+  latitude  : 36.3057414
+  longitude : 120.4968399
+  yaw       : 113.76
+  wait_time : 0.0
+
+- name      : WP_447
+  latitude  : 36.3057418
+  longitude : 120.4968396
+  yaw       : 113.54
+  wait_time : 0.0
+
+- name      : WP_448
+  latitude  : 36.3057424
+  longitude : 120.4968394
+  yaw       : 113.36
+  wait_time : 0.0
+
+- name      : WP_449
+  latitude  : 36.3057429
+  longitude : 120.4968391
+  yaw       : 113.20
+  wait_time : 0.0
+
+- name      : WP_450
+  latitude  : 36.3057434
+  longitude : 120.4968388
+  yaw       : 113.02
+  wait_time : 0.0
+
+- name      : WP_451
+  latitude  : 36.3057439
+  longitude : 120.4968385
+  yaw       : 112.94
+  wait_time : 0.0
+
+- name      : WP_452
+  latitude  : 36.3057444
+  longitude : 120.4968382
+  yaw       : 112.40
+  wait_time : 0.0
+
+- name      : WP_453
+  latitude  : 36.3057449
+  longitude : 120.4968379
+  yaw       : 112.20
+  wait_time : 0.0
+
+- name      : WP_454
+  latitude  : 36.3057454
+  longitude : 120.4968376
+  yaw       : 111.92
+  wait_time : 0.0
+
+- name      : WP_455
+  latitude  : 36.3057459
+  longitude : 120.4968374
+  yaw       : 111.77
+  wait_time : 0.0
+
+- name      : WP_456
+  latitude  : 36.3057464
+  longitude : 120.4968371
+  yaw       : 111.52
+  wait_time : 0.0
+
+- name      : WP_457
+  latitude  : 36.3057469
+  longitude : 120.4968369
+  yaw       : 111.41
+  wait_time : 0.0
+
+- name      : WP_458
+  latitude  : 36.3057474
+  longitude : 120.4968366
+  yaw       : 110.90
+  wait_time : 0.0
+
+- name      : WP_459
+  latitude  : 36.3057479
+  longitude : 120.4968363
+  yaw       : 110.69
+  wait_time : 0.0
+
+- name      : WP_460
+  latitude  : 36.3057484
+  longitude : 120.4968361
+  yaw       : 110.47
+  wait_time : 0.0
+
+- name      : WP_461
+  latitude  : 36.3057489
+  longitude : 120.4968359
+  yaw       : 110.19
+  wait_time : 0.0
+
+- name      : WP_462
+  latitude  : 36.3057494
+  longitude : 120.4968356
+  yaw       : 109.81
+  wait_time : 0.0
+
+- name      : WP_463
+  latitude  : 36.3057499
+  longitude : 120.4968354
+  yaw       : 109.67
+  wait_time : 0.0
+
+- name      : WP_464
+  latitude  : 36.3057504
+  longitude : 120.4968351
+  yaw       : 109.52
+  wait_time : 0.0
+
+- name      : WP_465
+  latitude  : 36.3057510
+  longitude : 120.4968348
+  yaw       : 109.35
+  wait_time : 0.0
+
+- name      : WP_466
+  latitude  : 36.3057515
+  longitude : 120.4968346
+  yaw       : 109.35
+  wait_time : 0.0
+
+- name      : WP_467
+  latitude  : 36.3057520
+  longitude : 120.4968344
+  yaw       : 109.21
+  wait_time : 0.0
+
+- name      : WP_468
+  latitude  : 36.3057525
+  longitude : 120.4968341
+  yaw       : 108.94
+  wait_time : 0.0
+
+- name      : WP_469
+  latitude  : 36.3057531
+  longitude : 120.4968340
+  yaw       : 108.96
+  wait_time : 0.0
+
+- name      : WP_470
+  latitude  : 36.3057536
+  longitude : 120.4968338
+  yaw       : 108.94
+  wait_time : 0.0
+
+- name      : WP_471
+  latitude  : 36.3057541
+  longitude : 120.4968336
+  yaw       : 108.98
+  wait_time : 0.0
+
+- name      : WP_472
+  latitude  : 36.3057546
+  longitude : 120.4968334
+  yaw       : 109.07
+  wait_time : 0.0
+
+- name      : WP_473
+  latitude  : 36.3057551
+  longitude : 120.4968331
+  yaw       : 108.85
+  wait_time : 0.0
+
+- name      : WP_474
+  latitude  : 36.3057556
+  longitude : 120.4968329
+  yaw       : 109.04
+  wait_time : 0.0
+
+- name      : WP_475
+  latitude  : 36.3057561
+  longitude : 120.4968327
+  yaw       : 109.25
+  wait_time : 0.0
+
+- name      : WP_476
+  latitude  : 36.3057566
+  longitude : 120.4968326
+  yaw       : 109.89
+  wait_time : 0.0
+
+- name      : WP_477
+  latitude  : 36.3057571
+  longitude : 120.4968324
+  yaw       : 110.14
+  wait_time : 0.0
+
+- name      : WP_478
+  latitude  : 36.3057576
+  longitude : 120.4968323
+  yaw       : 110.92
+  wait_time : 0.0
+
+- name      : WP_479
+  latitude  : 36.3057581
+  longitude : 120.4968321
+  yaw       : 111.60
+  wait_time : 0.0
+
+- name      : WP_480
+  latitude  : 36.3057586
+  longitude : 120.4968319
+  yaw       : 112.23
+  wait_time : 0.0
+
+- name      : WP_481
+  latitude  : 36.3057591
+  longitude : 120.4968318
+  yaw       : 113.31
+  wait_time : 0.0
+
+- name      : WP_482
+  latitude  : 36.3057596
+  longitude : 120.4968317
+  yaw       : 114.60
+  wait_time : 0.0
+
+- name      : WP_483
+  latitude  : 36.3057601
+  longitude : 120.4968316
+  yaw       : 115.44
+  wait_time : 0.0
+
+- name      : WP_484
+  latitude  : 36.3057606
+  longitude : 120.4968313
+  yaw       : 116.26
+  wait_time : 0.0
+
+- name      : WP_485
+  latitude  : 36.3057610
+  longitude : 120.4968311
+  yaw       : 116.60
+  wait_time : 0.0
+
+- name      : WP_486
+  latitude  : 36.3057615
+  longitude : 120.4968308
+  yaw       : 117.03
+  wait_time : 0.0
+
+- name      : WP_487
+  latitude  : 36.3057620
+  longitude : 120.4968307
+  yaw       : 117.98
+  wait_time : 0.0
+
+- name      : WP_488
+  latitude  : 36.3057625
+  longitude : 120.4968305
+  yaw       : 118.67
+  wait_time : 0.0
+
+- name      : WP_489
+  latitude  : 36.3057630
+  longitude : 120.4968302
+  yaw       : 118.95
+  wait_time : 0.0
+
+- name      : WP_490
+  latitude  : 36.3057634
+  longitude : 120.4968300
+  yaw       : 119.59
+  wait_time : 0.0
+
+- name      : WP_491
+  latitude  : 36.3057639
+  longitude : 120.4968298
+  yaw       : 119.98
+  wait_time : 0.0
+
+- name      : WP_492
+  latitude  : 36.3057643
+  longitude : 120.4968295
+  yaw       : 120.50
+  wait_time : 0.0
+
+- name      : WP_493
+  latitude  : 36.3057648
+  longitude : 120.4968293
+  yaw       : 120.92
+  wait_time : 0.0
+
+- name      : WP_494
+  latitude  : 36.3057653
+  longitude : 120.4968290
+  yaw       : 121.33
+  wait_time : 0.0
+
+- name      : WP_495
+  latitude  : 36.3057657
+  longitude : 120.4968287
+  yaw       : 121.52
+  wait_time : 0.0
+
+- name      : WP_496
+  latitude  : 36.3057662
+  longitude : 120.4968284
+  yaw       : 121.93
+  wait_time : 0.0
+
+- name      : WP_497
+  latitude  : 36.3057666
+  longitude : 120.4968282
+  yaw       : 122.48
+  wait_time : 0.0
+
+- name      : WP_498
+  latitude  : 36.3057671
+  longitude : 120.4968280
+  yaw       : 122.92
+  wait_time : 0.0
+
+- name      : WP_499
+  latitude  : 36.3057675
+  longitude : 120.4968277
+  yaw       : 122.83
+  wait_time : 0.0
+
+- name      : WP_500
+  latitude  : 36.3057680
+  longitude : 120.4968274
+  yaw       : 123.03
+  wait_time : 0.0
+
+- name      : WP_501
+  latitude  : 36.3057685
+  longitude : 120.4968271
+  yaw       : 123.19
+  wait_time : 0.0
+
+- name      : WP_502
+  latitude  : 36.3057689
+  longitude : 120.4968268
+  yaw       : 123.27
+  wait_time : 0.0
+
+- name      : WP_503
+  latitude  : 36.3057694
+  longitude : 120.4968264
+  yaw       : 123.47
+  wait_time : 0.0
+
+- name      : WP_504
+  latitude  : 36.3057699
+  longitude : 120.4968261
+  yaw       : 123.83
+  wait_time : 0.0
+
+- name      : WP_505
+  latitude  : 36.3057703
+  longitude : 120.4968258
+  yaw       : 124.20
+  wait_time : 0.0
+
+- name      : WP_506
+  latitude  : 36.3057708
+  longitude : 120.4968255
+  yaw       : 124.15
+  wait_time : 0.0
+
+- name      : WP_507
+  latitude  : 36.3057712
+  longitude : 120.4968252
+  yaw       : 124.25
+  wait_time : 0.0
+
+- name      : WP_508
+  latitude  : 36.3057716
+  longitude : 120.4968249
+  yaw       : 124.38
+  wait_time : 0.0
+
+- name      : WP_509
+  latitude  : 36.3057721
+  longitude : 120.4968246
+  yaw       : 124.50
+  wait_time : 0.0
+
+- name      : WP_510
+  latitude  : 36.3057725
+  longitude : 120.4968243
+  yaw       : 124.46
+  wait_time : 0.0
+
+- name      : WP_511
+  latitude  : 36.3057730
+  longitude : 120.4968240
+  yaw       : 124.70
+  wait_time : 0.0
+
+- name      : WP_512
+  latitude  : 36.3057734
+  longitude : 120.4968237
+  yaw       : 124.88
+  wait_time : 0.0
+
+- name      : WP_513
+  latitude  : 36.3057739
+  longitude : 120.4968234
+  yaw       : 124.92
+  wait_time : 0.0
+
+- name      : WP_514
+  latitude  : 36.3057743
+  longitude : 120.4968231
+  yaw       : 124.80
+  wait_time : 0.0
+
+- name      : WP_515
+  latitude  : 36.3057747
+  longitude : 120.4968227
+  yaw       : 124.89
+  wait_time : 0.0
+
+- name      : WP_516
+  latitude  : 36.3057751
+  longitude : 120.4968224
+  yaw       : 124.53
+  wait_time : 0.0
+
+- name      : WP_517
+  latitude  : 36.3057755
+  longitude : 120.4968221
+  yaw       : 124.11
+  wait_time : 0.0
+
+- name      : WP_518
+  latitude  : 36.3057760
+  longitude : 120.4968217
+  yaw       : 123.82
+  wait_time : 0.0
+
+- name      : WP_519
+  latitude  : 36.3057764
+  longitude : 120.4968214
+  yaw       : 123.27
+  wait_time : 0.0
+
+- name      : WP_520
+  latitude  : 36.3057769
+  longitude : 120.4968211
+  yaw       : 122.82
+  wait_time : 0.0
+
+- name      : WP_521
+  latitude  : 36.3057773
+  longitude : 120.4968207
+  yaw       : 122.19
+  wait_time : 0.0
+
+- name      : WP_522
+  latitude  : 36.3057777
+  longitude : 120.4968203
+  yaw       : 121.59
+  wait_time : 0.0
+
+- name      : WP_523
+  latitude  : 36.3057782
+  longitude : 120.4968200
+  yaw       : 120.95
+  wait_time : 0.0
+
+- name      : WP_524
+  latitude  : 36.3057786
+  longitude : 120.4968197
+  yaw       : 120.35
+  wait_time : 0.0
+
+- name      : WP_525
+  latitude  : 36.3057790
+  longitude : 120.4968192
+  yaw       : 119.32
+  wait_time : 0.0
+
+- name      : WP_526
+  latitude  : 36.3057795
+  longitude : 120.4968188
+  yaw       : 118.59
+  wait_time : 0.0
+
+- name      : WP_527
+  latitude  : 36.3057799
+  longitude : 120.4968184
+  yaw       : 117.67
+  wait_time : 0.0
+
+- name      : WP_528
+  latitude  : 36.3057804
+  longitude : 120.4968180
+  yaw       : 116.80
+  wait_time : 0.0
+
+- name      : WP_529
+  latitude  : 36.3057809
+  longitude : 120.4968176
+  yaw       : 115.90
+  wait_time : 0.0
+
+- name      : WP_530
+  latitude  : 36.3057813
+  longitude : 120.4968172
+  yaw       : 114.88
+  wait_time : 0.0
+
+- name      : WP_531
+  latitude  : 36.3057818
+  longitude : 120.4968168
+  yaw       : 113.96
+  wait_time : 0.0
+
+- name      : WP_532
+  latitude  : 36.3057823
+  longitude : 120.4968165
+  yaw       : 112.75
+  wait_time : 0.0
+
+- name      : WP_533
+  latitude  : 36.3057827
+  longitude : 120.4968161
+  yaw       : 111.88
+  wait_time : 0.0
+
+- name      : WP_534
+  latitude  : 36.3057832
+  longitude : 120.4968158
+  yaw       : 111.16
+  wait_time : 0.0
+
+- name      : WP_535
+  latitude  : 36.3057837
+  longitude : 120.4968155
+  yaw       : 109.99
+  wait_time : 0.0
+
+- name      : WP_536
+  latitude  : 36.3057842
+  longitude : 120.4968152
+  yaw       : 108.80
+  wait_time : 0.0
+
+- name      : WP_537
+  latitude  : 36.3057847
+  longitude : 120.4968148
+  yaw       : 107.86
+  wait_time : 0.0
+
+- name      : WP_538
+  latitude  : 36.3057852
+  longitude : 120.4968145
+  yaw       : 106.99
+  wait_time : 0.0
+
+- name      : WP_539
+  latitude  : 36.3057857
+  longitude : 120.4968142
+  yaw       : 105.96
+  wait_time : 0.0
+
+- name      : WP_540
+  latitude  : 36.3057863
+  longitude : 120.4968139
+  yaw       : 104.63
+  wait_time : 0.0
+
+- name      : WP_541
+  latitude  : 36.3057867
+  longitude : 120.4968136
+  yaw       : 103.82
+  wait_time : 0.0
+
+- name      : WP_542
+  latitude  : 36.3057873
+  longitude : 120.4968133
+  yaw       : 102.77
+  wait_time : 0.0
+
+- name      : WP_543
+  latitude  : 36.3057878
+  longitude : 120.4968130
+  yaw       : 101.57
+  wait_time : 0.0
+
+- name      : WP_544
+  latitude  : 36.3057883
+  longitude : 120.4968128
+  yaw       : 100.58
+  wait_time : 0.0
+
+- name      : WP_545
+  latitude  : 36.3057888
+  longitude : 120.4968126
+  yaw       : 99.88
+  wait_time : 0.0
+
+- name      : WP_546
+  latitude  : 36.3057893
+  longitude : 120.4968123
+  yaw       : 98.87
+  wait_time : 0.0
+
+- name      : WP_547
+  latitude  : 36.3057899
+  longitude : 120.4968121
+  yaw       : 97.95
+  wait_time : 0.0
+
+- name      : WP_548
+  latitude  : 36.3057904
+  longitude : 120.4968119
+  yaw       : 96.93
+  wait_time : 0.0
+
+- name      : WP_549
+  latitude  : 36.3057910
+  longitude : 120.4968116
+  yaw       : 96.00
+  wait_time : 0.0
+
+- name      : WP_550
+  latitude  : 36.3057915
+  longitude : 120.4968114
+  yaw       : 94.89
+  wait_time : 0.0
+
+- name      : WP_551
+  latitude  : 36.3057920
+  longitude : 120.4968112
+  yaw       : 94.00
+  wait_time : 0.0
+
+- name      : WP_552
+  latitude  : 36.3057926
+  longitude : 120.4968110
+  yaw       : 92.93
+  wait_time : 0.0
+
+- name      : WP_553
+  latitude  : 36.3057932
+  longitude : 120.4968109
+  yaw       : 91.87
+  wait_time : 0.0
+
+- name      : WP_554
+  latitude  : 36.3057938
+  longitude : 120.4968107
+  yaw       : 91.06
+  wait_time : 0.0
+
+- name      : WP_555
+  latitude  : 36.3057943
+  longitude : 120.4968105
+  yaw       : 90.13
+  wait_time : 0.0
+
+- name      : WP_556
+  latitude  : 36.3057948
+  longitude : 120.4968103
+  yaw       : 89.08
+  wait_time : 0.0
+
+- name      : WP_557
+  latitude  : 36.3057954
+  longitude : 120.4968102
+  yaw       : 88.07
+  wait_time : 0.0
+
+- name      : WP_558
+  latitude  : 36.3057960
+  longitude : 120.4968101
+  yaw       : 87.34
+  wait_time : 0.0
+
+- name      : WP_559
+  latitude  : 36.3057965
+  longitude : 120.4968101
+  yaw       : 86.74
+  wait_time : 0.0
+
+- name      : WP_560
+  latitude  : 36.3057971
+  longitude : 120.4968099
+  yaw       : 86.22
+  wait_time : 0.0
+
+- name      : WP_561
+  latitude  : 36.3057977
+  longitude : 120.4968099
+  yaw       : 85.40
+  wait_time : 0.0
+
+- name      : WP_562
+  latitude  : 36.3057982
+  longitude : 120.4968098
+  yaw       : 84.87
+  wait_time : 0.0
+
+- name      : WP_563
+  latitude  : 36.3057987
+  longitude : 120.4968097
+  yaw       : 84.62
+  wait_time : 0.0
+
+- name      : WP_564
+  latitude  : 36.3057993
+  longitude : 120.4968097
+  yaw       : 84.32
+  wait_time : 0.0
+
+- name      : WP_565
+  latitude  : 36.3057998
+  longitude : 120.4968097
+  yaw       : 84.26
+  wait_time : 0.0
+
+- name      : WP_566
+  latitude  : 36.3058003
+  longitude : 120.4968099
+  yaw       : 84.40
+  wait_time : 0.0
+
+- name      : WP_567
+  latitude  : 36.3058008
+  longitude : 120.4968099
+  yaw       : 84.72
+  wait_time : 0.0
+
+- name      : WP_568
+  latitude  : 36.3058014
+  longitude : 120.4968101
+  yaw       : 85.10
+  wait_time : 0.0
+
+- name      : WP_569
+  latitude  : 36.3058019
+  longitude : 120.4968101
+  yaw       : 85.58
+  wait_time : 0.0
+
+- name      : WP_570
+  latitude  : 36.3058024
+  longitude : 120.4968103
+  yaw       : 86.53
+  wait_time : 0.0
+
+- name      : WP_571
+  latitude  : 36.3058029
+  longitude : 120.4968104
+  yaw       : 87.13
+  wait_time : 0.0
+
+- name      : WP_572
+  latitude  : 36.3058033
+  longitude : 120.4968105
+  yaw       : 88.11
+  wait_time : 0.0
+
+- name      : WP_573
+  latitude  : 36.3058038
+  longitude : 120.4968106
+  yaw       : 89.20
+  wait_time : 0.0
+
+- name      : WP_574
+  latitude  : 36.3058043
+  longitude : 120.4968106
+  yaw       : 90.12
+  wait_time : 0.0
+
+- name      : WP_575
+  latitude  : 36.3058047
+  longitude : 120.4968106
+  yaw       : 91.51
+  wait_time : 0.0
+
+- name      : WP_576
+  latitude  : 36.3058052
+  longitude : 120.4968108
+  yaw       : 92.80
+  wait_time : 0.0
+
+- name      : WP_577
+  latitude  : 36.3058057
+  longitude : 120.4968109
+  yaw       : 94.35
+  wait_time : 0.0
+
+- name      : WP_578
+  latitude  : 36.3058062
+  longitude : 120.4968110
+  yaw       : 95.65
+  wait_time : 0.0
+
+- name      : WP_579
+  latitude  : 36.3058065
+  longitude : 120.4968110
+  yaw       : 97.08
+  wait_time : 0.0
+
+- name      : WP_580
+  latitude  : 36.3058070
+  longitude : 120.4968111
+  yaw       : 98.70
+  wait_time : 0.0
+
+- name      : WP_581
+  latitude  : 36.3058074
+  longitude : 120.4968111
+  yaw       : 99.73
+  wait_time : 0.0
+
+- name      : WP_582
+  latitude  : 36.3058079
+  longitude : 120.4968111
+  yaw       : 101.23
+  wait_time : 0.0
+
+- name      : WP_583
+  latitude  : 36.3058084
+  longitude : 120.4968112
+  yaw       : 102.70
+  wait_time : 0.0
+
+- name      : WP_584
+  latitude  : 36.3058088
+  longitude : 120.4968112
+  yaw       : 104.35
+  wait_time : 0.0
+
+- name      : WP_585
+  latitude  : 36.3058092
+  longitude : 120.4968113
+  yaw       : 105.68
+  wait_time : 0.0
+
+- name      : WP_586
+  latitude  : 36.3058096
+  longitude : 120.4968112
+  yaw       : 107.59
+  wait_time : 0.0
+
+- name      : WP_587
+  latitude  : 36.3058101
+  longitude : 120.4968111
+  yaw       : 109.03
+  wait_time : 0.0
+
+- name      : WP_588
+  latitude  : 36.3058105
+  longitude : 120.4968111
+  yaw       : 110.49
+  wait_time : 0.0
+
+- name      : WP_589
+  latitude  : 36.3058109
+  longitude : 120.4968110
+  yaw       : 112.18
+  wait_time : 0.0
+
+- name      : WP_590
+  latitude  : 36.3058113
+  longitude : 120.4968110
+  yaw       : 113.82
+  wait_time : 0.0
+
+- name      : WP_591
+  latitude  : 36.3058118
+  longitude : 120.4968109
+  yaw       : 115.33
+  wait_time : 0.0
+
+- name      : WP_592
+  latitude  : 36.3058123
+  longitude : 120.4968109
+  yaw       : 116.94
+  wait_time : 0.0
+
+- name      : WP_593
+  latitude  : 36.3058128
+  longitude : 120.4968108
+  yaw       : 118.63
+  wait_time : 0.0
+
+- name      : WP_594
+  latitude  : 36.3058132
+  longitude : 120.4968107
+  yaw       : 120.48
+  wait_time : 0.0
+
+- name      : WP_595
+  latitude  : 36.3058137
+  longitude : 120.4968106
+  yaw       : 121.50
+  wait_time : 0.0
+
+- name      : WP_596
+  latitude  : 36.3058141
+  longitude : 120.4968105
+  yaw       : 122.93
+  wait_time : 0.0
+
+- name      : WP_597
+  latitude  : 36.3058146
+  longitude : 120.4968104
+  yaw       : 124.32
+  wait_time : 0.0
+
+- name      : WP_598
+  latitude  : 36.3058150
+  longitude : 120.4968102
+  yaw       : 125.72
+  wait_time : 0.0
+
+- name      : WP_599
+  latitude  : 36.3058154
+  longitude : 120.4968101
+  yaw       : 127.17
+  wait_time : 0.0
+
+- name      : WP_600
+  latitude  : 36.3058159
+  longitude : 120.4968099
+  yaw       : 128.09
+  wait_time : 0.0
+
+- name      : WP_601
+  latitude  : 36.3058163
+  longitude : 120.4968097
+  yaw       : 129.24
+  wait_time : 0.0
+
+- name      : WP_602
+  latitude  : 36.3058167
+  longitude : 120.4968095
+  yaw       : 129.88
+  wait_time : 0.0
+
+- name      : WP_603
+  latitude  : 36.3058171
+  longitude : 120.4968092
+  yaw       : 131.00
+  wait_time : 0.0
+
+- name      : WP_604
+  latitude  : 36.3058176
+  longitude : 120.4968089
+  yaw       : 132.30
+  wait_time : 0.0
+
+- name      : WP_605
+  latitude  : 36.3058180
+  longitude : 120.4968086
+  yaw       : 132.91
+  wait_time : 0.0
+
+- name      : WP_606
+  latitude  : 36.3058183
+  longitude : 120.4968083
+  yaw       : 133.46
+  wait_time : 0.0
+
+- name      : WP_607
+  latitude  : 36.3058187
+  longitude : 120.4968080
+  yaw       : 134.19
+  wait_time : 0.0
+
+- name      : WP_608
+  latitude  : 36.3058191
+  longitude : 120.4968077
+  yaw       : 134.71
+  wait_time : 0.0
+
+- name      : WP_609
+  latitude  : 36.3058195
+  longitude : 120.4968075
+  yaw       : 135.29
+  wait_time : 0.0
+
+- name      : WP_610
+  latitude  : 36.3058199
+  longitude : 120.4968072
+  yaw       : 135.55
+  wait_time : 0.0
+
+- name      : WP_611
+  latitude  : 36.3058202
+  longitude : 120.4968068
+  yaw       : 135.59
+  wait_time : 0.0
+
+- name      : WP_612
+  latitude  : 36.3058206
+  longitude : 120.4968065
+  yaw       : 135.31
+  wait_time : 0.0
+
+- name      : WP_613
+  latitude  : 36.3058209
+  longitude : 120.4968060
+  yaw       : 135.03
+  wait_time : 0.0
+
+- name      : WP_614
+  latitude  : 36.3058212
+  longitude : 120.4968057
+  yaw       : 135.12
+  wait_time : 0.0
+
+- name      : WP_615
+  latitude  : 36.3058215
+  longitude : 120.4968053
+  yaw       : 134.62
+  wait_time : 0.0
+
+- name      : WP_616
+  latitude  : 36.3058218
+  longitude : 120.4968048
+  yaw       : 133.87
+  wait_time : 0.0
+
+- name      : WP_617
+  latitude  : 36.3058221
+  longitude : 120.4968043
+  yaw       : 132.81
+  wait_time : 0.0
+
+- name      : WP_618
+  latitude  : 36.3058225
+  longitude : 120.4968040
+  yaw       : 132.13
+  wait_time : 0.0
+
+- name      : WP_619
+  latitude  : 36.3058229
+  longitude : 120.4968036
+  yaw       : 131.42
+  wait_time : 0.0
+
+- name      : WP_620
+  latitude  : 36.3058232
+  longitude : 120.4968031
+  yaw       : 130.19
+  wait_time : 0.0
+
+- name      : WP_621
+  latitude  : 36.3058235
+  longitude : 120.4968026
+  yaw       : 128.71
+  wait_time : 0.0
+
+- name      : WP_622
+  latitude  : 36.3058238
+  longitude : 120.4968021
+  yaw       : 127.46
+  wait_time : 0.0
+
+- name      : WP_623
+  latitude  : 36.3058242
+  longitude : 120.4968015
+  yaw       : 126.11
+  wait_time : 0.0
+
+- name      : WP_624
+  latitude  : 36.3058245
+  longitude : 120.4968010
+  yaw       : 124.57
+  wait_time : 0.0
+
+- name      : WP_625
+  latitude  : 36.3058249
+  longitude : 120.4968006
+  yaw       : 123.43
+  wait_time : 0.0
+
+- name      : WP_626
+  latitude  : 36.3058253
+  longitude : 120.4968002
+  yaw       : 121.79
+  wait_time : 0.0
+
+- name      : WP_627
+  latitude  : 36.3058257
+  longitude : 120.4967997
+  yaw       : 120.26
+  wait_time : 0.0
+
+- name      : WP_628
+  latitude  : 36.3058261
+  longitude : 120.4967991
+  yaw       : 118.77
+  wait_time : 0.0
+
+- name      : WP_629
+  latitude  : 36.3058266
+  longitude : 120.4967986
+  yaw       : 117.46
+  wait_time : 0.0
+
+- name      : WP_630
+  latitude  : 36.3058270
+  longitude : 120.4967982
+  yaw       : 116.37
+  wait_time : 0.0
+
+- name      : WP_631
+  latitude  : 36.3058275
+  longitude : 120.4967977
+  yaw       : 114.95
+  wait_time : 0.0
+
+- name      : WP_632
+  latitude  : 36.3058279
+  longitude : 120.4967973
+  yaw       : 113.69
+  wait_time : 0.0
+
+- name      : WP_633
+  latitude  : 36.3058284
+  longitude : 120.4967969
+  yaw       : 113.02
+  wait_time : 0.0
+
+- name      : WP_634
+  latitude  : 36.3058289
+  longitude : 120.4967965
+  yaw       : 112.24
+  wait_time : 0.0
+
+- name      : WP_635
+  latitude  : 36.3058294
+  longitude : 120.4967961
+  yaw       : 111.45
+  wait_time : 0.0
+
+- name      : WP_636
+  latitude  : 36.3058299
+  longitude : 120.4967957
+  yaw       : 109.86
+  wait_time : 0.0
+
+- name      : WP_637
+  latitude  : 36.3058304
+  longitude : 120.4967954
+  yaw       : 109.12
+  wait_time : 0.0
+
+- name      : WP_638
+  latitude  : 36.3058309
+  longitude : 120.4967951
+  yaw       : 108.46
+  wait_time : 0.0
+
+- name      : WP_639
+  latitude  : 36.3058313
+  longitude : 120.4967949
+  yaw       : 107.74
+  wait_time : 0.0
+
+- name      : WP_640
+  latitude  : 36.3058318
+  longitude : 120.4967946
+  yaw       : 106.92
+  wait_time : 0.0
+
+- name      : WP_641
+  latitude  : 36.3058324
+  longitude : 120.4967942
+  yaw       : 106.30
+  wait_time : 0.0
+
+- name      : WP_642
+  latitude  : 36.3058329
+  longitude : 120.4967939
+  yaw       : 105.84
+  wait_time : 0.0
+
+- name      : WP_643
+  latitude  : 36.3058334
+  longitude : 120.4967937
+  yaw       : 105.25
+  wait_time : 0.0
+
+- name      : WP_644
+  latitude  : 36.3058339
+  longitude : 120.4967934
+  yaw       : 104.59
+  wait_time : 0.0
+
+- name      : WP_645
+  latitude  : 36.3058344
+  longitude : 120.4967932
+  yaw       : 104.08
+  wait_time : 0.0
+
+- name      : WP_646
+  latitude  : 36.3058350
+  longitude : 120.4967930
+  yaw       : 103.91
+  wait_time : 0.0
+
+- name      : WP_647
+  latitude  : 36.3058355
+  longitude : 120.4967928
+  yaw       : 103.78
+  wait_time : 0.0
+
+- name      : WP_648
+  latitude  : 36.3058361
+  longitude : 120.4967926
+  yaw       : 103.61
+  wait_time : 0.0
+
+- name      : WP_649
+  latitude  : 36.3058366
+  longitude : 120.4967924
+  yaw       : 103.33
+  wait_time : 0.0
+
+- name      : WP_650
+  latitude  : 36.3058370
+  longitude : 120.4967922
+  yaw       : 103.71
+  wait_time : 0.0
+
+- name      : WP_651
+  latitude  : 36.3058376
+  longitude : 120.4967921
+  yaw       : 103.88
+  wait_time : 0.0
+
+- name      : WP_652
+  latitude  : 36.3058381
+  longitude : 120.4967919
+  yaw       : 103.86
+  wait_time : 0.0
+
+- name      : WP_653
+  latitude  : 36.3058386
+  longitude : 120.4967917
+  yaw       : 102.86
+  wait_time : 0.0
+
+- name      : WP_654
+  latitude  : 36.3058391
+  longitude : 120.4967916
+  yaw       : 103.37
+  wait_time : 0.0
+
+- name      : WP_655
+  latitude  : 36.3058396
+  longitude : 120.4967915
+  yaw       : 103.61
+  wait_time : 0.0
+
+- name      : WP_656
+  latitude  : 36.3058401
+  longitude : 120.4967913
+  yaw       : 103.37
+  wait_time : 0.0
+
+- name      : WP_657
+  latitude  : 36.3058406
+  longitude : 120.4967912
+  yaw       : 103.21
+  wait_time : 0.0
+
+- name      : WP_658
+  latitude  : 36.3058411
+  longitude : 120.4967910
+  yaw       : 103.09
+  wait_time : 0.0
+
+- name      : WP_659
+  latitude  : 36.3058416
+  longitude : 120.4967909
+  yaw       : 103.10
+  wait_time : 0.0
+
+- name      : WP_660
+  latitude  : 36.3058421
+  longitude : 120.4967907
+  yaw       : 102.29
+  wait_time : 0.0
+
+- name      : WP_661
+  latitude  : 36.3058426
+  longitude : 120.4967905
+  yaw       : 101.99
+  wait_time : 0.0
+
+- name      : WP_662
+  latitude  : 36.3058431
+  longitude : 120.4967903
+  yaw       : 101.86
+  wait_time : 0.0
+
+- name      : WP_663
+  latitude  : 36.3058436
+  longitude : 120.4967902
+  yaw       : 101.76
+  wait_time : 0.0
+
+- name      : WP_664
+  latitude  : 36.3058442
+  longitude : 120.4967900
+  yaw       : 101.72
+  wait_time : 0.0
+
+- name      : WP_665
+  latitude  : 36.3058447
+  longitude : 120.4967899
+  yaw       : 101.58
+  wait_time : 0.0
+
+- name      : WP_666
+  latitude  : 36.3058452
+  longitude : 120.4967898
+  yaw       : 101.43
+  wait_time : 0.0
+
+- name      : WP_667
+  latitude  : 36.3058457
+  longitude : 120.4967896
+  yaw       : 101.28
+  wait_time : 0.0
+
+- name      : WP_668
+  latitude  : 36.3058462
+  longitude : 120.4967895
+  yaw       : 101.05
+  wait_time : 0.0
+
+- name      : WP_669
+  latitude  : 36.3058467
+  longitude : 120.4967893
+  yaw       : 100.88
+  wait_time : 0.0
+
+- name      : WP_670
+  latitude  : 36.3058472
+  longitude : 120.4967892
+  yaw       : 101.49
+  wait_time : 0.0
+
+- name      : WP_671
+  latitude  : 36.3058477
+  longitude : 120.4967891
+  yaw       : 101.68
+  wait_time : 0.0
+
+- name      : WP_672
+  latitude  : 36.3058482
+  longitude : 120.4967889
+  yaw       : 101.40
+  wait_time : 0.0
+
+- name      : WP_673
+  latitude  : 36.3058487
+  longitude : 120.4967888
+  yaw       : 101.20
+  wait_time : 0.0
+
+- name      : WP_674
+  latitude  : 36.3058492
+  longitude : 120.4967887
+  yaw       : 101.06
+  wait_time : 0.0
+
+- name      : WP_675
+  latitude  : 36.3058496
+  longitude : 120.4967885
+  yaw       : 101.01
+  wait_time : 0.0
+
+- name      : WP_676
+  latitude  : 36.3058502
+  longitude : 120.4967884
+  yaw       : 100.54
+  wait_time : 0.0
+
+- name      : WP_677
+  latitude  : 36.3058506
+  longitude : 120.4967882
+  yaw       : 100.48
+  wait_time : 0.0
+
+- name      : WP_678
+  latitude  : 36.3058511
+  longitude : 120.4967881
+  yaw       : 100.24
+  wait_time : 0.0
+
+- name      : WP_679
+  latitude  : 36.3058516
+  longitude : 120.4967880
+  yaw       : 100.27
+  wait_time : 0.0
+
+- name      : WP_680
+  latitude  : 36.3058521
+  longitude : 120.4967879
+  yaw       : 100.05
+  wait_time : 0.0
+
+- name      : WP_681
+  latitude  : 36.3058525
+  longitude : 120.4967877
+  yaw       : 99.81
+  wait_time : 0.0
+
+- name      : WP_682
+  latitude  : 36.3058530
+  longitude : 120.4967876
+  yaw       : 99.62
+  wait_time : 0.0
+
+- name      : WP_683
+  latitude  : 36.3058535
+  longitude : 120.4967875
+  yaw       : 99.68
+  wait_time : 0.0
+
+- name      : WP_684
+  latitude  : 36.3058541
+  longitude : 120.4967874
+  yaw       : 99.70
+  wait_time : 0.0
+
+- name      : WP_685
+  latitude  : 36.3058545
+  longitude : 120.4967872
+  yaw       : 99.55
+  wait_time : 0.0
+
+- name      : WP_686
+  latitude  : 36.3058550
+  longitude : 120.4967871
+  yaw       : 99.47
+  wait_time : 0.0
+
+- name      : WP_687
+  latitude  : 36.3058555
+  longitude : 120.4967870
+  yaw       : 99.21
+  wait_time : 0.0
+
+- name      : WP_688
+  latitude  : 36.3058560
+  longitude : 120.4967870
+  yaw       : 99.40
+  wait_time : 0.0
+
+- name      : WP_689
+  latitude  : 36.3058565
+  longitude : 120.4967869
+  yaw       : 99.34
+  wait_time : 0.0
+
+- name      : WP_690
+  latitude  : 36.3058570
+  longitude : 120.4967868
+  yaw       : 98.99
+  wait_time : 0.0
+
+- name      : WP_691
+  latitude  : 36.3058575
+  longitude : 120.4967866
+  yaw       : 98.83
+  wait_time : 0.0
+
+- name      : WP_692
+  latitude  : 36.3058580
+  longitude : 120.4967865
+  yaw       : 98.71
+  wait_time : 0.0
+
+- name      : WP_693
+  latitude  : 36.3058584
+  longitude : 120.4967864
+  yaw       : 98.76
+  wait_time : 0.0
+
+- name      : WP_694
+  latitude  : 36.3058589
+  longitude : 120.4967863
+  yaw       : 98.53
+  wait_time : 0.0
+
+- name      : WP_695
+  latitude  : 36.3058594
+  longitude : 120.4967862
+  yaw       : 98.46
+  wait_time : 0.0
+
+- name      : WP_696
+  latitude  : 36.3058599
+  longitude : 120.4967861
+  yaw       : 98.33
+  wait_time : 0.0
+
+- name      : WP_697
+  latitude  : 36.3058604
+  longitude : 120.4967860
+  yaw       : 97.96
+  wait_time : 0.0
+
+- name      : WP_698
+  latitude  : 36.3058609
+  longitude : 120.4967858
+  yaw       : 97.84
+  wait_time : 0.0
+
+- name      : WP_699
+  latitude  : 36.3058614
+  longitude : 120.4967857
+  yaw       : 97.80
+  wait_time : 0.0
+
+- name      : WP_700
+  latitude  : 36.3058619
+  longitude : 120.4967857
+  yaw       : 97.61
+  wait_time : 0.0
+
+- name      : WP_701
+  latitude  : 36.3058624
+  longitude : 120.4967855
+  yaw       : 97.28
+  wait_time : 0.0
+
+- name      : WP_702
+  latitude  : 36.3058629
+  longitude : 120.4967854
+  yaw       : 97.48
+  wait_time : 0.0
+
+- name      : WP_703
+  latitude  : 36.3058634
+  longitude : 120.4967853
+  yaw       : 97.28
+  wait_time : 0.0
+
+- name      : WP_704
+  latitude  : 36.3058639
+  longitude : 120.4967852
+  yaw       : 96.79
+  wait_time : 0.0
+
+- name      : WP_705
+  latitude  : 36.3058644
+  longitude : 120.4967851
+  yaw       : 96.97
+  wait_time : 0.0
+
+- name      : WP_706
+  latitude  : 36.3058649
+  longitude : 120.4967850
+  yaw       : 96.36
+  wait_time : 0.0
+
+- name      : WP_707
+  latitude  : 36.3058653
+  longitude : 120.4967848
+  yaw       : 95.84
+  wait_time : 0.0
+
+- name      : WP_708
+  latitude  : 36.3058658
+  longitude : 120.4967846
+  yaw       : 95.20
+  wait_time : 0.0
+
+- name      : WP_709
+  latitude  : 36.3058663
+  longitude : 120.4967845
+  yaw       : 94.56
+  wait_time : 0.0
+
+- name      : WP_710
+  latitude  : 36.3058668
+  longitude : 120.4967844
+  yaw       : 93.34
+  wait_time : 0.0
+
+- name      : WP_711
+  latitude  : 36.3058673
+  longitude : 120.4967842
+  yaw       : 92.53
+  wait_time : 0.0
+
+- name      : WP_712
+  latitude  : 36.3058678
+  longitude : 120.4967841
+  yaw       : 91.75
+  wait_time : 0.0
+
+- name      : WP_713
+  latitude  : 36.3058683
+  longitude : 120.4967840
+  yaw       : 90.96
+  wait_time : 0.0
+
+- name      : WP_714
+  latitude  : 36.3058688
+  longitude : 120.4967839
+  yaw       : 90.12
+  wait_time : 0.0
+
+- name      : WP_715
+  latitude  : 36.3058693
+  longitude : 120.4967837
+  yaw       : 89.23
+  wait_time : 0.0
+
+- name      : WP_716
+  latitude  : 36.3058698
+  longitude : 120.4967837
+  yaw       : 88.30
+  wait_time : 0.0
+
+- name      : WP_717
+  latitude  : 36.3058703
+  longitude : 120.4967835
+  yaw       : 87.23
+  wait_time : 0.0
+
+- name      : WP_718
+  latitude  : 36.3058709
+  longitude : 120.4967834
+  yaw       : 86.23
+  wait_time : 0.0
+
+- name      : WP_719
+  latitude  : 36.3058714
+  longitude : 120.4967832
+  yaw       : 85.03
+  wait_time : 0.0
+
+- name      : WP_720
+  latitude  : 36.3058719
+  longitude : 120.4967831
+  yaw       : 84.17
+  wait_time : 0.0
+
+- name      : WP_721
+  latitude  : 36.3058725
+  longitude : 120.4967831
+  yaw       : 83.51
+  wait_time : 0.0
+
+- name      : WP_722
+  latitude  : 36.3058731
+  longitude : 120.4967831
+  yaw       : 82.34
+  wait_time : 0.0
+
+- name      : WP_723
+  latitude  : 36.3058737
+  longitude : 120.4967830
+  yaw       : 80.92
+  wait_time : 0.0
+
+- name      : WP_724
+  latitude  : 36.3058742
+  longitude : 120.4967830
+  yaw       : 79.88
+  wait_time : 0.0
+
+- name      : WP_725
+  latitude  : 36.3058748
+  longitude : 120.4967830
+  yaw       : 78.71
+  wait_time : 0.0
+
+- name      : WP_726
+  latitude  : 36.3058754
+  longitude : 120.4967830
+  yaw       : 77.65
+  wait_time : 0.0
+
+- name      : WP_727
+  latitude  : 36.3058759
+  longitude : 120.4967830
+  yaw       : 76.36
+  wait_time : 0.0
+
+- name      : WP_728
+  latitude  : 36.3058765
+  longitude : 120.4967830
+  yaw       : 75.24
+  wait_time : 0.0
+
+- name      : WP_729
+  latitude  : 36.3058770
+  longitude : 120.4967830
+  yaw       : 74.40
+  wait_time : 0.0
+
+- name      : WP_730
+  latitude  : 36.3058776
+  longitude : 120.4967830
+  yaw       : 73.50
+  wait_time : 0.0
+
+- name      : WP_731
+  latitude  : 36.3058781
+  longitude : 120.4967831
+  yaw       : 72.29
+  wait_time : 0.0
+
+- name      : WP_732
+  latitude  : 36.3058787
+  longitude : 120.4967831
+  yaw       : 71.01
+  wait_time : 0.0
+
+- name      : WP_733
+  latitude  : 36.3058793
+  longitude : 120.4967832
+  yaw       : 70.13
+  wait_time : 0.0
+
+- name      : WP_734
+  latitude  : 36.3058798
+  longitude : 120.4967832
+  yaw       : 69.19
+  wait_time : 0.0
+
+- name      : WP_735
+  latitude  : 36.3058803
+  longitude : 120.4967833
+  yaw       : 67.76
+  wait_time : 0.0
+
+- name      : WP_736
+  latitude  : 36.3058809
+  longitude : 120.4967834
+  yaw       : 66.94
+  wait_time : 0.0
+
+- name      : WP_737
+  latitude  : 36.3058814
+  longitude : 120.4967835
+  yaw       : 65.67
+  wait_time : 0.0
+
+- name      : WP_738
+  latitude  : 36.3058820
+  longitude : 120.4967837
+  yaw       : 64.71
+  wait_time : 0.0
+
+- name      : WP_739
+  latitude  : 36.3058825
+  longitude : 120.4967838
+  yaw       : 63.67
+  wait_time : 0.0
+
+- name      : WP_740
+  latitude  : 36.3058830
+  longitude : 120.4967840
+  yaw       : 62.61
+  wait_time : 0.0
+
+- name      : WP_741
+  latitude  : 36.3058835
+  longitude : 120.4967842
+  yaw       : 61.59
+  wait_time : 0.0
+
+- name      : WP_742
+  latitude  : 36.3058840
+  longitude : 120.4967843
+  yaw       : 60.31
+  wait_time : 0.0
+
+- name      : WP_743
+  latitude  : 36.3058845
+  longitude : 120.4967846
+  yaw       : 59.61
+  wait_time : 0.0
+
+- name      : WP_744
+  latitude  : 36.3058851
+  longitude : 120.4967848
+  yaw       : 58.42
+  wait_time : 0.0
+
+- name      : WP_745
+  latitude  : 36.3058855
+  longitude : 120.4967850
+  yaw       : 57.40
+  wait_time : 0.0
+
+- name      : WP_746
+  latitude  : 36.3058861
+  longitude : 120.4967851
+  yaw       : 56.02
+  wait_time : 0.0
+
+- name      : WP_747
+  latitude  : 36.3058866
+  longitude : 120.4967853
+  yaw       : 55.05
+  wait_time : 0.0
+
+- name      : WP_748
+  latitude  : 36.3058871
+  longitude : 120.4967856
+  yaw       : 53.97
+  wait_time : 0.0
+
+- name      : WP_749
+  latitude  : 36.3058876
+  longitude : 120.4967858
+  yaw       : 52.82
+  wait_time : 0.0
+
+- name      : WP_750
+  latitude  : 36.3058881
+  longitude : 120.4967860
+  yaw       : 51.81
+  wait_time : 0.0
+
+- name      : WP_751
+  latitude  : 36.3058886
+  longitude : 120.4967863
+  yaw       : 50.73
+  wait_time : 0.0
+
+- name      : WP_752
+  latitude  : 36.3058890
+  longitude : 120.4967865
+  yaw       : 49.61
+  wait_time : 0.0
+
+- name      : WP_753
+  latitude  : 36.3058895
+  longitude : 120.4967868
+  yaw       : 48.22
+  wait_time : 0.0
+
+- name      : WP_754
+  latitude  : 36.3058900
+  longitude : 120.4967870
+  yaw       : 47.10
+  wait_time : 0.0
+
+- name      : WP_755
+  latitude  : 36.3058904
+  longitude : 120.4967872
+  yaw       : 45.56
+  wait_time : 0.0
+
+- name      : WP_756
+  latitude  : 36.3058909
+  longitude : 120.4967874
+  yaw       : 44.19
+  wait_time : 0.0
+
+- name      : WP_757
+  latitude  : 36.3058914
+  longitude : 120.4967877
+  yaw       : 43.20
+  wait_time : 0.0
+
+- name      : WP_758
+  latitude  : 36.3058918
+  longitude : 120.4967880
+  yaw       : 41.98
+  wait_time : 0.0
+
+- name      : WP_759
+  latitude  : 36.3058922
+  longitude : 120.4967883
+  yaw       : 40.52
+  wait_time : 0.0
+
+- name      : WP_760
+  latitude  : 36.3058927
+  longitude : 120.4967885
+  yaw       : 38.95
+  wait_time : 0.0
+
+- name      : WP_761
+  latitude  : 36.3058931
+  longitude : 120.4967888
+  yaw       : 37.28
+  wait_time : 0.0
+
+- name      : WP_762
+  latitude  : 36.3058935
+  longitude : 120.4967891
+  yaw       : 35.88
+  wait_time : 0.0
+
+- name      : WP_763
+  latitude  : 36.3058939
+  longitude : 120.4967895
+  yaw       : 34.37
+  wait_time : 0.0
+
+- name      : WP_764
+  latitude  : 36.3058944
+  longitude : 120.4967898
+  yaw       : 32.64
+  wait_time : 0.0
+
+- name      : WP_765
+  latitude  : 36.3058948
+  longitude : 120.4967904
+  yaw       : 31.00
+  wait_time : 0.0
+
+- name      : WP_766
+  latitude  : 36.3058953
+  longitude : 120.4967908
+  yaw       : 29.43
+  wait_time : 0.0
+
+- name      : WP_767
+  latitude  : 36.3058956
+  longitude : 120.4967911
+  yaw       : 27.94
+  wait_time : 0.0
+
+- name      : WP_768
+  latitude  : 36.3058961
+  longitude : 120.4967918
+  yaw       : 26.06
+  wait_time : 0.0
+
+- name      : WP_769
+  latitude  : 36.3058965
+  longitude : 120.4967922
+  yaw       : 24.32
+  wait_time : 0.0
+
+- name      : WP_770
+  latitude  : 36.3058969
+  longitude : 120.4967927
+  yaw       : 22.73
+  wait_time : 0.0
+
+- name      : WP_771
+  latitude  : 36.3058972
+  longitude : 120.4967931
+  yaw       : 20.94
+  wait_time : 0.0
+
+- name      : WP_772
+  latitude  : 36.3058976
+  longitude : 120.4967936
+  yaw       : 18.99
+  wait_time : 0.0
+
+- name      : WP_773
+  latitude  : 36.3058980
+  longitude : 120.4967940
+  yaw       : 16.80
+  wait_time : 0.0
+
+- name      : WP_774
+  latitude  : 36.3058984
+  longitude : 120.4967946
+  yaw       : 15.15
+  wait_time : 0.0
+
+- name      : WP_775
+  latitude  : 36.3058987
+  longitude : 120.4967952
+  yaw       : 13.23
+  wait_time : 0.0
+
+- name      : WP_776
+  latitude  : 36.3058990
+  longitude : 120.4967958
+  yaw       : 11.25
+  wait_time : 0.0
+
+- name      : WP_777
+  latitude  : 36.3058993
+  longitude : 120.4967963
+  yaw       : 9.40
+  wait_time : 0.0
+
+- name      : WP_778
+  latitude  : 36.3058995
+  longitude : 120.4967969
+  yaw       : 7.79
+  wait_time : 0.0
+
+- name      : WP_779
+  latitude  : 36.3058998
+  longitude : 120.4967975
+  yaw       : 6.02
+  wait_time : 0.0
+
+- name      : WP_780
+  latitude  : 36.3059000
+  longitude : 120.4967981
+  yaw       : 4.16
+  wait_time : 0.0
+
+- name      : WP_781
+  latitude  : 36.3059002
+  longitude : 120.4967987
+  yaw       : 2.39
+  wait_time : 0.0
+
+- name      : WP_782
+  latitude  : 36.3059005
+  longitude : 120.4967995
+  yaw       : 0.25
+  wait_time : 0.0
+
+- name      : WP_783
+  latitude  : 36.3059006
+  longitude : 120.4968000
+  yaw       : -1.05
+  wait_time : 0.0
+
+- name      : WP_784
+  latitude  : 36.3059008
+  longitude : 120.4968005
+  yaw       : -2.64
+  wait_time : 0.0
+
+- name      : WP_785
+  latitude  : 36.3059009
+  longitude : 120.4968013
+  yaw       : -4.42
+  wait_time : 0.0
+
+- name      : WP_786
+  latitude  : 36.3059010
+  longitude : 120.4968018
+  yaw       : -5.80
+  wait_time : 0.0
+
+- name      : WP_787
+  latitude  : 36.3059010
+  longitude : 120.4968024
+  yaw       : -7.12
+  wait_time : 0.0
+
+- name      : WP_788
+  latitude  : 36.3059011
+  longitude : 120.4968030
+  yaw       : -7.80
+  wait_time : 0.0
+
+- name      : WP_789
+  latitude  : 36.3059011
+  longitude : 120.4968036
+  yaw       : -9.09
+  wait_time : 0.0
+
+- name      : WP_790
+  latitude  : 36.3059011
+  longitude : 120.4968042
+  yaw       : -10.24
+  wait_time : 0.0
+
+- name      : WP_791
+  latitude  : 36.3059011
+  longitude : 120.4968047
+  yaw       : -10.81
+  wait_time : 0.0
+
+- name      : WP_792
+  latitude  : 36.3059011
+  longitude : 120.4968054
+  yaw       : -12.09
+  wait_time : 0.0
+
+- name      : WP_793
+  latitude  : 36.3059011
+  longitude : 120.4968059
+  yaw       : -13.09
+  wait_time : 0.0
+
+- name      : WP_794
+  latitude  : 36.3059011
+  longitude : 120.4968066
+  yaw       : -13.95
+  wait_time : 0.0
+
+- name      : WP_795
+  latitude  : 36.3059010
+  longitude : 120.4968071
+  yaw       : -15.19
+  wait_time : 0.0
+
+- name      : WP_796
+  latitude  : 36.3059009
+  longitude : 120.4968076
+  yaw       : -15.79
+  wait_time : 0.0
+
+- name      : WP_797
+  latitude  : 36.3059008
+  longitude : 120.4968082
+  yaw       : -16.53
+  wait_time : 0.0
+
+- name      : WP_798
+  latitude  : 36.3059008
+  longitude : 120.4968087
+  yaw       : -16.82
+  wait_time : 0.0
+
+- name      : WP_799
+  latitude  : 36.3059006
+  longitude : 120.4968092
+  yaw       : -17.32
+  wait_time : 0.0
+
+- name      : WP_800
+  latitude  : 36.3059004
+  longitude : 120.4968095
+  yaw       : -17.70
+  wait_time : 0.0
+
+- name      : WP_801
+  latitude  : 36.3059003
+  longitude : 120.4968101
+  yaw       : -18.31
+  wait_time : 0.0
+
+- name      : WP_802
+  latitude  : 36.3059001
+  longitude : 120.4968106
+  yaw       : -19.05
+  wait_time : 0.0
+
+- name      : WP_803
+  latitude  : 36.3059000
+  longitude : 120.4968111
+  yaw       : -20.01
+  wait_time : 0.0
+
+- name      : WP_804
+  latitude  : 36.3058998
+  longitude : 120.4968115
+  yaw       : -20.05
+  wait_time : 0.0
+
+- name      : WP_805
+  latitude  : 36.3058996
+  longitude : 120.4968119
+  yaw       : -19.94
+  wait_time : 0.0
+
+- name      : WP_806
+  latitude  : 36.3058994
+  longitude : 120.4968125
+  yaw       : -20.01
+  wait_time : 0.0
+
+- name      : WP_807
+  latitude  : 36.3058994
+  longitude : 120.4968131
+  yaw       : -21.34
+  wait_time : 0.0
+
+- name      : WP_808
+  latitude  : 36.3058993
+  longitude : 120.4968136
+  yaw       : -21.63
+  wait_time : 0.0
+
+- name      : WP_809
+  latitude  : 36.3058990
+  longitude : 120.4968141
+  yaw       : -21.26
+  wait_time : 0.0
+
+- name      : WP_810
+  latitude  : 36.3058989
+  longitude : 120.4968146
+  yaw       : -21.12
+  wait_time : 0.0
+
+- name      : WP_811
+  latitude  : 36.3058988
+  longitude : 120.4968151
+  yaw       : -21.42
+  wait_time : 0.0
+
+- name      : WP_812
+  latitude  : 36.3058986
+  longitude : 120.4968156
+  yaw       : -21.78
+  wait_time : 0.0
+
+- name      : WP_813
+  latitude  : 36.3058985
+  longitude : 120.4968161
+  yaw       : -22.01
+  wait_time : 0.0
+
+- name      : WP_814
+  latitude  : 36.3058983
+  longitude : 120.4968165
+  yaw       : -22.23
+  wait_time : 0.0
+
+- name      : WP_815
+  latitude  : 36.3058982
+  longitude : 120.4968171
+  yaw       : -22.57
+  wait_time : 0.0
+
+- name      : WP_816
+  latitude  : 36.3058980
+  longitude : 120.4968176
+  yaw       : -23.29
+  wait_time : 0.0
+
+- name      : WP_817
+  latitude  : 36.3058978
+  longitude : 120.4968180
+  yaw       : -23.23
+  wait_time : 0.0
+
+- name      : WP_818
+  latitude  : 36.3058976
+  longitude : 120.4968186
+  yaw       : -22.93
+  wait_time : 0.0
+
+- name      : WP_819
+  latitude  : 36.3058975
+  longitude : 120.4968192
+  yaw       : -23.33
+  wait_time : 0.0
+
+- name      : WP_820
+  latitude  : 36.3058973
+  longitude : 120.4968196
+  yaw       : -23.90
+  wait_time : 0.0
+
+- name      : WP_821
+  latitude  : 36.3058971
+  longitude : 120.4968202
+  yaw       : -24.55
+  wait_time : 0.0
+
+- name      : WP_822
+  latitude  : 36.3058970
+  longitude : 120.4968207
+  yaw       : -25.00
+  wait_time : 0.0
+
+- name      : WP_823
+  latitude  : 36.3058968
+  longitude : 120.4968212
+  yaw       : -25.24
+  wait_time : 0.0
+
+- name      : WP_824
+  latitude  : 36.3058966
+  longitude : 120.4968217
+  yaw       : -25.30
+  wait_time : 0.0
+
+- name      : WP_825
+  latitude  : 36.3058964
+  longitude : 120.4968222
+  yaw       : -25.59
+  wait_time : 0.0
+
+- name      : WP_826
+  latitude  : 36.3058963
+  longitude : 120.4968227
+  yaw       : -26.09
+  wait_time : 0.0
+
+- name      : WP_827
+  latitude  : 36.3058962
+  longitude : 120.4968233
+  yaw       : -26.98
+  wait_time : 0.0
+
+- name      : WP_828
+  latitude  : 36.3058961
+  longitude : 120.4968238
+  yaw       : -27.86
+  wait_time : 0.0
+
+- name      : WP_829
+  latitude  : 36.3058959
+  longitude : 120.4968243
+  yaw       : -28.34
+  wait_time : 0.0
+
+- name      : WP_830
+  latitude  : 36.3058956
+  longitude : 120.4968248
+  yaw       : -28.66
+  wait_time : 0.0
+
+- name      : WP_831
+  latitude  : 36.3058955
+  longitude : 120.4968253
+  yaw       : -29.73
+  wait_time : 0.0
+
+- name      : WP_832
+  latitude  : 36.3058955
+  longitude : 120.4968260
+  yaw       : -30.78
+  wait_time : 0.0
+
+- name      : WP_833
+  latitude  : 36.3058954
+  longitude : 120.4968265
+  yaw       : -31.61
+  wait_time : 0.0
+
+- name      : WP_834
+  latitude  : 36.3058952
+  longitude : 120.4968270
+  yaw       : -32.34
+  wait_time : 0.0
+
+- name      : WP_835
+  latitude  : 36.3058949
+  longitude : 120.4968275
+  yaw       : -32.88
+  wait_time : 0.0
+
+- name      : WP_836
+  latitude  : 36.3058947
+  longitude : 120.4968280
+  yaw       : -33.39
+  wait_time : 0.0
+
+- name      : WP_837
+  latitude  : 36.3058945
+  longitude : 120.4968286
+  yaw       : -34.02
+  wait_time : 0.0
+
+- name      : WP_838
+  latitude  : 36.3058943
+  longitude : 120.4968291
+  yaw       : -34.50
+  wait_time : 0.0
+
+- name      : WP_839
+  latitude  : 36.3058941
+  longitude : 120.4968297
+  yaw       : -35.35
+  wait_time : 0.0
+
+- name      : WP_840
+  latitude  : 36.3058938
+  longitude : 120.4968302
+  yaw       : -35.61
+  wait_time : 0.0
+
+- name      : WP_841
+  latitude  : 36.3058936
+  longitude : 120.4968306
+  yaw       : -35.14
+  wait_time : 0.0
+
+- name      : WP_842
+  latitude  : 36.3058934
+  longitude : 120.4968312
+  yaw       : -36.06
+  wait_time : 0.0
+
+- name      : WP_843
+  latitude  : 36.3058931
+  longitude : 120.4968316
+  yaw       : -36.44
+  wait_time : 0.0
+
+- name      : WP_844
+  latitude  : 36.3058929
+  longitude : 120.4968321
+  yaw       : -36.60
+  wait_time : 0.0
+
+- name      : WP_845
+  latitude  : 36.3058926
+  longitude : 120.4968326
+  yaw       : -37.00
+  wait_time : 0.0
+
+- name      : WP_846
+  latitude  : 36.3058924
+  longitude : 120.4968332
+  yaw       : -37.44
+  wait_time : 0.0
+
+- name      : WP_847
+  latitude  : 36.3058921
+  longitude : 120.4968337
+  yaw       : -38.02
+  wait_time : 0.0
+
+- name      : WP_848
+  latitude  : 36.3058918
+  longitude : 120.4968342
+  yaw       : -38.47
+  wait_time : 0.0
+
+- name      : WP_849
+  latitude  : 36.3058915
+  longitude : 120.4968347
+  yaw       : -38.70
+  wait_time : 0.0
+
+- name      : WP_850
+  latitude  : 36.3058912
+  longitude : 120.4968352
+  yaw       : -39.22
+  wait_time : 0.0
+
+- name      : WP_851
+  latitude  : 36.3058910
+  longitude : 120.4968356
+  yaw       : -39.74
+  wait_time : 0.0
+
+- name      : WP_852
+  latitude  : 36.3058908
+  longitude : 120.4968361
+  yaw       : -40.60
+  wait_time : 0.0
+
+- name      : WP_853
+  latitude  : 36.3058905
+  longitude : 120.4968366
+  yaw       : -41.31
+  wait_time : 0.0
+
+- name      : WP_854
+  latitude  : 36.3058902
+  longitude : 120.4968371
+  yaw       : -41.71
+  wait_time : 0.0
+
+- name      : WP_855
+  latitude  : 36.3058899
+  longitude : 120.4968376
+  yaw       : -41.72
+  wait_time : 0.0
+
+- name      : WP_856
+  latitude  : 36.3058896
+  longitude : 120.4968381
+  yaw       : -41.83
+  wait_time : 0.0
+
+- name      : WP_857
+  latitude  : 36.3058893
+  longitude : 120.4968386
+  yaw       : -43.06
+  wait_time : 0.0
+
+- name      : WP_858
+  latitude  : 36.3058890
+  longitude : 120.4968390
+  yaw       : -43.68
+  wait_time : 0.0
+
+- name      : WP_859
+  latitude  : 36.3058887
+  longitude : 120.4968395
+  yaw       : -43.78
+  wait_time : 0.0
+
+- name      : WP_860
+  latitude  : 36.3058884
+  longitude : 120.4968399
+  yaw       : -43.94
+  wait_time : 0.0
+
+- name      : WP_861
+  latitude  : 36.3058882
+  longitude : 120.4968404
+  yaw       : -44.53
+  wait_time : 0.0
+
+- name      : WP_862
+  latitude  : 36.3058879
+  longitude : 120.4968407
+  yaw       : -44.97
+  wait_time : 0.0
+
+- name      : WP_863
+  latitude  : 36.3058875
+  longitude : 120.4968411
+  yaw       : -45.72
+  wait_time : 0.0
+
+- name      : WP_864
+  latitude  : 36.3058873
+  longitude : 120.4968417
+  yaw       : -46.49
+  wait_time : 0.0
+
+- name      : WP_865
+  latitude  : 36.3058870
+  longitude : 120.4968421
+  yaw       : -47.34
+  wait_time : 0.0
+
+- name      : WP_866
+  latitude  : 36.3058867
+  longitude : 120.4968426
+  yaw       : -48.29
+  wait_time : 0.0
+
+- name      : WP_867
+  latitude  : 36.3058864
+  longitude : 120.4968431
+  yaw       : -49.51
+  wait_time : 0.0
+
+- name      : WP_868
+  latitude  : 36.3058861
+  longitude : 120.4968436
+  yaw       : -50.51
+  wait_time : 0.0
+
+- name      : WP_869
+  latitude  : 36.3058858
+  longitude : 120.4968440
+  yaw       : -51.48
+  wait_time : 0.0
+
+- name      : WP_870
+  latitude  : 36.3058855
+  longitude : 120.4968445
+  yaw       : -52.02
+  wait_time : 0.0
+
+- name      : WP_871
+  latitude  : 36.3058852
+  longitude : 120.4968449
+  yaw       : -52.83
+  wait_time : 0.0
+
+- name      : WP_872
+  latitude  : 36.3058849
+  longitude : 120.4968455
+  yaw       : -54.36
+  wait_time : 0.0
+
+- name      : WP_873
+  latitude  : 36.3058845
+  longitude : 120.4968459
+  yaw       : -55.01
+  wait_time : 0.0
+
+- name      : WP_874
+  latitude  : 36.3058841
+  longitude : 120.4968463
+  yaw       : -55.73
+  wait_time : 0.0
+
+- name      : WP_875
+  latitude  : 36.3058838
+  longitude : 120.4968468
+  yaw       : -57.11
+  wait_time : 0.0
+
+- name      : WP_876
+  latitude  : 36.3058835
+  longitude : 120.4968473
+  yaw       : -58.09
+  wait_time : 0.0
+
+- name      : WP_877
+  latitude  : 36.3058831
+  longitude : 120.4968476
+  yaw       : -58.44
+  wait_time : 0.0
+
+- name      : WP_878
+  latitude  : 36.3058827
+  longitude : 120.4968480
+  yaw       : -59.21
+  wait_time : 0.0
+
+- name      : WP_879
+  latitude  : 36.3058823
+  longitude : 120.4968485
+  yaw       : -60.41
+  wait_time : 0.0
+
+- name      : WP_880
+  latitude  : 36.3058818
+  longitude : 120.4968488
+  yaw       : -60.78
+  wait_time : 0.0
+
+- name      : WP_881
+  latitude  : 36.3058815
+  longitude : 120.4968493
+  yaw       : -61.69
+  wait_time : 0.0
+
+- name      : WP_882
+  latitude  : 36.3058811
+  longitude : 120.4968497
+  yaw       : -62.55
+  wait_time : 0.0
+
+- name      : WP_883
+  latitude  : 36.3058806
+  longitude : 120.4968500
+  yaw       : -62.62
+  wait_time : 0.0
+
+- name      : WP_884
+  latitude  : 36.3058801
+  longitude : 120.4968503
+  yaw       : -62.92
+  wait_time : 0.0
+
+- name      : WP_885
+  latitude  : 36.3058797
+  longitude : 120.4968506
+  yaw       : -63.52
+  wait_time : 0.0
+
+- name      : WP_886
+  latitude  : 36.3058793
+  longitude : 120.4968510
+  yaw       : -64.00
+  wait_time : 0.0
+
+- name      : WP_887
+  latitude  : 36.3058788
+  longitude : 120.4968514
+  yaw       : -64.56
+  wait_time : 0.0
+
+- name      : WP_888
+  latitude  : 36.3058784
+  longitude : 120.4968517
+  yaw       : -65.05
+  wait_time : 0.0
+
+- name      : WP_889
+  latitude  : 36.3058779
+  longitude : 120.4968521
+  yaw       : -65.88
+  wait_time : 0.0
+
+- name      : WP_890
+  latitude  : 36.3058775
+  longitude : 120.4968525
+  yaw       : -66.44
+  wait_time : 0.0
+
+- name      : WP_891
+  latitude  : 36.3058771
+  longitude : 120.4968528
+  yaw       : -66.93
+  wait_time : 0.0
+
+- name      : WP_892
+  latitude  : 36.3058765
+  longitude : 120.4968530
+  yaw       : -67.28
+  wait_time : 0.0
+
+- name      : WP_893
+  latitude  : 36.3058761
+  longitude : 120.4968533
+  yaw       : -67.62
+  wait_time : 0.0
+
+- name      : WP_894
+  latitude  : 36.3058756
+  longitude : 120.4968537
+  yaw       : -68.20
+  wait_time : 0.0
+
+- name      : WP_895
+  latitude  : 36.3058752
+  longitude : 120.4968540
+  yaw       : -68.77
+  wait_time : 0.0
+
+- name      : WP_896
+  latitude  : 36.3058747
+  longitude : 120.4968542
+  yaw       : -68.81
+  wait_time : 0.0
+
+- name      : WP_897
+  latitude  : 36.3058741
+  longitude : 120.4968545
+  yaw       : -69.11
+  wait_time : 0.0
+
+- name      : WP_898
+  latitude  : 36.3058736
+  longitude : 120.4968548
+  yaw       : -69.65
+  wait_time : 0.0
+
+- name      : WP_899
+  latitude  : 36.3058731
+  longitude : 120.4968550
+  yaw       : -70.20
+  wait_time : 0.0
+
+- name      : WP_900
+  latitude  : 36.3058726
+  longitude : 120.4968553
+  yaw       : -70.39
+  wait_time : 0.0
+
+- name      : WP_901
+  latitude  : 36.3058721
+  longitude : 120.4968556
+  yaw       : -70.73
+  wait_time : 0.0
+
+- name      : WP_902
+  latitude  : 36.3058716
+  longitude : 120.4968558
+  yaw       : -70.88
+  wait_time : 0.0
+
+- name      : WP_903
+  latitude  : 36.3058711
+  longitude : 120.4968560
+  yaw       : -71.11
+  wait_time : 0.0
+
+- name      : WP_904
+  latitude  : 36.3058706
+  longitude : 120.4968564
+  yaw       : -71.60
+  wait_time : 0.0
+
+- name      : WP_905
+  latitude  : 36.3058701
+  longitude : 120.4968566
+  yaw       : -71.78
+  wait_time : 0.0
+
+- name      : WP_906
+  latitude  : 36.3058695
+  longitude : 120.4968568
+  yaw       : -71.87
+  wait_time : 0.0
+
+- name      : WP_907
+  latitude  : 36.3058690
+  longitude : 120.4968570
+  yaw       : -72.14
+  wait_time : 0.0
+
+- name      : WP_908
+  latitude  : 36.3058685
+  longitude : 120.4968573
+  yaw       : -72.67
+  wait_time : 0.0
+
+- name      : WP_909
+  latitude  : 36.3058679
+  longitude : 120.4968576
+  yaw       : -72.92
+  wait_time : 0.0
+
+- name      : WP_910
+  latitude  : 36.3058674
+  longitude : 120.4968579
+  yaw       : -73.20
+  wait_time : 0.0
+
+- name      : WP_911
+  latitude  : 36.3058668
+  longitude : 120.4968580
+  yaw       : -73.04
+  wait_time : 0.0
+
+- name      : WP_912
+  latitude  : 36.3058663
+  longitude : 120.4968583
+  yaw       : -73.39
+  wait_time : 0.0
+
+- name      : WP_913
+  latitude  : 36.3058657
+  longitude : 120.4968585
+  yaw       : -73.71
+  wait_time : 0.0
+
+- name      : WP_914
+  latitude  : 36.3058652
+  longitude : 120.4968588
+  yaw       : -73.89
+  wait_time : 0.0
+
+- name      : WP_915
+  latitude  : 36.3058646
+  longitude : 120.4968590
+  yaw       : -74.10
+  wait_time : 0.0
+
+- name      : WP_916
+  latitude  : 36.3058642
+  longitude : 120.4968594
+  yaw       : -75.35
+  wait_time : 0.0
+
+- name      : WP_917
+  latitude  : 36.3058640
+  longitude : 120.4968596
+  yaw       : -76.34
+  wait_time : 0.0
+
+- name      : WP_918
+  latitude  : 36.3058639
+  longitude : 120.4968594
+  yaw       : -75.28
+  wait_time : 0.0
+
+- name      : WP_919
+  latitude  : 36.3058639
+  longitude : 120.4968593
+  yaw       : -74.22
+  wait_time : 0.0
+
+- name      : WP_920
+  latitude  : 36.3058639
+  longitude : 120.4968592
+  yaw       : -73.91
+  wait_time : 0.0
+
+- name      : WP_921
+  latitude  : 36.3058640
+  longitude : 120.4968593
+  yaw       : -74.24
+  wait_time : 0.0
+
+- name      : WP_922
+  latitude  : 36.3058640
+  longitude : 120.4968593
+  yaw       : -74.69
+  wait_time : 0.0
+
+- name      : WP_923
+  latitude  : 36.3058640
+  longitude : 120.4968593
+  yaw       : -74.81
+  wait_time : 0.0
+
+- name      : WP_924
+  latitude  : 36.3058640
+  longitude : 120.4968593
+  yaw       : -74.54
+  wait_time : 0.0
+
+- name      : WP_925
+  latitude  : 36.3058640
+  longitude : 120.4968593
+  yaw       : -74.32
+  wait_time : 0.0
+
+- name      : WP_926
+  latitude  : 36.3058639
+  longitude : 120.4968593
+  yaw       : -74.15
+  wait_time : 0.0
+
+- name      : WP_927
+  latitude  : 36.3058639
+  longitude : 120.4968594
+  yaw       : -74.39
+  wait_time : 0.0
+
+- name      : WP_928
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.42
+  wait_time : 0.0
+
+- name      : WP_929
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.49
+  wait_time : 0.0
+
+- name      : WP_930
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.29
+  wait_time : 0.0
+
+- name      : WP_931
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.13
+  wait_time : 0.0
+
+- name      : WP_932
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.16
+  wait_time : 0.0
+
+- name      : WP_933
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.09
+  wait_time : 0.0
+
+- name      : WP_934
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.20
+  wait_time : 0.0
+
+- name      : WP_935
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.35
+  wait_time : 0.0
+
+- name      : WP_936
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.36
+  wait_time : 0.0
+
+- name      : WP_937
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.22
+  wait_time : 0.0
+
+- name      : WP_938
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.24
+  wait_time : 0.0
+
+- name      : WP_939
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.32
+  wait_time : 0.0
+
+- name      : WP_940
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.18
+  wait_time : 0.0
+
+- name      : WP_941
+  latitude  : 36.3058638
+  longitude : 120.4968593
+  yaw       : -74.30
+  wait_time : 0.0
+
+- name      : WP_942
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.37
+  wait_time : 0.0
+
+- name      : WP_943
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.30
+  wait_time : 0.0
+
+- name      : WP_944
+  latitude  : 36.3058638
+  longitude : 120.4968594
+  yaw       : -74.44
+  wait_time : 0.0
+
+- name      : WP_945
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.43
+  wait_time : 0.0
+
+- name      : WP_946
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.33
+  wait_time : 0.0
+
+- name      : WP_947
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.32
+  wait_time : 0.0
+
+- name      : WP_948
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.38
+  wait_time : 0.0
+
+- name      : WP_949
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.19
+  wait_time : 0.0
+
+- name      : WP_950
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.30
+  wait_time : 0.0
+
+- name      : WP_951
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.23
+  wait_time : 0.0
+
+- name      : WP_952
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.44
+  wait_time : 0.0
+
+- name      : WP_953
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.25
+  wait_time : 0.0
+
+- name      : WP_954
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.32
+  wait_time : 0.0
+
+- name      : WP_955
+  latitude  : 36.3058637
+  longitude : 120.4968593
+  yaw       : -74.08
+  wait_time : 0.0
+
+- name      : WP_956
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.43
+  wait_time : 0.0
+
+- name      : WP_957
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.42
+  wait_time : 0.0
+
+- name      : WP_958
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.41
+  wait_time : 0.0
+
+- name      : WP_959
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.31
+  wait_time : 0.0
+
+- name      : WP_960
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.02
+  wait_time : 0.0
+
+- name      : WP_961
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.41
+  wait_time : 0.0
+
+- name      : WP_962
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.38
+  wait_time : 0.0
+
+- name      : WP_963
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.29
+  wait_time : 0.0
+
+- name      : WP_964
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.24
+  wait_time : 0.0
+
+- name      : WP_965
+  latitude  : 36.3058637
+  longitude : 120.4968594
+  yaw       : -74.21
+  wait_time : 0.0
+
+- name      : WP_966
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.19
+  wait_time : 0.0
+
+- name      : WP_967
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.17
+  wait_time : 0.0
+
+- name      : WP_968
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.30
+  wait_time : 0.0
+
+- name      : WP_969
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.19
+  wait_time : 0.0
+
+- name      : WP_970
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.28
+  wait_time : 0.0
+
+- name      : WP_971
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.23
+  wait_time : 0.0
+
+- name      : WP_972
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.15
+  wait_time : 0.0
+
+- name      : WP_973
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.23
+  wait_time : 0.0
+
+- name      : WP_974
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.37
+  wait_time : 0.0
+
+- name      : WP_975
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.18
+  wait_time : 0.0
+
+- name      : WP_976
+  latitude  : 36.3058636
+  longitude : 120.4968594
+  yaw       : -74.31
+  wait_time : 0.0
+
+- name      : WP_977
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.28
+  wait_time : 0.0
+
+- name      : WP_978
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.21
+  wait_time : 0.0
+
+- name      : WP_979
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.15
+  wait_time : 0.0
+
+- name      : WP_980
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.18
+  wait_time : 0.0
+
+- name      : WP_981
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.03
+  wait_time : 0.0
+
+- name      : WP_982
+  latitude  : 36.3058635
+  longitude : 120.4968595
+  yaw       : -74.27
+  wait_time : 0.0
+
+- name      : WP_983
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.28
+  wait_time : 0.0
+
+- name      : WP_984
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.21
+  wait_time : 0.0
+
+- name      : WP_985
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.26
+  wait_time : 0.0
+
+- name      : WP_986
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.19
+  wait_time : 0.0
+
+- name      : WP_987
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.34
+  wait_time : 0.0
+
+- name      : WP_988
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.15
+  wait_time : 0.0
+
+- name      : WP_989
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.20
+  wait_time : 0.0
+
+- name      : WP_990
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.15
+  wait_time : 0.0
+
+- name      : WP_991
+  latitude  : 36.3058635
+  longitude : 120.4968595
+  yaw       : -74.32
+  wait_time : 0.0
+
+- name      : WP_992
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.28
+  wait_time : 0.0
+
+- name      : WP_993
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.25
+  wait_time : 0.0
+
+- name      : WP_994
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.35
+  wait_time : 0.0
+
+- name      : WP_995
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.15
+  wait_time : 0.0
+
+- name      : WP_996
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.26
+  wait_time : 0.0
+
+- name      : WP_997
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.14
+  wait_time : 0.0
+
+- name      : WP_998
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.20
+  wait_time : 0.0
+
+- name      : WP_999
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.16
+  wait_time : 0.0
+
+- name      : WP_1000
+  latitude  : 36.3058635
+  longitude : 120.4968594
+  yaw       : -74.23
+  wait_time : 0.0
+
