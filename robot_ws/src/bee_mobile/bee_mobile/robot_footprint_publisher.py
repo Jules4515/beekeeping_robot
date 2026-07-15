@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import QuaternionStamped, Point
 from visualization_msgs.msg import Marker
@@ -163,9 +164,14 @@ class RobotFootprintPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = RobotFootprintPublisher()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

@@ -4,6 +4,7 @@ import time
 import threading
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from std_msgs.msg import Float64MultiArray
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -18,7 +19,7 @@ class DockingController(Node):
         self.odom_frame = 'odom'
         self.base_frame = 'base_link'
         self.aruco_frame = 'aruco_marker_91'
-        self.camera_frame = 'camera_link_optical'
+        self.camera_frame = 'camera_link'
         
         # --- Limites Logiques Strictes ---
         self.v_pulse = 0.30
@@ -270,11 +271,12 @@ def main(args=None):
     node = DockingController()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        node.get_logger().info("Docking Controller aborted.")
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

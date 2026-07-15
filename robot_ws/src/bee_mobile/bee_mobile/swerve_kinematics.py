@@ -1,39 +1,100 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64MultiArray, Int8, Float64
+from std_msgs.msg import Float64MultiArray, Float64, Int8
 import math
 
 class SwerveKinematics(Node):
     def __init__(self):
         super().__init__('swerve_kinematics')
+        
+        # --- 1. INITIALISATION DES VARIABLES & PARAMÈTRES ---
+        self._init_parameters()
+        self._init_kinematic_constants()
+        self._init_wheel_hardware()
+        self._init_ros_interfaces()
 
+    def _init_parameters(self):
+        """Loads and converts ROS 2 parameters to class variables."""
+        self.declare_parameter('max_steer_deg_s', 70.0)
+        self.declare_parameter('hard_limit_deg', 50.0)
+        self.declare_parameter('v_max_physical', 0.75)
+        self.declare_parameter('v_min_moteur', 0.40)
+        self.declare_parameter('v_min_nav2', 0.10)
+        self.declare_parameter('deadband_vx', 0.05)
+        self.declare_parameter('deadband_wz', 0.05)
+        self.declare_parameter('opposite_max_angle_deg', 40.0)
+
+        # Tolérance d'alignement
+        self.declare_parameter('align_tolerance_deg', 7.0)
+        
+        # Paramètres du Slew Rate Linéaire
+        self.declare_parameter('enable_speed_slew_rate', True)
+        self.declare_parameter('accel_max', 2.0)
+        self.declare_parameter('decel_max', 2.0)
+
+        self.max_steer_rad_s = math.radians(self.get_parameter('max_steer_deg_s').value)
+        self.hard_limit_rad = math.radians(self.get_parameter('hard_limit_deg').value)
+        self.v_max_physical = self.get_parameter('v_max_physical').value
+        self.v_min_moteur = self.get_parameter('v_min_moteur').value
+        self.v_min_nav2 = self.get_parameter('v_min_nav2').value
+        self.deadband_vx = self.get_parameter('deadband_vx').value
+        self.deadband_wz = self.get_parameter('deadband_wz').value
+        self.opposite_max_angle_rad = math.radians(self.get_parameter('opposite_max_angle_deg').value)
+
+        self.align_tolerance_rad = math.radians(self.get_parameter('align_tolerance_deg').value)
+        
+        self.enable_speed_slew_rate = self.get_parameter('enable_speed_slew_rate').value
+        self.accel_max = self.get_parameter('accel_max').value
+        self.decel_max = self.get_parameter('decel_max').value
+
+    def _init_kinematic_constants(self):
+        """Pre-computes mapping coefficients to save CPU cycles in the main loop."""
         self.wheel_radius = 0.215
+        
+        v_max = self.v_max_physical
+        v_min_mot = self.v_min_moteur
+        v_min_nav = self.v_min_nav2
+        
+        self.map_m = (v_max - v_min_mot) / (v_max - v_min_nav)
+        self.map_A = (2.0 * (v_min_mot - self.map_m * v_min_nav)) / math.sqrt(v_min_nav)
+        self.map_B = 2.0 * self.map_m - (v_min_mot / v_min_nav)
 
-        # si sim mettre des - pour dir pour les right wheels
+    def _init_wheel_hardware(self):
+        """Defines the physical geometry and state matrix of the Swerve drive."""
         self.wheels = {
-            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
-            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_speed': 0.0, 'last_logical_speed': 0.0, 'stop_counter': 0, 'confirmed_stopped': True},
+            'front_left':  {'x': 0.48,  'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_target_angle': 0.0, 'last_logical_speed': 0.0},
+            'front_right': {'x': 0.48,  'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_target_angle': 0.0, 'last_logical_speed': 0.0},
+            'rear_left':   {'x': -0.48, 'y': 0.4150,  'dir': 1.0, 'enc_dir': 1.0,  'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_target_angle': 0.0, 'last_logical_speed': 0.0},
+            'rear_right':  {'x': -0.48, 'y': -0.4150, 'dir': 1.0, 'enc_dir': -1.0, 'current_angle': 0.0, 'current_rpm': 0.0, 'last_angle': 0.0, 'last_target_angle': 0.0, 'last_logical_speed': 0.0},
         }
+        self.L_half = 0.48
+        self.W_half = 0.4150
 
-        self.last_cmd_time = self.get_clock().now()  # Dedicated timer for Slew Rate Calculation
+        # Pré-calcul du Rayon CIR minimal absolu
+        self.R_min = (self.L_half / math.tan(self.opposite_max_angle_rad)) + self.W_half
 
-        # --- État du Joystick ---
+    def _init_ros_interfaces(self):
+        """Sets up ROS 2 publishers, subscribers, and timers."""
         self.active_joy_mode = -1
-        self.mode_sub = self.create_subscription(Int8, '/joystick_control_mode', self.mode_callback, 10)
+        self.last_cmd_time = self.get_clock().now()
 
+        self.mode_sub = self.create_subscription(Int8, '/joystick_control_mode', self.mode_callback, 10)
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel_out', self.cmd_vel_callback, 10)
         
         self.wheel_pubs = {}
-        self.logical_speed_pubs = {}
 
         for name in self.wheels.keys():
             self.wheel_pubs[name] = self.create_publisher(Float64MultiArray, f'mobile/wheel_{name}/motor_speed', 10)
-            self.logical_speed_pubs[name] = self.create_publisher(Float64, f'mobile/wheel_{name}/logical_speed', 10)
-            self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', lambda msg, n=name: self.encoder_callback(msg, n), 10)
+            self.create_subscription(Float64MultiArray, f'mobile/wheel_{name}/encoder_angle', 
+                                     lambda msg, n=name: self.encoder_callback(msg, n), 10)
+            
+        self.current_mode = 'STOP'
+        self.waiting_for_alignment = False
+
+    # --- 2. CALLBACKS ---
 
     def mode_callback(self, msg):
         self.active_joy_mode = msg.data
@@ -44,93 +105,85 @@ class SwerveKinematics(Node):
             self.wheels[wheel_name]['current_angle'] = float(msg.data[1])
 
     def cmd_vel_callback(self, msg):
-        # Calculate time elapsed since last command to compute physically achievable angle steps
         current_time = self.get_clock().now()
         dt = (current_time - self.last_cmd_time).nanoseconds / 1e9
         self.last_cmd_time = current_time
         
-        # Prevent massive dt spikes on first run or after long pauses
         if dt <= 0.0 or dt > 0.5:
             dt = 0.1
 
-        # Physical machine limits
-        MAX_STEER_RAD_S = math.radians(60.0)  # Max servo rotation SPEED (~45 deg/s) - Tune based on hardware
-        MAX_RPM_LIMIT = 30.0  # Limite de sécurité physique
-        MAX_SPEED_MS = (MAX_RPM_LIMIT * 2.0 * math.pi * self.wheel_radius) / 60.0
-        HARD_LIMIT_RAD = math.radians(80.0) # Limite physique de +-80 deg pour l'orientation des roues
+        new_state, vx, wz, cir_radius = self._compute_fsm_state(msg.linear.x, msg.angular.z)
         
-        # --- PARAMÈTRES DU PROFIL DE TRACTION ---
-        TOLERANCE_VERTE_DEG = 10.0  # Fin de la zone 100%
-        TOLERANCE_ROUGE_DEG = 40.0  # Début de la zone 0%
-        
-        # Conversion en radians pour le calcul interne
-        TOLERANCE_VERTE_RAD = math.radians(TOLERANCE_VERTE_DEG)
-        TOLERANCE_ROUGE_RAD = math.radians(TOLERANCE_ROUGE_DEG)
-
-        # ============================================================
-        # NOUVEAU : PRÉ-CALCUL DE L'ERREUR GLOBALE (ANTI-DRAGGING)
-        # ============================================================
-        max_angle_error_rad = 0.0
-        
-        for name, config in self.wheels.items():
-            vx_w = msg.linear.x - config['y'] * msg.angular.z
-            vy_w = msg.linear.y + config['x'] * msg.angular.z
-            raw_speed = math.hypot(vx_w, vy_w)
-            
-            if raw_speed > 0.001:
-                raw_angle = math.atan2(vy_w, vx_w)
+        # --- LOGIQUE DE TRANSITION ---
+        if new_state != self.current_mode:
+            if new_state == 'STOP':
+                self.waiting_for_alignment = False # Pas d'alignement requis pour s'arrêter
+            elif self.current_mode in ['STRAIGHT', 'OPPOSITE'] and new_state in ['STRAIGHT', 'OPPOSITE']:
+                pass # Transition fluide : on maintient l'avancement
             else:
-                if self.active_joy_mode == 3:      # Zero Turn
-                    raw_angle = math.atan2(config['x'], -config['y'])
-                elif self.active_joy_mode in [1, 2]: # Straight ou Crab
-                    raw_angle = 0.0
-                else:                              # Holonome (0) ou inactif (-1)
-                    raw_angle = config['last_angle']
+                self.waiting_for_alignment = True # PIVOT <-> Mouvement OU STOP -> Mouvement
+                
+            self.current_mode = new_state
 
-            if raw_angle > (math.pi / 2.0):
-                ideal_angle = raw_angle - math.pi
-            elif raw_angle < -(math.pi / 2.0):
-                ideal_angle = raw_angle + math.pi
-            else:
-                ideal_angle = raw_angle
+        #self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
 
-            current_phys_angle = math.radians(config['current_angle'])
-            error_to_ideal = ideal_angle - current_phys_angle
-            error_to_ideal = abs(math.atan2(math.sin(error_to_ideal), math.cos(error_to_ideal)))
+        self._calculate_wheel_targets(self.current_mode, vx, wz, dt)
+        is_aligned = self._check_alignment()
+        self._publish_hardware_commands(is_aligned, dt)
 
-            if error_to_ideal > max_angle_error_rad:
-                max_angle_error_rad = error_to_ideal
+    # --- 3. MÉTHODES CINÉMATIQUES INTERNES ---
 
-        # Verrou de Traction GLOBAL (Bloc déplacé ici)
-        if max_angle_error_rad <= TOLERANCE_VERTE_RAD:
-            global_speed_multiplier = 1.0
-        elif max_angle_error_rad >= TOLERANCE_ROUGE_RAD:
-            global_speed_multiplier = 0.0
+    def _compute_fsm_state(self, vx, wz):
+        """Determines kinematic mode, applies Ackermann constraints, and calculates CIR radius."""
+        is_vx_active = abs(vx) > self.deadband_vx
+        is_wz_active = abs(wz) > self.deadband_wz
+
+        if is_wz_active and not is_vx_active:
+            current_state = 'PIVOT'
+            vx = 0.0
+            cir_radius = 0.0
+        elif is_vx_active and not is_wz_active:
+            current_state = 'STRAIGHT'
+            wz = 0.0
+            cir_radius = float('inf')
+        elif is_vx_active and is_wz_active:
+            current_state = 'OPPOSITE'
         else:
-            # Calcul du ratio linéaire de 0.0 à 1.0 dans la zone de dégradation
-            ratio = (max_angle_error_rad - TOLERANCE_VERTE_RAD) / (TOLERANCE_ROUGE_RAD - TOLERANCE_VERTE_RAD)
-            # Application du profil Quadratique Convexe : (1 - ratio)^2
-            global_speed_multiplier = (1.0 - ratio) ** 2
-        # ============================================================
+            current_state = 'STOP'
+            vx = 0.0
+            wz = 0.0
+            cir_radius = float('inf')
 
-        for name, config in self.wheels.items():
-            vx_w = msg.linear.x - config['y'] * msg.angular.z
-            vy_w = msg.linear.y + config['x'] * msg.angular.z
-            
-            raw_speed = math.hypot(vx_w, vy_w)
-            
-            # --- Logique de Pré-orientation simplifiée ---
-            if raw_speed > 0.001:
-                raw_angle = math.atan2(vy_w, vx_w)
+        # Application de la saturation géométrique
+        if current_state == 'OPPOSITE':
+            R = vx / wz
+            if abs(R) < self.R_min:
+                clamped_R = math.copysign(self.R_min, R)
+                wz = vx / clamped_R # Bridage de la rotation pour respecter l'angle max
+                cir_radius = abs(clamped_R)
             else:
-                if self.active_joy_mode == 3:      # Zero Turn
-                    raw_angle = math.atan2(config['x'], -config['y'])
-                elif self.active_joy_mode in [1, 2]: # Straight ou Crab
-                    raw_angle = 0.0
-                else:                              # Holonome (0) ou inactif (-1)
-                    raw_angle = config['last_angle']
+                cir_radius = abs(R)
 
-            # 1. Absolute Phase Inversion (Clamp to +/- 90 deg)
+        return current_state, vx, wz, cir_radius
+
+    def _calculate_wheel_targets(self, current_state, vx, wz, dt):
+        """Computes ideal angles/speeds, applies phase inversion, and enforces steer slew rate."""
+        for name, config in self.wheels.items():
+            if current_state == 'STOP':
+                raw_speed = 0.0
+                if self.active_joy_mode == 3:
+                    raw_angle = math.atan2(config['x'], -config['y'])
+                elif self.active_joy_mode == 1:
+                    raw_angle = 0.0
+                else:
+                    raw_angle = config['last_target_angle']
+            else:
+                vx_w = vx - config['y'] * wz
+                vy_w = config['x'] * wz 
+                raw_speed = math.hypot(vx_w, vy_w)
+                raw_angle = math.atan2(vy_w, vx_w)
+
+            # Phase Inversion for all states
             if raw_angle > (math.pi / 2.0):
                 ideal_angle = raw_angle - math.pi
                 ideal_speed = -raw_speed
@@ -140,12 +193,13 @@ class SwerveKinematics(Node):
             else:
                 ideal_angle = raw_angle
                 ideal_speed = raw_speed
+                    
+            config['last_target_angle'] = ideal_angle
 
-            # 2. Slew Rate Limiter: Ramp the angle target instead of instant snapping
+            # Steer Slew Rate Limiter
             angle_diff = ideal_angle - config['last_angle']
-            # Normalisation stricte de la différence pour le chemin le plus court
             angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))
-            max_step_angle = MAX_STEER_RAD_S * dt
+            max_step_angle = self.max_steer_rad_s * dt
 
             if angle_diff > max_step_angle:
                 cmd_angle = config['last_angle'] + max_step_angle
@@ -154,88 +208,110 @@ class SwerveKinematics(Node):
             else:
                 cmd_angle = ideal_angle
 
-            # Application de la limite physique d'angle sur l'orientation des roues (Clamping)
-            cmd_angle = max(min(cmd_angle, HARD_LIMIT_RAD), -HARD_LIMIT_RAD)
-
-            # 3. Application du Verrou de Traction GLOBAL (Calculé précédemment)
-            speed_multiplier = global_speed_multiplier
-
-            # Application finale à la consigne de vitesse LOGIQUE
-            logical_target_speed = ideal_speed * speed_multiplier
+            cmd_angle = max(min(cmd_angle, self.hard_limit_rad), -self.hard_limit_rad)
             
-            V_MIN_PHYSICAL = 0.30  # La vitesse minimum pour vaincre la stiction
-            V_MAX_PHYSICAL = 0.50  # Ta vitesse maximale
+            config['temp_cmd_angle'] = cmd_angle
+            config['temp_ideal_speed'] = ideal_speed
+
             
-            logical_target_speed = max(min(logical_target_speed, V_MAX_PHYSICAL), -V_MAX_PHYSICAL)
+        # Si aucune tra
+    def _check_alignment(self):
+        """Verifies strict alignment only when the wait flag is triggered by a major transition."""
+            
+        # Si aucune transition majeure n'a verrouillé le système, on autorise la traction
+        if not self.waiting_for_alignment:
+            return True
+
+        is_aligned = True
+
+        # Mode de vérification stricte (Stop & Steer)
+        for name, config in self.wheels.items():
+            phys_angle = math.radians(config['current_angle'])
+            target = config['last_target_angle'] 
+            err = target - phys_angle
+            err = abs(math.atan2(math.sin(err), math.cos(err)))
+            
+            if err > self.align_tolerance_rad:
+                is_aligned = False # Toujours pas aligné, on bloque l'avancement
+        
+        if not is_aligned:
+            return False
+        else:
+            # Si la boucle termine sans retourner False, les 4 roues sont parfaites
+            self.waiting_for_alignment = False
+            return True
+
+    def _publish_hardware_commands(self, is_aligned, dt):
+        """Applies linear slew rate, non-linear speed mapping, and publishes commands."""
+        precalculated_commands = {}
+
+        for name, config in self.wheels.items():
+            cmd_angle = config['temp_cmd_angle']
+            
+            if not is_aligned:
+                ideal_speed = 0.0
+            else:
+                ideal_speed = config['temp_ideal_speed']
+
+            logical_target_speed = max(min(ideal_speed, self.v_max_physical), -self.v_max_physical)
 
             # ============================================================
-            # SLEW RATE LIMITER (Accélération Linéaire Constante)
+            # Linar Speed Slew Rate Limiter
             # ============================================================
-            A_MAX = 2.0  # m/s² - Limite d'accélération (À régler)
-            D_MAX = 2.0  # m/s² - Limite de décélération (Freinage)
-            
             last_logical_spd = config['last_logical_speed']
             speed_diff = logical_target_speed - last_logical_spd
             
-            # Détermination de l'état dynamique (Accélération vs Freinage)
-            # On accélère si la vitesse absolue augmente OU si on inverse le sens de rotation
             is_accelerating = abs(logical_target_speed) > abs(last_logical_spd) or (logical_target_speed * last_logical_spd < 0)
-            
-            # Choix du taux limite en fonction de l'état
-            max_step_lin = (A_MAX if is_accelerating else D_MAX) * dt
+            max_step_lin = (self.accel_max if is_accelerating else self.decel_max) * dt
                 
-            # Application de la limite cinématique
             if abs(speed_diff) > max_step_lin:
                 logical_smoothed_speed = last_logical_spd + math.copysign(max_step_lin, speed_diff)
             else:
                 logical_smoothed_speed = logical_target_speed
-                logical_smoothed_speed
-            # ============================================================
-            # MAPPING CONTINU C1 (HYBRIDE RACINE / LINÉAIRE)
-            # ============================================================
-            V_MAX = 0.50
-            V_MIN_MOTEUR = 0.30
-            V_MIN_NAV2 = 0.10
+
+            config['last_logical_speed'] = logical_smoothed_speed
             
-            abs_smoothed = abs(logical_smoothed_speed)
-            
-            if abs_smoothed > 0.005:
+            # ============================================================
+            # Hybrid Speed Mapping
+            # ============================================================
+            abs_spd = abs(logical_smoothed_speed)
+            if abs_spd > 0.005:
                 sign = math.copysign(1.0, logical_smoothed_speed)
                 
-                # Pré-calcul des coefficients (À déplacer dans le __init__ pour l'optimisation)
-                m = (V_MAX - V_MIN_MOTEUR) / (V_MAX - V_MIN_NAV2)
-                A = (2.0 * (V_MIN_MOTEUR - m * V_MIN_NAV2)) / math.sqrt(V_MIN_NAV2)
-                B = 2.0 * m - (V_MIN_MOTEUR / V_MIN_NAV2)
-
-                if abs_smoothed <= V_MIN_NAV2:
-                    # Zone 1 : Raccordement concave lisse
-                    cmd_speed_hardware = sign * (A * math.sqrt(abs_smoothed) + B * abs_smoothed)
+                if abs_spd <= self.v_min_nav2:
+                    cmd_speed_hardware = sign * (self.map_A * math.sqrt(abs_spd) + self.map_B * abs_spd)
                 else:
-                    # Zone 2 : Ligne droite vers V_MAX
-                    cmd_speed_hardware = sign * (m * (abs_smoothed - V_MIN_NAV2) + V_MIN_MOTEUR)
+                    cmd_speed_hardware = sign * (self.map_m * (abs_spd - self.v_min_nav2) + self.v_min_moteur)
             else:
                 cmd_speed_hardware = 0.0
                 
-            cmd_speed_hardware = max(min(cmd_speed_hardware, V_MAX), -V_MAX)
+            cmd_speed_hardware = max(min(cmd_speed_hardware, self.v_max_physical), -self.v_max_physical)
             
-            # Update state variables
             config['last_angle'] = cmd_angle
-            config['last_speed'] = cmd_speed_hardware
-            config['last_logical_speed'] = logical_smoothed_speed
 
-            # Conversion and Publication
+            # Publish
             rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']   
-            #rpm_final = 0.0         
-            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(rpm_final), float(math.degrees(cmd_angle))]))
+            
+            # Sauvegarde dans le dictionnaire local
+            precalculated_commands[name] = {
+                'rpm': rpm_final,
+                'angle_deg': math.degrees(cmd_angle),
+            }
 
-            logical_msg = Float64()
-            logical_msg.data = float(logical_smoothed_speed)
-            self.logical_speed_pubs[name].publish(logical_msg)
+        for name, cmds in precalculated_commands.items():
+            self.wheel_pubs[name].publish(Float64MultiArray(data=[float(cmds['rpm']), float(cmds['angle_deg'])]))
             
 def main(args=None):
     rclpy.init(args=args)
-    rclpy.spin(SwerveKinematics())
-    rclpy.shutdown()
+    node = SwerveKinematics()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

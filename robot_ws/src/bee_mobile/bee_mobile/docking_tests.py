@@ -4,6 +4,7 @@ import time
 import threading
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import PoseArray
 from tf2_ros.buffer import Buffer
@@ -21,8 +22,8 @@ class DockingTests(Node):
         # 1 = STRAIGHT PULSE (0 deg)
         # 2 = CRAB PULSE (+-60 deg)
         # 3 = ZERO TURN PULSE (Rotational)
-        # 4 = TF: aruco_marker_91 -> camera_link_optical
-        # 5 = TF: camera_link_optical -> base_link
+        # 4 = TF: aruco_marker_91 -> camera_link
+        # 5 = TF: camera_link -> base_link
         # 6 = TF: base_link -> base_footprint
         # 7 = TF: base_footprint -> odom
         # ==========================================
@@ -188,8 +189,8 @@ class DockingTests(Node):
 
     def execute_tf_test(self):
         mappings = {
-            4: ('camera_link_optical', self.aruco_frame),
-            5: (self.base_frame, 'camera_link_optical', ),
+            4: ('camera_link', self.aruco_frame),
+            5: (self.base_frame, 'camera_link', ),
             6: (self.base_frame, self.aruco_frame),
             7: (self.odom_frame, self.aruco_frame)
             #7: (self.odom_frame, 'base_footprint')
@@ -356,11 +357,12 @@ def main(args=None):
     node = DockingTests()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

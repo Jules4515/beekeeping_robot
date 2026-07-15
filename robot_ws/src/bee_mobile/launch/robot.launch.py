@@ -1,33 +1,50 @@
 import os
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition, UnlessCondition
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, LaunchConfiguration
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     pkg_share = get_package_share_directory('bee_mobile')
 
-    # --- Arguments ---
-    sim_arg = DeclareLaunchArgument(
-        'simulation',
-        default_value='False',
-        description='Set to True to enable SITL (Software-in-the-Loop) simulation bypasses and disable hardware'
-    )
-    is_sim = LaunchConfiguration('simulation')
-
     # --- URDF & Robot State (Always On) ---
     xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
+
+    # Declare mode launch argument (indoor or outdoor)
+    declare_mode = DeclareLaunchArgument(
+        'mode', default_value='outdoor', description='Navigation mode: indoor or outdoor'
+    )
+
+    mode = LaunchConfiguration('mode')
+
+    # Navigation launch include (outdoor)
+    navigation_outdoor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')),
+        condition=IfCondition(PythonExpression(["'", mode, "' == 'outdoor'"])),
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
+
+    # Navigation launch include (indoor)
+    navigation_indoor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')),
+        condition=IfCondition(PythonExpression(["'", mode, "' == 'indoor'"])),
+        launch_arguments={'use_sim_time': 'false'}.items()
+    )
+
+    # Caméra
+    camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
-        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 50.0,}]  # Increased from 50 to 100 Hz
+        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 15.0,}]
     )
 
     # --- Hardware Nodes (Real World Only) ---
@@ -37,33 +54,83 @@ def generate_launch_description():
         output='screen',
         arguments=['udp4', '--port', '8888'],
         # arguments=['udp4', '--port', '8888', '-v6']   # -v6 for verbose, optional
-        condition=UnlessCondition(is_sim)
     )
 
-    lidar_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'lidar.launch.py')),
-        condition=UnlessCondition(is_sim)
+    unitree_lidar_node = Node(
+        package='unitree_lidar_ros2',
+        executable='unitree_lidar_ros2_node',
+        name='unitree_lidar',
+        parameters=[{
+            'cloud_frame': 'unilidar_lidar',
+            'imu_frame': 'unilidar_imu',
+        }],
+        remappings=[
+            ('/tf', '/tf_unitree_ignored'),
+            ('/tf_static', '/tf_static_unitree_ignored')
+        ]
     )
 
-    camera_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'camera.launch.py')),
-        condition=UnlessCondition(is_sim)
+    pointcloud_to_scan_node = Node(
+        package='pointcloud_to_laserscan',
+        executable='pointcloud_to_laserscan_node',
+        name='pointcloud_to_laserscan',
+        output='screen',
+        remappings=[
+            ('cloud_in', '/unilidar/cloud'),
+            ('scan', '/scan')
+        ],
+        parameters=[{
+            'target_frame': 'base_link',
+            'transform_tolerance': 0.05,
+            'min_height': 0.15,
+            'max_height': 0.80,
+            'angle_min': -3.14159,
+            'angle_max': 3.14159,
+            'angle_increment': 0.0087,
+            'scan_time': 0.05,
+            'range_min': 0.30,
+            'range_max': 15.0,
+            'use_inf': True,
+            'inf_epsilon': 1.0,
+        }]
+    )
+
+    camera_node = Node(
+        package='usb_cam',
+        executable='usb_cam_node_exe',
+        name='usb_cam',
+        namespace='camera',
+        output='screen',
+        parameters=[{
+            'video_device': '/dev/video0',
+            'framerate': 30.0,
+            'pixel_format': 'mjpeg2rgb',
+            'image_width': 640,
+            'image_height': 480,
+            'camera_frame_id': 'camera_link',
+            'camera_info_url': 'file://' + camera_info_yaml,
+            'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
+            'exposure_absolute': 20,
+            'gain': 10,
+            'qos_reliability': 'best_effort',
+            'qos_history': 'keep_last',
+            'qos_depth': 1,
+        }]
     )
 
     pid_tuner = Node(
         package='bee_mobile',
         executable='pid_tuner',
         output='screen',
-        condition=UnlessCondition(is_sim),
         parameters=[{
             'interactive_mode': False
         }]
     )
 
-    compressed_aruco_node = Node(
+    aruco_tag_detector_node = Node(
         package='bee_mobile', 
-        executable='compressed_aruco_node',
-        name='compressed_aruco_node',
+        executable='aruco_tag_detector',
+        name='aruco_tag_detector',
         namespace='camera',
         output='screen',
         parameters=[{
@@ -78,22 +145,6 @@ def generate_launch_description():
         package='bee_mobile',
         executable='docking_controller',
         output='screen',
-        condition=UnlessCondition(is_sim)
-    )
-
-    # --- Simulation Nodes (SITL Only) ---
-    sim_bridge_node = Node(
-        package='bee_mobile',
-        executable='sim_bridge',
-        output='screen',
-        condition=IfCondition(is_sim)
-    )
-
-    static_tf_map_odom = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
-        condition=IfCondition(is_sim)
     )
 
     # --- Core Control Nodes (Always On) ---
@@ -105,7 +156,7 @@ def generate_launch_description():
 
     mux_joystick_node = Node(
         package='bee_mobile',
-        executable='mux_joystick_node',
+        executable='mux_joystick',
         output='screen'
     )
 
@@ -120,7 +171,13 @@ def generate_launch_description():
         executable='odometry',
         output='screen'
     )
-    
+
+    unitree_imu_hotfix = Node(
+        package='bee_mobile',
+        executable='unitree_imu_hotfix',
+        output='screen'
+    )
+
     twist_mux_node = Node(
         package='twist_mux',
         executable='twist_mux',
@@ -128,20 +185,26 @@ def generate_launch_description():
         parameters=[os.path.join(pkg_share, 'config', 'twist_mux_topics.yaml')]
     )
 
+    # navigation_outdoor or navigation_indoor will be included based on `mode`
+    navigation_launch = (navigation_outdoor, navigation_indoor)
+
     return LaunchDescription([
-        sim_arg,
+        declare_mode,
         robot_state_publisher_node,
         #micro_ros_node,
-        lidar_launch,
-        camera_launch,
-        compressed_aruco_node,
+        unitree_lidar_node,
+        pointcloud_to_scan_node,
+        #camera_node,
+        aruco_tag_detector_node,
         pid_tuner,
-        sim_bridge_node,
-        static_tf_map_odom,
         joy_node,
         mux_joystick_node,
-        #swerve_kinematics_node,
+        swerve_kinematics_node,
         odometry_node,
+        unitree_imu_hotfix,
         twist_mux_node,
         #docking_controller_node,
+        # include chosen navigation launch(s)
+        navigation_outdoor,
+        navigation_indoor,
     ])

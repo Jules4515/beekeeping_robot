@@ -6,8 +6,8 @@
     <!-- Position of the steering joint in the base_link frame of reference -->
     <xacro:property name="left_y" value="0.4150" /> <!-- 0.5790 -->
     <xacro:property name="right_y"  value="-0.4150" /> <!-- -0.5790 -->
-    <xacro:property name="front_x"  value="0.7661" />
-    <xacro:property name="rear_x" value="-0.1939" />
+    <xacro:property name="front_x"  value="0.48" /> <!-- 0.7661 -->
+    <xacro:property name="rear_x" value="-0.48" /> <!-- -0.1939 -->
 
     <!-- Materials -->
     <material name="black">
@@ -26,14 +26,14 @@
             <geometry>
                 <mesh filename="${pkg}/base_link.STL" />
             </geometry>
-            <origin xyz="0 0 0" rpy="0 0 1.5708" />
+            <origin xyz="-0.2861 0 0" rpy="0 0 1.5708" />
             <material name="white" />
         </visual>
         <collision>
             <geometry>
                 <mesh filename="${pkg}/base_link.STL" />
             </geometry>
-            <origin xyz="0 0 0" rpy="0 0 1.5708" />
+            <origin xyz="-0.2861 0 0" rpy="0 0 1.5708" />
         </collision>
         <inertial>
             <origin xyz="0.2513 0.0 -0.0925" rpy="0 0 0" />
@@ -45,7 +45,7 @@
     <joint name="base_footprint_joint" type="fixed">
         <parent link="base_footprint"/>
         <child link="base_link"/>
-        <origin xyz="-0.2861 0 0.79"/>
+        <origin xyz="0 0 0.79"/>
     </joint>
     
     <!-- ======= Wheel macro =======-->
@@ -155,7 +155,7 @@
     <joint name="robot_arm_base_steering" type="prismatic">
         <parent link="base_link" />
         <child link="robot_arm_base_steering_link" />
-        <origin xyz="0.233073 0.0 0.029" rpy="0 0 0" />
+        <origin xyz="-0.053027 0.0 0.029" rpy="0 0 0" />
         <axis xyz="0 1 0" />
         <limit lower="-0.1" upper="0.38" effort="30" velocity="0.5" />
     </joint>
@@ -333,10 +333,11 @@
     <!-- === Sensors === -->
 
     <!-- Camera -->
-    <link name="default_cam">
+    <link name="camera_link">
         <visual>
-            <geometry><box size="0.1 0.1 0.07" /></geometry>
-            <origin xyz="0 0 0" />
+            <geometry><box size="0.05 0.05 0.02" /></geometry>
+            <!-- <origin xyz="-0.081 0 0" rpy="1.5708 0.0 2.944"/> -->
+            <origin xyz="0 0 0" rpy="0 0 -0.05"/>
             <material name="white" />
         </visual>
         <inertial>
@@ -344,15 +345,17 @@
             <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
         </inertial>
     </link>
-    
+
     <joint name="camera_joint" type="fixed">
-        <parent link="base_link" />
-        <child link="default_cam" />
-        <origin xyz="0.975 0 0.03" rpy="0 0 0" />
+        <parent link="base_link"/>
+        <child link="camera_link"/>
+        <origin xyz="0.7699 0.0 0.03" rpy="-2.0944 0.0 -1.5708"/> <!-- Rotation Roll (default : -pi/2 = -1.5708), Pitch, Yaw (caméra à -30 deg vers le bas -pi/2) en radians (REP-103) -->
     </joint>
 
     <!-- Lidar -->
-    <link name="laser_frame">
+
+    <!-- 1. Le capteur physique (Origine du nuage de points) -->
+    <link name="unilidar_lidar">
         <visual>
             <geometry><cylinder radius="0.07" length="0.05" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -364,10 +367,41 @@
         </inertial>
     </link>
 
+    <!-- 2. Ancrage rigide du centre du Lidar sur le châssis -->
     <joint name="lidar_joint" type="fixed">
         <parent link="base_link" />
-        <child link="laser_frame" />
-        <origin xyz="0.975 0 0.09" rpy="0 0 3.06" />
+        <child link="unilidar_lidar" />
+        <!-- Tes coordonnées de montage physique -->
+        <origin xyz="0.6889 0 0.09" rpy="1.5708 1.1208 1.5708" />
+    </joint>
+
+    <!-- 3. Déclaration du repère de l'IMU interne -->
+    <link name="unilidar_imu" />
+
+    <!-- 4. Application stricte de la matrice de transformation Unitree -->
+    <!-- T_LI offset en mètres : X: -0.007698, Y: -0.014655, Z: 0.00667 -->
+    <joint name="lidar_to_imu_joint" type="fixed">
+        <parent link="unilidar_lidar" />
+        <child link="unilidar_imu" />
+        <origin xyz="-0.007698 -0.014655 0.00667" rpy="0.0 0.0 0.0" />
+    </joint>
+
+
+    <link name="gps_link">
+        <visual>
+        <geometry>
+            <cylinder radius="0.06" length="0.04"/>
+        </geometry>
+        <material name="black">
+            <color rgba="0.1 0.1 0.1 1.0"/>
+        </material>
+        </visual>
+    </link>
+
+    <joint name="gps_joint" type="fixed">
+        <parent link="base_link"/> 
+        <child link="gps_link"/>
+        <origin xyz="-0.72 0.0 0.24" rpy="0.0 0.0 0.0"/>
     </joint>
 
 </robot>

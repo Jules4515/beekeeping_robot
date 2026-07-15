@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.duration import Duration
 from tf2_ros import TransformException
@@ -7,9 +8,9 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 import math
 
-class TfMathTester(Node):
+class DockingTfMathTester(Node):
     def __init__(self):
-        super().__init__('tf_math_tester')
+        super().__init__('docking_tf_math_tester')
         
         # Frames à observer
         self.odom_frame = 'odom'
@@ -112,14 +113,15 @@ class TfMathTester(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = TfMathTester()
+    node = DockingTfMathTester()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

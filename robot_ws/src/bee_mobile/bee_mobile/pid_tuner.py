@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from std_msgs.msg import Float64MultiArray
 import threading
 
@@ -101,15 +102,13 @@ def input_thread_worker(node):
 def main(args=None):
     rclpy.init(args=args)
     node = PIDTuner()
-
     if node.interactive_mode:
         input_thread = threading.Thread(target=input_thread_worker, args=(node,), daemon=True)
         input_thread.start()
-
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
         if rclpy.ok():
