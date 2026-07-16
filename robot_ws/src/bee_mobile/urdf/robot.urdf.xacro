@@ -136,7 +136,7 @@
     <!-- === Arm ===-->
 
     <!-- Arm base slide (prismatic, X axis) -->
-    <link name="robot_arm_base_steering_link">
+    <!-- <link name="robot_arm_base_steering_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_base_steering_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -158,10 +158,10 @@
         <origin xyz="-0.053027 0.0 0.029" rpy="0 0 0" />
         <axis xyz="0 1 0" />
         <limit lower="-0.1" upper="0.38" effort="30" velocity="0.5" />
-    </joint>
+    </joint> -->
 
     <!-- Arm rotation (continuous, -Z axis) -->
-    <link name="robot_arm_steering_link">
+    <!-- <link name="robot_arm_steering_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_steering_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -175,17 +175,17 @@
             <mass value="4.440" />
             <inertia ixx="0.32071" ixy="0.0" ixz="0.0" iyy="0.32258" iyz="-0.00202" izz="0.00540" />
         </inertial>
-    </link>
+    </link> -->
 
-    <joint name="robot_arm_steering_joint" type="continuous">
+    <!-- <joint name="robot_arm_steering_joint" type="continuous">
         <parent link="robot_arm_base_steering_link" />
         <child link="robot_arm_steering_link" />
         <origin xyz="-0.000282 -0.026715 0.072" rpy="0 0 0" />
         <axis xyz="0 0 -1" />
-    </joint>
+    </joint> -->
 
     <!-- Vertical lift (prismatic, Z axis) -->
-    <link name="robot_arm_up_link">
+    <!-- <link name="robot_arm_up_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_up_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -207,10 +207,10 @@
         <origin xyz="0.028282 -0.003162 0.172176" rpy="0 0 0" />
         <axis xyz="0 0 1" />
         <limit lower="-0.05" upper="1.0" effort="30" velocity="0.5" />
-    </joint>
+    </joint> -->
 
     <!-- Forward extension (prismatic, -Y axis) -->
-    <link name="robot_arm_front_link">
+    <!-- <link name="robot_arm_front_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_front_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -232,10 +232,10 @@
         <origin xyz="0.349803 0.026377 -0.086735" rpy="0 0 0" />
         <axis xyz="1 0 0" />
         <limit lower="0" upper="0.1" effort="30" velocity="0.5" />
-    </joint>
+    </joint> -->
 
     <!-- Vertical descent (prismatic, Z axis) -->
-    <link name="robot_arm_down_link">
+    <!-- <link name="robot_arm_down_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_arm_down_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -257,10 +257,10 @@
         <origin xyz="0.029197 -0.049 -0.027801" rpy="0 0 0" />
         <axis xyz="0 0 1" />
         <limit lower="-0.3" upper="0" effort="30" velocity="0.5" />
-    </joint>
+    </joint> -->
 
     <!-- Hand rotation (continuous, Z axis) -->
-    <link name="robot_hand_link">
+    <!-- <link name="robot_hand_link">
         <visual>
             <geometry><mesh filename="${pkg}/robot_hand_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -281,10 +281,10 @@
         <child link="robot_hand_link" />
         <origin xyz="0 -0.010319 -0.244140" rpy="0 0 0" />
         <axis xyz="0 0 1" />
-    </joint>
+    </joint> -->
 
     <!-- Finger 1 -->
-    <link name="finger_1_link">
+    <!-- <link name="finger_1_link">
         <visual>
             <geometry><mesh filename="${pkg}/finger_1_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -304,10 +304,10 @@
         <child link="finger_1_link" />
         <origin xyz="0.233796 -0.042813 0.014167" rpy="0 0 0" />
         <axis xyz="1 0 0" />
-    </joint>
+    </joint> -->
 
     <!-- Finger 2 -->
-    <link name="finger_2_link">
+    <!-- <link name="finger_2_link">
         <visual>
             <geometry><mesh filename="${pkg}/finger_2_link.STL" /></geometry>
             <origin xyz="0 0 0" rpy="0 0 1.5708" />
@@ -327,7 +327,7 @@
         <child link="finger_2_link" />
         <origin xyz="-0.239546 -0.016681 0.025" rpy="0 0 0" />
         <axis xyz="-1 0 0" />
-    </joint>
+    </joint> -->
 
 
     <!-- === Sensors === -->

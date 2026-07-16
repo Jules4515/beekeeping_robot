@@ -186,7 +186,8 @@ class GpsMissionNode(Node):
             marker_array.markers.append(marker_arr)
 
         # Publication simultanée de toutes les formes
-        self.marker_pub.publish(marker_array)
+        for i in range(3):  # Publication répétée pour garantir la réception par RViz
+            self.marker_pub.publish(marker_array)
         time.sleep(0.5)
 
         # # ============================================================
@@ -234,7 +235,7 @@ class GpsMissionNode(Node):
 
         # Rayon de validation à la volée (en mètres)
         # Plus c'est grand, plus le robot passera au point suivant tôt.
-        FLY_BY_RADIUS = 1.0
+        FLY_BY_RADIUS = 1.5
 
         # Ce qui marche le mieux
 

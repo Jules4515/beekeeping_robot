@@ -20,15 +20,15 @@ class KinematicsAckermann(Node):
         """Loads and converts ROS 2 parameters to class variables."""
         self.declare_parameter('max_steer_deg_s', 80.0)
         self.declare_parameter('hard_limit_deg', 50.0)
-        self.declare_parameter('v_max_physical', 0.75)
-        self.declare_parameter('v_min_moteur', 0.45)
+        self.declare_parameter('v_max_physical', 0.80)
+        self.declare_parameter('v_min_moteur', 0.50)
         self.declare_parameter('v_min_nav2', 0.10)
         self.declare_parameter('deadband_vx', 0.05)
         self.declare_parameter('deadband_wz', 0.05)
         
         # Paramètres du Slew Rate Linéaire
         self.declare_parameter('enable_speed_slew_rate', True)
-        self.declare_parameter('accel_max', 0.75)
+        self.declare_parameter('accel_max', 0.50)
         self.declare_parameter('decel_max', 2.0)
 
         self.max_steer_rad_s = math.radians(self.get_parameter('max_steer_deg_s').value)

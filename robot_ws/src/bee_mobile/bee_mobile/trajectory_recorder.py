@@ -15,7 +15,7 @@ class TrajectoryRecorder(Node):
 
         # Paramètres ROS 2 dynamiques (valeurs par défaut : 2.0m et 15.0°)
         self.declare_parameter('delta_d', 3.0)
-        self.declare_parameter('delta_theta', 30.0)
+        self.declare_parameter('delta_theta', 50.0)
         
         self.delta_d = self.get_parameter('delta_d').value
         self.delta_theta = self.get_parameter('delta_theta').value

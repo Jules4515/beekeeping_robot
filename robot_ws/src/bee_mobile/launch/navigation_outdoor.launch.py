@@ -76,7 +76,8 @@ def generate_launch_description():
                 output='screen',
                 remappings=[
                     ('/odometry/filtered', '/odometry/global'),
-                ]
+                ],
+                parameters=[ekf_config],
             )
         ]
     )

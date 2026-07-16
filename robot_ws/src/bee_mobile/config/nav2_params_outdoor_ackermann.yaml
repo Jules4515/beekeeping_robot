@@ -137,7 +137,7 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.60     # Rayon de validation de 50 cm (adapté à l'extérieur)
+      xy_goal_tolerance: 0.40     # Rayon de validation de 50 cm (adapté à l'extérieur)
       yaw_goal_tolerance: 0.25 #pi/6
       #stateful_timeout: 10.0
 
@@ -163,12 +163,12 @@ controller_server:
       iteration_count: 1
       motion_model: "Ackermann"
       min_turning_r: 0.81 # Angle de braquage minimum avec les roues à 50 deg max
-      vx_max: 0.80
-      vx_min: -0.80
+      vx_max: 0.75
+      vx_min: -0.75
       vy_max: 0.0
       vy_min: 0.0
-      wz_max: 0.91
-      wz_min: -0.91
+      wz_max: 0.80
+      wz_min: -0.80
       # Écart-types des bruits aléatoires ajoutés à chaque commande de vitesse pour générer les trajectoires simulées,
       # plus les écarts-types sont grands, plus les trajectoires simulées seront différentes les unes des autres,
       # et plus le MPPI pourra trouver une trajectoire de contournement d'obstacle si la trajectoire nominale (sans bruit)
@@ -177,12 +177,12 @@ controller_server:
       vx_std: 0.2
       vy_std: 0.0
       wz_std: 0.3
-      ax_max: 3.0
-      ax_min: -3.0
+      ax_max: 2.0
+      ax_min: -2.0
       ay_max: 0.0
       ay_min: 0.0
-      az_max: 3.0
-      az_min: -3.0
+      az_max: 2.0
+      az_min: -2.0
       prune_distance: 1.5
       transform_tolerance: 1.0
       # Température : capacité du MPPI à explorer des trajectoires plus coûteuses que la trajectoire nominale (sans bruit),
@@ -228,8 +228,8 @@ controller_server:
       GoalCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 8.0
-        threshold_to_consider: 0.5 #2.0
+        cost_weight: 4.0
+        threshold_to_consider: 2.0
       GoalAngleCritic:
         enabled: true
         cost_power: 1
@@ -241,13 +241,13 @@ controller_server:
         cost_weight: 10.0
         max_path_occupancy_ratio: 0.05
         trajectory_point_step: 3
-        threshold_to_consider: 0.5
-        offset_from_furthest: 15
+        threshold_to_consider: 2.0
+        offset_from_furthest: 20
         use_path_orientations: false
       PathFollowCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 2.0
+        cost_weight: 0.5
         offset_from_furthest: 5
         threshold_to_consider: 1.5
       # Alignement par rapport au chemin vers le goal
@@ -272,7 +272,7 @@ local_costmap:
       width: 10
       height: 10
       resolution: 0.1
-      transform_tolerance: 0.5
+      transform_tolerance: 0.6
       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]'
       
       # 1. Mise à jour de la liste des plugins
@@ -310,7 +310,7 @@ global_costmap:
       robot_base_frame: base_footprint
       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]' 
       track_unknown_space: false
-      transform_tolerance: 0.5
+      transform_tolerance: 0.6
       rolling_window: true
       width: 200
       height: 200
@@ -434,7 +434,7 @@ behavior_server:
     local_frame: odom
     global_frame: map
     robot_base_frame: base_footprint
-    transform_tolerance: 0.3
+    transform_tolerance: 0.5
     simulate_ahead_time: 2.0
     max_rotational_vel: 0.71
     min_rotational_vel: 0.35
@@ -476,10 +476,10 @@ velocity_smoother:
     stamp_smoothed_velocity_with_smoothing_time: False
     scale_velocities: True
     feedback: "OPEN_LOOP"
-    max_velocity: [0.80, 0.0, 0.91]
-    min_velocity: [-0.80, 0.0, -0.91]
-    max_accel: [3.0, 0.0, 3.0]
-    max_decel: [-3.0, 0.0, -3.0]
+    max_velocity: [0.75, 0.0, 0.81]
+    min_velocity: [-0.75, 0.0, -0.81]
+    max_accel: [2.0, 0.0, 2.0]
+    max_decel: [-2.0, 0.0, -2.0]
     odom_topic: "odom"
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]
@@ -495,7 +495,7 @@ collision_monitor:
     cmd_vel_in_topic: "cmd_vel" 
     cmd_vel_out_topic: "cmd_vel_nav"
     state_topic: "collision_monitor_state"
-    transform_tolerance: 0.3
+    transform_tolerance: 0.5
     source_timeout: 1.0
     base_shift_correction: True
     stop_pub_timeout: 2.0
