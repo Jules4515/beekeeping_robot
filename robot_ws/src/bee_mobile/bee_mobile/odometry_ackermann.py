@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# Ackermann Odometry Publisher for ROS2
+#
+# This node estimates the robot pose and velocity from the front-wheel encoder
+# speeds and steering angles. It integrates the Ackermann kinematics, publishes
+# an Odometry message for the localization filter, and can optionally broadcast
+# the odom to base_footprint TF transform.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
@@ -24,14 +33,13 @@ class OdometryAckermann(Node):
         self.odom_theta = 0.0
         self.last_time = self.get_clock().now()
 
-        # Paramètre pour activer/désactiver la TF
+        # Parameter to enable or disable TF publication.
         self.declare_parameter('publish_odom_tf', False)
         self.publish_odom_tf = self.get_parameter('publish_odom_tf').value
         
         self.tf_broadcaster = TransformBroadcaster(self)
 
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
-        # SUPPRESSION DU TF BROADCASTER (C'est l'EKF qui gère ça maintenant)
 
         self.create_subscription(Float64MultiArray, '/mobile/wheel_front_left/encoder_angle',  self.fl_callback, 10)
         self.create_subscription(Float64MultiArray, '/mobile/wheel_front_right/encoder_angle', self.fr_callback, 10)
@@ -55,35 +63,35 @@ class OdometryAckermann(Node):
             return
 
         # ==========================================================
-        # MODÈLE BICYCLETTE (Ackermann FWD projeté)
+        # BICYCLE MODEL (projected Ackermann front-wheel drive)
         # ==========================================================
-        L_empattement = 0.96  # Distance entre l'essieu arrière (fixe) et avant (directeur)
+        L_empattement = 0.96  # Distance between the fixed rear axle and steering front axle.
 
-        # 1. Extraction des vitesses et angles individuels des roues avant
+        # 1. Extract individual front-wheel speeds and angles.
         v_fl = (self.wheels['front_left']['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
         angle_fl = math.radians(self.wheels['front_left']['current_angle'])
         
         v_fr = (self.wheels['front_right']['current_rpm'] * 2.0 * math.pi * self.wheel_radius) / 60.0
         angle_fr = math.radians(self.wheels['front_right']['current_angle'])
 
-        # 2. Projection des vecteurs cinématiques sur l'essieu avant
-        # On calcule la vitesse moyenne de l'essieu avant sur ses axes X et Y
+        # 2. Project the kinematic vectors onto the front axle.
+        # Calculate the average front-axle velocity along its X and Y axes.
         v_xf = (v_fl * math.cos(angle_fl) + v_fr * math.cos(angle_fr)) / 2.0
         v_yf = (v_fl * math.sin(angle_fl) + v_fr * math.sin(angle_fr)) / 2.0
 
-        # 3. Calcul de la cinématique globale du châssis
-        # La vitesse longitudinale du robot est dictée par l'avancement de l'essieu avant
+        # 3. Calculate the chassis-level kinematics.
+        # The robot's longitudinal velocity is determined by front-axle motion.
         real_vx_robot = v_xf
         
-        # La rotation du châssis est créée par la vitesse latérale de l'essieu avant autour de l'essieu arrière
+        # Chassis rotation is created by the front axle's lateral velocity around the rear axle.
         real_wz_robot = v_yf / L_empattement
         
-        # Le repère base_footprint est au centre géométrique (à L/2 de l'essieu arrière)
-        # Il subit donc une dérive latérale lors d'un virage
+        # The base_footprint frame is at the geometric center (L/2 from the rear axle).
+        # It therefore experiences lateral drift during a turn.
         real_vy_robot = real_wz_robot * (L_empattement / 2.0)
 
         # ==========================================================
-        # Intégration Spatiale
+        # Spatial integration.
         # ==========================================================
         delta_theta = real_wz_robot * dt
         theta_mid = self.odom_theta + delta_theta / 2.0 
@@ -93,7 +101,7 @@ class OdometryAckermann(Node):
         self.odom_theta += delta_theta
 
         # ==========================================================
-        # PUBLICATION: Odom (avec incertitudes pour EKF)
+        # PUBLICATION: Odometry (with EKF uncertainties)
         # ==========================================================
         cy = math.cos(self.odom_theta * 0.5)
         sy = math.sin(self.odom_theta * 0.5)
@@ -128,7 +136,7 @@ class OdometryAckermann(Node):
         self.odom_pub.publish(odom)
 
         # ==========================================================
-        # PUBLICATION TF (Optionnelle)
+        # TF PUBLICATION (optional)
         # ==========================================================
         if self.publish_odom_tf:
             t = TransformStamped()

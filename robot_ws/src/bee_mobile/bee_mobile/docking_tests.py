@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# 
+# Docking Tests Utilities
+#
+# !! Work in progress !!, file used by the docking controller and docking test nodes.
+#
+# This node publishes wheel commands for straight, crab, and zero-turn motion,
+# verifies TF2 transformations and timing behavior, and provides smooth-pulse
+# tests for validating the docking controller hardware and control logic.
+# 
+
 import math
 import time
 import threading
@@ -28,30 +38,30 @@ class DockingTests(Node):
         # 7 = TF: base_footprint -> odom
         # ==========================================
         self.ACTIVE_TEST = 0
-        self.pulse_direction = 1.0  # Ajout : Multiplicateur de direction (1.0 = gauche/avant, -1.0 = droite/arrière)
+        self.pulse_direction = 1.0  # Direction multiplier (1.0 = left/forward, -1.0 = right/backward)
 
         # --- Frames ---
         self.odom_frame = 'odom'
         self.base_frame = 'base_link'
         self.aruco_frame = 'aruco_marker_91'
         
-        # --- Limites Logiques Strictes (Amplitude de Pulse Bang-Bang) ---
+        # --- Strict Logic Limits (Pulse Amplitude) ---
         self.v_pulse = 0.30
         self.w_pulse = 0.30
         self.wheel_radius = 0.215
         
-        # --- Tolérances de la Machine d'États ---
+        # --- State Machine Tolerances ---
         self.tol_angle = math.radians(0.5)
         self.tol_y     = 0.05
         self.tol_x     = 0.05
         
-        # --- Configuration des Pulses & Filtres ---
+        # --- Pulse & Filter Configuration ---
         self.pulse_duration = 0.8
         self.wait_duration = 1.0
         self.micro_state = 'WAITING'
         self.state_start_time = self.get_clock().now()
         
-        # Filtres exponentiels rapides pour saturer le pulse en 0.25s
+        # Fast exponential filters to reach pulse saturation in 0.25s
         self.alpha_v = 0.10
         self.alpha_wz = 0.05
         
@@ -59,19 +69,19 @@ class DockingTests(Node):
         self.filtered_vy = 0.0
         self.filtered_wz = 0.0
         
-        # Cibles logiques mémorisées pour l'impulsion en cours
+        # Latched logic targets for the current pulse
         self.latched_target_vx = 0.0
         self.latched_target_vy = 0.0
         self.latched_target_wz = 0.0
         self.latched_ideal_angles = {}
         self.latched_phase_str = "WAITING"
         
-        # --- Variables d'Historique et de Gestion du Tag ---
+        # --- Tag History and Management Variables ---
         self.last_tag_time = self.get_clock().now()
         self.tag_perdu_recemment = False
-        self.rollback_autorise = True  # Déclencheur de sécurité
+        self.rollback_autorise = True  # Safety trigger
         
-        # Stockage du dernier mouvement vectoriel généré [vx, vy, wz]
+        # Store the last generated velocity vector [vx, vy, wz]
         self.dernier_pulse_cmd = [0.0, 0.0, 0.0]
         
         self.wheels = {
@@ -99,7 +109,7 @@ class DockingTests(Node):
                 10
             )
 
-        self.perception_timer = self.create_timer(0.033, self.execute_tf_buffer_tests) # 30Hz
+        self.perception_timer = self.create_timer(0.033, self.execute_tf_buffer_tests) # 30 Hz
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -115,7 +125,7 @@ class DockingTests(Node):
         with self.lock:
             if len(msg.data) >= 2:
                 current_rpm = float(msg.data[0]) * self.wheels[wheel_name]['enc_dir']
-                # Conversion RPM vers m/s
+                # Convert RPM to m/s.
                 current_speed_ms = (current_rpm * 2.0 * math.pi * self.wheel_radius) / 60.0
                 self.wheels[wheel_name]['current_speed_ms'] = current_speed_ms
                 self.wheels[wheel_name]['current_angle_deg'] = float(msg.data[1])
@@ -184,7 +194,7 @@ class DockingTests(Node):
             f"[{self.micro_state}] t_pulse: {elapsed_s:.2f}s | "
             f"Cmd [Vx:{self.filtered_vx:.2f}, Vy:{self.filtered_vy:.2f}, Wz:{self.filtered_wz:.2f}] | "
             f"FL_deg: {fl_ang_deg:.1f}°, FL_ms: {fl_speed_ms:.2f}",
-            throttle_duration_sec=0.20  # Affiche toutes les 200ms
+            throttle_duration_sec=0.20  # Display every 200 ms.
         )
 
     def execute_tf_test(self):
@@ -200,9 +210,10 @@ class DockingTests(Node):
         tf_data = get_universal_transform(self.tf_buffer, parent, child)
         
         if tf_data:
-            # --- FIX GÉOMÉTRIQUE ANTI-GIMBAL LOCK ---
-            # Si la cible est le tag ArUco, on ignore le Yaw du quaternion (bruit optique)
-            # et on calcule le cap réel (vecteur directeur 2D) depuis l'origine du parent.
+            # --- GEOMETRIC GIMBAL-LOCK FIX ---
+            # If the target is an ArUco tag, ignore the quaternion yaw
+            # (optical noise) and calculate the actual heading (2D direction
+            # vector) from the parent-frame origin.
             if 'aruco_marker' in child:
                 stable_yaw_rad = math.atan2(tf_data['y_m'], tf_data['x_m'])
                 tf_data['yaw_rad'] = stable_yaw_rad
@@ -223,24 +234,24 @@ class DockingTests(Node):
         now_ros = self.get_clock().now()
 
         if self.ACTIVE_TEST == 8:
-            # Test 8 : Vérification de la disponibilité immédiate du snapshot
-            # tf_exact demande le snapshot à la nanoseconde près actuelle
+            # Test 8: Check immediate snapshot availability.
+            # tf_exact requests the snapshot at the current nanosecond.
             tf_exact = get_universal_transform(self.tf_buffer, self.odom_frame, self.aruco_frame, now_ros)
-            # tf_latest demande la trame la plus récente disponible (Time 0)
+            # tf_latest requests the most recent available transform (Time 0).
             tf_latest = get_universal_transform(self.tf_buffer, self.odom_frame, self.aruco_frame)
             
             self.get_logger().info(
                 f"[TEST 8] ArUco -> Odom | "
-                f"Instant Présent Strict: {'OK' if tf_exact else 'FAIL'} | "
-                f"Dernier Connu (Time 0): {'OK' if tf_latest else 'FAIL'}",
+                f"Strict Current Instant: {'OK' if tf_exact else 'FAIL'} | "
+                f"Last Known (Time 0): {'OK' if tf_latest else 'FAIL'}",
                 throttle_duration_sec=0.5
             )
 
         elif self.ACTIVE_TEST == 9:
-            # Test 9 : Évaluation de la capacité de blocage/recherche temporelle
+            # Test 9: Evaluate blocking and temporal lookup behavior.
             start_wait = time.time()
             try:
-                # On demande à TF2 d'attendre activement jusqu'à 50ms que la trame présente arrive
+                # Ask TF2 to actively wait up to 50 ms for the requested transform.
                 self.tf_buffer.lookup_transform(
                     self.odom_frame, 
                     self.aruco_frame, 
@@ -248,10 +259,10 @@ class DockingTests(Node):
                     rclpy.duration.Duration(seconds=0.05)
                 )
                 delay_ms = (time.time() - start_wait) * 1000.0
-                self.get_logger().info(f"[TEST 9] TF synchronisé après une attente de {delay_ms:.1f} ms")
+                self.get_logger().info(f"[TEST 9] TF synchronized after waiting {delay_ms:.1f} ms")
             except Exception as e:
                 self.get_logger().error(
-                    f"[TEST 9] Pas de trame synchrone après 50ms d'attente. Erreur : {str(e)}",
+                    f"[TEST 9] No synchronized transform after waiting 50 ms. Error: {str(e)}",
                     throttle_duration_sec=0.5
                 )
 
@@ -264,7 +275,7 @@ class DockingTests(Node):
             self.latched_target_wz = 0.0
             self.pulse_start_time_s = time.time()
             self.micro_state = 'WAITING_WHEEL_ORIENTATION'
-            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Début profil Smooth (Mode {mode}). Vmax=0.35, T=1.0s")
+            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Starting smooth profile (Mode {mode}). Vmax=0.35, T=1.0s")
 
         elapsed_s = 0.0
         if self.micro_state == 'SENDING_PULSE':
@@ -274,24 +285,24 @@ class DockingTests(Node):
             self.micro_state, elapsed_s, 0.8,
             self.latched_target_vx, self.latched_target_vy, self.latched_target_wz,
             self.filtered_vx, self.filtered_vy, self.filtered_wz,
-            0.45, 0.45, mode, 0.05,                      # dt=0.05 — doit matcher self.timer (create_timer(0.05, ...))
+            0.45, 0.45, mode, 0.05,                      # dt=0.05 - must match self.timer (create_timer(0.05, ...))
             self.wheels, self.wheel_pubs, self.wheel_radius
         )
 
         if self.micro_state == 'WAITING_WHEEL_ORIENTATION' and new_state == 'SENDING_PULSE':
             self.pulse_start_time_s = time.time()
-            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Roues alignées. Phase d'accélération.")
+            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Wheels aligned. Acceleration phase.")
 
         if self.micro_state == 'SENDING_PULSE' and new_state == 'WAITING':
             self.filtered_vx, self.filtered_vy, self.filtered_wz = 0.0, 0.0, 0.0
-            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Fin d'impulsion fluide. Auto-stop.")
+            self.get_logger().info(f"[TEST {self.ACTIVE_TEST}] Smooth pulse complete. Auto-stop.")
             self.ACTIVE_TEST = 0
 
         self.micro_state = new_state
 
     def keyboard_listener_loop(self):
-        """Boucle bloquante s'exécutant dans un thread séparé pour détecter les commandes clavier."""
-        menu = "\n=== CMD === | 0:IDLE | 1-3:KINEMATICS | 4-7:TF | 8:RACE CHECK | 9:LATENCY | [Entrée]:Relancer ==="
+        """Blocking loop running in a separate thread to detect keyboard commands."""
+        menu = "\n=== CMD === | 0:IDLE | 1-3:KINEMATICS | 4-7:TF | 8:RACE CHECK | 9:LATENCY | [Enter]:Restart ==="
         print(menu)
         
         while rclpy.ok():
@@ -299,15 +310,15 @@ class DockingTests(Node):
                 cmd = input("\nCommande > ").strip().lower()
                 
                 with self.lock:
-                    # Sécurité : Bloquer la prise de commande si une impulsion est en cours d'exécution
+                    # Safety: block new commands while a pulse is running.
                     if self.micro_state != 'WAITING' and self.ACTIVE_TEST in [1, 2, 3]:
-                        self.get_logger().warning(f"Ignoré : Robot en mouvement | État : {self.micro_state}")
+                        self.get_logger().warning(f"Ignored: Robot is moving | State: {self.micro_state}")
                         continue
                         
                     if cmd != "":
                         try:
-                            # Sépare les chiffres du début (le numéro de test) de la
-                            # lettre optionnelle à la fin (direction: 'b' ou 'r')
+                            # Separate the leading digits (test number) from the
+                            # optional trailing direction letter ('b' or 'r').
                             digits = ''
                             suffix = ''
                             for ch in cmd:
@@ -331,25 +342,25 @@ class DockingTests(Node):
                                     self.pulse_direction = -1.0
 
                         except (ValueError, IndexError):
-                            print("Erreur de syntaxe. Exemples valides : '1', '1b', '3r', '10', '11'")
+                            print("Syntax error. Valid examples: '1', '1b', '3r', '10', '11'")
                             continue
                             
-                    # Application logicielle selon le test sélectionné
+                    # Apply software initialization for the selected test.
                     if self.ACTIVE_TEST in [1, 2, 3]:
-                        # Vidage des tampons du filtre exponentiel pour un démarrage net
+                        # Clear the exponential-filter buffers for a clean start.
                         self.filtered_vx = 0.0
                         self.filtered_vy = 0.0
                         self.filtered_wz = 0.0
-                        self.get_logger().info(f"--- RELANCE IMPULSION | TEST: {self.ACTIVE_TEST} | DIR: {self.pulse_direction} ---")
+                        self.get_logger().info(f"--- RESTART PULSE | TEST: {self.ACTIVE_TEST} | DIR: {self.pulse_direction} ---")
                     elif self.ACTIVE_TEST in [4, 5, 6, 7]:
-                        self.get_logger().info(f"--- LECTURE TF EN CONTINU (TEST {self.ACTIVE_TEST}) ---")
+                        self.get_logger().info(f"--- CONTINUOUS TF READING (TEST {self.ACTIVE_TEST}) ---")
                     else:
                         self.get_logger().info("--- IDLE ---")
 
             except EOFError:
                 break
             except Exception as e:
-                self.get_logger().error(f"Erreur thread clavier : {e}")
+                self.get_logger().error(f"Keyboard thread error: {e}")
                 break
 
 def main(args=None):

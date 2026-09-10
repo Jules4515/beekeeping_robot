@@ -1,62 +1,8 @@
-# amcl:
-#   ros__parameters:
-#     alpha1: 0.2
-#     alpha2: 0.2
-#     alpha3: 0.2
-#     alpha4: 0.2
-#     alpha5: 0.2
-#     base_frame_id: "base_footprint"
-#     beam_skip_distance: 0.5
-#     beam_skip_error_threshold: 0.9
-#     beam_skip_threshold: 0.3
-#     do_beamskip: false
-#     global_frame_id: "map"
-#     lambda_short: 0.1
-#     laser_likelihood_max_dist: 2.0
-#     laser_max_range: 12.0
-#     laser_min_range: 0.05
-#     laser_model_type: "likelihood_field"
-#     max_beams: 60
-#     max_particles: 2000
-#     min_particles: 500
-#     odom_frame_id: "odom"
-#     pf_err: 0.05
-#     pf_z: 0.99
-#     recovery_alpha_fast: 0.0
-#     recovery_alpha_slow: 0.0
-#     resample_interval: 1
-#     robot_model_type: "nav2_amcl::OmniMotionModel"
-#     # Initialisation critique
-#     set_initial_pose: true
-#     always_reset_initial_pose: true
-#     initial_pose: [0.0, 0.0, 0.0]  # Position initiale fixe
-#     save_pose_rate: 0.5
-#     sigma_hit: 0.2
-#     tf_broadcast: true
-#     transform_tolerance: 0.1
-#     update_min_a: 0.2
-#     update_min_d: 0.25
-#     z_hit: 0.5
-#     z_max: 0.05
-#     z_rand: 0.5
-#     z_short: 0.05
-#     scan_topic: scan
-#     first_map_only: false
-#     always_transform_velocities: true
-
-# lifecycle_manager_localization:
-#   ros__parameters:
-#     use_sim_time: false
-#     autostart: true
-#     # AVANT : node_names: ['map_server', 'amcl'] par défaut
-#     node_names: ['map_server'] # <-- RETIRER 'amcl' DE LA LISTE pour éviter que ça publish la tf odom vers base_footprint
-
 amcl:
   ros__parameters:
     use_sim_time: False
     
-    # Désactiver TOUTES les corrections
-    alpha1: 0.0  # Plus de bruit = plus de confiance dans l'odométrie
+    alpha1: 0.0 
     alpha2: 0.0
     alpha3: 0.0
     alpha4: 0.0
@@ -66,35 +12,30 @@ amcl:
     global_frame_id: "map"
     odom_frame_id: "odom"
     
-    # Désactiver complètement le laser
     laser_model_type: "likelihood_field"
-    laser_max_range: 0.01  # Portée quasi-nulle
+    laser_max_range: 0.01
     laser_min_range: 0.0
-    max_beams: 0  # AUCUN beam = AUCUNE correction lidar
+    max_beams: 0
     
-    # Forcer le modèle d'odométrie pure
     odom_model_type: "diff"
     
-    # Initialisation critique
     set_initial_pose: true
     always_reset_initial_pose: true
-    initial_pose: [0.0, 0.0, 0.0]  # Position initiale fixe
+    initial_pose: [0.0, 0.0, 0.0]
     
-    # Filtre à particules minimal
     min_particles: 10
-    max_particles: 10  # Très peu de particules
+    max_particles: 10
     
-    # Mise à jour très lente
-    update_min_d: 1000.0  # Ne pas mettre à jour avant 1000m
-    update_min_a: 6.283  # Ne pas mettre à jour avant 360°
+    update_min_d: 1000.0
+    update_min_a: 6.283
     
-    # Désactiver la publication de la transformation map->odom
-    tf_broadcast: false  # ← CRUCIAL : ne pas publier de TF
+    # Disable publication of the map->odom transform.
+    tf_broadcast: false  # CRUCIAL: do not publish TF.
 
 lifecycle_manager_localization:
   ros__parameters:
     autostart: true
-    node_names: ["map_server"]  # ← PAS "amcl" !
+    node_names: ["map_server"]  # NOT "amcl".
 
 bt_navigator:
   ros__parameters:
@@ -137,43 +78,43 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.40     # Rayon de validation de 50 cm (adapté à l'extérieur)
+      xy_goal_tolerance: 0.40     # 50 cm validation radius (outdoor setting).
       yaw_goal_tolerance: 0.25 #pi/6
       #stateful_timeout: 10.0
 
     FollowPath:
-      # # 1. On remplace le plugin MPPI direct par le Shim Controller
+      # # 1. Replace the direct MPPI plugin with the Shim Controller.
       # plugin: "nav2_rotation_shim_controller::RotationShimController"
       
-      # # 2. On déclare le MPPI comme sous-contrôleur
+      # # 2. Declare MPPI as the child controller.
       # primary_controller: "nav2_mppi_controller::MPPIController"
       
-      # # --- Paramètres du Shim Controller (Alignement) ---
-      # angular_dist_threshold: 0.523  # Tolérance d'alignement en radians (ici ~30 degrés). En dessous, le MPPI démarre direct.
-      # forward_sampling_distance: 0.5 # À quelle distance (en mètres) sur le chemin le plugin calcule-t-il la tangente cible ?
-      # rotate_to_heading_angular_vel: 0.5 # Vitesse angulaire (wz) envoyée à ton mode PIVOT pendant l'alignement
-      # max_angular_accel: 1.0         # Accélération angulaire de l'alignement
-      # simulate_ahead_time: 1.0       # Temps de simulation pour la prédiction de collision pendant la rotation
+      # # --- Shim Controller parameters (alignment) ---
+      # angular_dist_threshold: 0.523  # Alignment tolerance in radians (about 30 degrees); below this, MPPI starts directly.
+      # forward_sampling_distance: 0.5 # Distance along the path at which the plugin calculates the target tangent.
+      # rotate_to_heading_angular_vel: 0.5 # Angular velocity (wz) sent to PIVOT mode during alignment.
+      # max_angular_accel: 1.0         # Angular acceleration during alignment.
+      # simulate_ahead_time: 1.0       # Simulation time for collision prediction during rotation.
 
       plugin: "nav2_mppi_controller::MPPIController"
-      # --- Paramètres du MPPI ---
-      time_steps: 40  # Nombre de pas de temps simulés dans le futur pour évaluer les trajectoires
-      model_dt: 0.10  # Pas de temps entre chaque évaluation physique des trajectoires
-      batch_size: 200 # Nombre de trajectoires simulées à chaque itération (dt) pour trouver la meilleure trajectoire à suivre
+      # --- MPPI parameters ---
+      time_steps: 40  # Number of simulated future time steps used to evaluate trajectories.
+      model_dt: 0.10  # Time step between each physical trajectory evaluation.
+      batch_size: 200 # Number of trajectories simulated at each iteration (dt) to find the best trajectory.
       iteration_count: 1
       motion_model: "Ackermann"
-      min_turning_r: 0.81 # Angle de braquage minimum avec les roues à 50 deg max
+      min_turning_r: 0.81 # Minimum turning radius with a maximum wheel angle of 50 degrees.
       vx_max: 0.75
       vx_min: -0.75
       vy_max: 0.0
       vy_min: 0.0
       wz_max: 0.80
       wz_min: -0.80
-      # Écart-types des bruits aléatoires ajoutés à chaque commande de vitesse pour générer les trajectoires simulées,
-      # plus les écarts-types sont grands, plus les trajectoires simulées seront différentes les unes des autres,
-      # et plus le MPPI pourra trouver une trajectoire de contournement d'obstacle si la trajectoire nominale (sans bruit)
-      # est bloquée par un obstacle, mais cela rend aussi le MPPI plus instable et moins précis pour suivre la trajectoire
-      # nominale, il faut donc trouver un bon compromis
+      # Standard deviations of random noise added to each velocity command to generate simulated trajectories.
+      # Larger standard deviations produce more diverse simulated trajectories,
+      # helping MPPI find an obstacle-avoidance trajectory if the nominal trajectory (without noise)
+      # is blocked by an obstacle. However, this also makes MPPI less stable and less precise when following
+      # the nominal trajectory, so a good compromise is required.
       vx_std: 0.2
       vy_std: 0.0
       wz_std: 0.3
@@ -185,11 +126,11 @@ controller_server:
       az_min: -2.0
       prune_distance: 1.5
       transform_tolerance: 1.0
-      # Température : capacité du MPPI à explorer des trajectoires plus coûteuses que la trajectoire nominale (sans bruit),
-      # plus la température est élevée, plus le MPPI explorera des trajectoires différentes de la trajectoire nominale, 
-      # même si elles sont médiocres ou s'approchent trop des obstacles donc le robot peut être plus lent
-      # plus la temprérature est basse, plus le MPPI met de valeur dans la trajectoire nominale qui peut être bloquée par 
-      # un obstacle, aussi chattering entre plusieurs autre trajectoires, il n'arrive pas à choisir et n'avance pas
+      # Temperature: MPPI's ability to explore trajectories that are more costly than the nominal trajectory (without noise).
+      # A higher temperature makes MPPI explore trajectories farther from the nominal trajectory,
+      # even if they are poor or too close to obstacles, which can make the robot slower.
+      # A lower temperature gives more weight to the nominal trajectory, which may be blocked by an obstacle,
+      # and can also cause chattering between trajectories when MPPI cannot choose and does not move.
       temperature: 0.4
       gamma: 0.015
       visualize: true
@@ -197,10 +138,10 @@ controller_server:
       TrajectoryVisualizer:
         trajectory_step: 5
         time_step: 3
-      # Liste des critiques utilisés pour évaluer le coût des 200 (batch size) trajectoires simulées tous les 0.1s (dt),
-      # et choisir la meilleure trajectoire à suivre (moyenne pondérée), publie la meilleure sur le topic /cmd_vel
-      # Plus le cost_weight est grand, plus la pénalité sera grande dans le calcul du coût total de la trajectoire,
-      # si la critic n'est pas respectée (eg: obstacle dans la trajectoire pour CostCritic, angle par rapport au goal trop grand pour GoalAngleCritic, etc)
+      # List of critics used to evaluate the cost of the 200 (batch size) trajectories simulated every 0.1 s (dt),
+      # select the best trajectory to follow (weighted average), and publish it on /cmd_vel.
+      # The larger the cost_weight, the greater the penalty in the total trajectory cost
+      # when a critic is not satisfied (e.g. an obstacle for CostCritic or excessive goal angle for GoalAngleCritic).
       critics: [
         "ConstraintCritic",
         "CostCritic",
@@ -214,7 +155,7 @@ controller_server:
         enabled: true
         cost_power: 1
         cost_weight: 4.0
-      # Évitement d'obstacles
+      # Obstacle avoidance.
       CostCritic:
         enabled: true
         cost_power: 1
@@ -250,7 +191,7 @@ controller_server:
         cost_weight: 0.5
         offset_from_furthest: 5
         threshold_to_consider: 1.5
-      # Alignement par rapport au chemin vers le goal
+      # Alignment with the path to the goal.
       PathAngleCritic:
         enabled: true
         cost_power: 1
@@ -260,7 +201,7 @@ controller_server:
         max_angle_to_furthest: 0.25
         mode: 0
 
-# LIDAR ACTIVÉ
+# LIDAR ENABLED
 local_costmap:
   local_costmap:
     ros__parameters:
@@ -275,7 +216,7 @@ local_costmap:
       transform_tolerance: 0.6
       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]'
       
-      # 1. Mise à jour de la liste des plugins
+      # 1. Update the plugin list.
       plugins: ["obstacle_layer", "inflation_layer"]
       
       inflation_layer:
@@ -289,10 +230,10 @@ local_costmap:
         scan:
           topic: /scan
           data_type: "LaserScan"
-          # 1. LE MOTEUR D'EFFACEMENT : Valide les rayons pointant vers le vide
+          # 1. CLEARING ENGINE: validates rays pointing toward free space.
           inf_is_valid: True 
           
-          # 2. RAYTRACE > OBSTACLE_MAX_RANGE : Le rayon de nettoyage doit aller plus loin que la zone de marquage
+          # 2. RAYTRACE > OBSTACLE_MAX_RANGE: the clearing ray must extend beyond the marking area.
           raytrace_max_range: 12.0 
           obstacle_max_range: 8.0
           
@@ -315,9 +256,9 @@ global_costmap:
       width: 200
       height: 200
       resolution: 0.2
-      #plugins: ["static_layer", "obstacle_layer", "inflation_layer"] 
-      #plugins: ["inflation_layer"] #nav GPS
-      plugins: ["obstacle_layer", "inflation_layer"] # Réactivation de la couche obstacle
+      #plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      #plugins: ["inflation_layer"] # GPS navigation
+      plugins: ["obstacle_layer", "inflation_layer"] # Reactivate the obstacle layer.
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -329,64 +270,19 @@ global_costmap:
         scan:
           topic: /scan
           max_obstacle_height: 2.0
-          clearing: True   # Autorise le LiDAR à effacer les obstacles qui ont disparu
-          marking: True    # Autorise le LiDAR à dessiner de nouveaux obstacles
-          raytrace_max_range: 10.0 # Distance max pour "nettoyer" l'espace libre
-          obstacle_max_range: 8.0  # Distance max pour imprimer un obstacle
+          clearing: True   # Allow LiDAR to clear obstacles that have disappeared.
+          marking: True    # Allow LiDAR to mark new obstacles.
+          raytrace_max_range: 10.0 # Maximum distance for clearing free space.
+          obstacle_max_range: 8.0  # Maximum distance for marking an obstacle.
           
-          # --- LE FILTRE D'AUTO-COLLISION ---
-          # Ignore tout point laser rebondissant sur la structure physique du robot.
-          # Calculé selon ton footprint massif (rayon de ~1.05m)
+          # --- SELF-COLLISION FILTER ---
+          # Ignore laser points reflected by the physical robot structure.
+          # Computed from the large robot footprint (radius of about 1.05 m).
           obstacle_min_range: 1.05
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 1.0
         inflation_radius: 1.0
-
-# LIDAR DÉSACTIVÉ
-# local_costmap:
-#   local_costmap:
-#     ros__parameters:
-#       update_frequency: 10.0
-#       publish_frequency: 2.0
-#       global_frame: odom
-#       robot_base_frame: base_footprint
-#       rolling_window: true
-#       width: 10
-#       height: 10
-#       resolution: 0.1
-#       transform_tolerance: 1.0
-#       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]'
-      
-#       track_unknown_space: false
-#       plugins: ["inflation_layer"]
-      
-#       inflation_layer:
-#         plugin: "nav2_costmap_2d::InflationLayer"
-#         cost_scaling_factor: 4.0
-#         inflation_radius: 1.05
-
-# global_costmap:
-#   global_costmap:
-#     ros__parameters:
-#       update_frequency: 1.0
-#       publish_frequency: 1.0
-#       global_frame: map
-#       robot_base_frame: base_footprint
-#       footprint: '[ [0.75, 0.625], [0.75, -0.625], [-0.705, -0.625], [-0.705, 0.625] ]' 
-#       track_unknown_space: false
-#       transform_tolerance: 0.5
-#       rolling_window: true
-#       width: 40
-#       height: 40
-#       resolution: 0.2
-      
-#       plugins: ["inflation_layer"] 
-      
-#       inflation_layer:
-#         plugin: "nav2_costmap_2d::InflationLayer"
-#         cost_scaling_factor: 1.0
-#         inflation_radius: 1.0
 
 map_saver:
   ros__parameters:
@@ -489,9 +385,9 @@ collision_monitor:
   ros__parameters:
     base_frame_id: "base_footprint"
     odom_frame_id: "odom"
-    # Ne pas mettre /cmd_vel_smoothed pour cmd_vel_in_topic pour éviter le bouclage entre le velocity smoother et le 
-    # collision monitor, qui fait que le robot ne s'arrête pas après le succes du goal nav2, publication en continue 
-    # des dernières commandes de vitesse, robot tourne en rond
+    # Do not use /cmd_vel_smoothed for cmd_vel_in_topic to avoid a loop between the velocity smoother and
+    # the collision monitor. Otherwise, the robot does not stop after a successful Nav2 goal, keeps publishing
+    # the last velocity commands, and drives in circles.
     cmd_vel_in_topic: "cmd_vel" 
     cmd_vel_out_topic: "cmd_vel_nav"
     state_topic: "collision_monitor_state"

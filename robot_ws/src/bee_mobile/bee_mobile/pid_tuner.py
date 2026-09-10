@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# PID Tuner for ROS2
+#
+# This node manages the PID coefficients used by the wheel modules. It
+# publishes updated parameters after manual user input or when a new
+# microcontroller connects to the DDS network, ensuring that late-joining
+# modules receive the current controller configuration.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException

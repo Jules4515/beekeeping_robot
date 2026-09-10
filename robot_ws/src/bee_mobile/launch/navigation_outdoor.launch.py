@@ -106,24 +106,8 @@ def generate_launch_description():
     )
             
     # ========================================================================
-    # PHASE 4: Services and Navigation (Starts after 7/10 seconds) 
+    # PHASE 4: Navigation (Starts after 7/10 seconds) 
     # ========================================================================
-    
-    gps_health_monitor = TimerAction(
-        period=7.0,
-        actions=[
-            Node(
-                package='bee_mobile',
-                executable='gps_health_monitor',
-                name='gps_health_monitor',
-                output='screen',
-                parameters=[{
-                    'min_gps_status': 2,
-                    'gps_timeout': 2.0,
-                }]
-            )
-        ]
-    )
     
     # Nav2 Bringup (Waits until system is stable) 
     nav2_bringup = TimerAction(
@@ -159,7 +143,6 @@ def generate_launch_description():
         # Phase 3: GPS Transform 
         navsat_transform,
         
-        # Phase 4: Services & Navigation 
-        gps_health_monitor,
+        # Phase 4: Navigation 
         nav2_bringup,
     ])

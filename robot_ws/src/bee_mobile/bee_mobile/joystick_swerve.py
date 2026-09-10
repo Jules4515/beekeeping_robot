@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# Joystick Swerve Controller node for ROS2
+#
+# This node reads joystick commands, applies deadband and exponential smoothing,
+# and publishes swerve-style velocity commands to /cmd_vel_joy for twist_mux.
+# It also manages trajectory recording, manual TASK waypoint requests, speed
+# modes, and selectable straight or zero-turn driving modes.
+# 
+
 import time
 import rclpy
 from rclpy.node import Node
@@ -20,8 +29,8 @@ class JoystickSwerve(Node):
         super().__init__('joystick_swerve')
 
         # Axis mapping (Left Joystick Only)
-        self.declare_parameter('speed_axis', 1)  # Joystick Gauche Haut/Bas
-        self.declare_parameter('steer_axis', 3)  # Joystick Droit Gauche/Droite
+        self.declare_parameter('speed_axis', 1)  # Left joystick up/down.
+        self.declare_parameter('steer_axis', 3)  # Right joystick left/right.
         self.declare_parameter('dpad_x_axis', 6)
         self.declare_parameter('dpad_y_axis', 7)
         self.declare_parameter('deadband', 0.1)
@@ -40,8 +49,8 @@ class JoystickSwerve(Node):
         self.declare_parameter('btn_straight', 0)        # A
         self.declare_parameter('btn_zeroturn', 1)        # B
         self.declare_parameter('btn_deadman', 5)         # R2/RT axis (Hardware trigger)
-        self.declare_parameter('btn_start_record', 9)    # L3 (Clic joystick gauche)
-        self.declare_parameter('btn_stop_record', 10)    # R3 (Clic joystick droit)
+        self.declare_parameter('btn_start_record', 9)    # L3 (left joystick click).
+        self.declare_parameter('btn_stop_record', 10)    # R3 (right joystick click).
 
         # Fetch parameters
         self.speed_axis = self.get_parameter('speed_axis').value
@@ -67,7 +76,7 @@ class JoystickSwerve(Node):
         self.btn_stop_record = self.get_parameter('btn_stop_record').value
         self.btn_deadman = self.get_parameter('btn_deadman').value
 
-        # Publisher pour le signal d'enregistrement manuel
+        # Publisher for the manual recording signal.
         self.task_wp_pub = self.create_publisher(Empty, '/save_task_waypoint', 10)
         
         # Exponential Smoothing Filter Coefficients
@@ -132,7 +141,7 @@ class JoystickSwerve(Node):
         # --- L1/R1 LOGIC: TRAJECTORY RECORDING (SUBPROCESS MANAGEMENT) ---
         current_time = time.time()
         
-        # Verrouillage logiciel de 2 secondes
+        # Two-second software lockout.
         if current_time - self.last_toggle_time < 2.0:
             btn_l1 = 0
             btn_r1 = 0
@@ -164,7 +173,7 @@ class JoystickSwerve(Node):
                     self.recorder_process.wait(timeout=2.0)
                     self.last_toggle_time = current_time
                 except subprocess.TimeoutExpired:
-                    self.get_logger().warn("Le noeud ne répond pas, kill forcé (SIGKILL).")
+                    self.get_logger().warn("The node is not responding; forcing termination (SIGKILL).")
                     os.killpg(os.getpgid(self.recorder_process.pid), signal.SIGKILL)
                 except ProcessLookupError:
                     pass 
@@ -189,9 +198,9 @@ class JoystickSwerve(Node):
         if dpad_x == 1.0 and self.last_dpad_x != 1.0:
             if self.recorder_process is not None:
                 self.task_wp_pub.publish(Empty())
-                self.get_logger().info("Signal WP_TASK envoyé au recorder.")
+                self.get_logger().info("WP_TASK signal sent to the recorder.")
             else:
-                self.get_logger().warn("Impossible : Aucun enregistrement en cours.")
+                self.get_logger().warn("Unable to send waypoint: no recording is active.")
 
         self.last_dpad_x = dpad_x
         self.last_dpad_y = dpad_y

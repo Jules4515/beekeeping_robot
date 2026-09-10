@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# Swerve Odometry Publisher for ROS2
+#
+# This node estimates the robot pose and velocity from the four swerve-wheel
+# encoder speeds and steering angles. It decomposes wheel vectors, estimates
+# chassis angular velocity, integrates the pose, publishes Odometry data for
+# the localization filter, and can optionally broadcast the odom TF transform.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
@@ -26,14 +35,13 @@ class OdometrySwerve(Node):
         self.odom_theta = 0.0
         self.last_time = self.get_clock().now()
 
-        # Paramètre pour activer/désactiver la TF
+        # Parameter to enable or disable TF publication.
         self.declare_parameter('publish_odom_tf', False)
         self.publish_odom_tf = self.get_parameter('publish_odom_tf').value
         
         self.tf_broadcaster = TransformBroadcaster(self)
 
         self.odom_pub = self.create_publisher(Odometry, '/odom', 10)
-        # SUPPRESSION DU TF BROADCASTER (C'est l'EKF qui gère ça maintenant)
 
         self.create_subscription(Float64MultiArray, '/mobile/wheel_front_left/encoder_angle',  self.fl_callback, 10)
         self.create_subscription(Float64MultiArray, '/mobile/wheel_front_right/encoder_angle', self.fr_callback, 10)
@@ -61,7 +69,7 @@ class OdometrySwerve(Node):
             return
 
         # ==========================================================
-        # PASS 1: Décomposition Vectorielle
+        # PASS 1: Vector decomposition
         # ==========================================================
         vx_sum, vy_sum = 0.0, 0.0
 
@@ -78,7 +86,7 @@ class OdometrySwerve(Node):
         real_vy_robot = vy_sum / 4.0
 
         # ==========================================================
-        # PASS 2: Calcul de la Vitesse Angulaire (wz)
+        # PASS 2: Angular velocity calculation (wz)
         # ==========================================================
         wz_num, wz_den = 0.0, 0.0
 
@@ -89,7 +97,7 @@ class OdometrySwerve(Node):
         real_wz_robot = wz_num / wz_den if wz_den > 0 else 0.0
 
         # ==========================================================
-        # PASS 3: Intégration Spatiale
+        # PASS 3: Spatial integration
         # ==========================================================
         delta_theta = real_wz_robot * dt
         theta_mid = self.odom_theta + delta_theta / 2.0 
@@ -99,16 +107,16 @@ class OdometrySwerve(Node):
         self.odom_theta += delta_theta
 
         # ==========================================================
-        # PUBLICATION: Odom Uniquement (avec incertitudes pour EKF)
+        # PUBLICATION: Odometry only (with EKF uncertainties)
         # ==========================================================
         cy = math.cos(self.odom_theta * 0.5)
         sy = math.sin(self.odom_theta * 0.5)
 
         odom = Odometry()
-        # On utilise le temps exact actuel, pas de triche dans le futur
+        # Use the exact current time; do not publish a future timestamp.
         odom.header.stamp = current_time.to_msg()
         odom.header.frame_id = 'odom'
-        odom.child_frame_id = 'base_link' # Redirigé vers la physique (base_link)
+        odom.child_frame_id = 'base_link' # Redirected to the physical base_link.
         
         # POSE
         odom.pose.pose.position.x = self.odom_x
@@ -121,7 +129,7 @@ class OdometrySwerve(Node):
         odom.twist.twist.linear.y = real_vy_robot
         odom.twist.twist.angular.z = real_wz_robot
 
-        # MATRICE DE COVARIANCE (Cruciale pour que l'EKF fusionne les données)
+        # COVARIANCE MATRIX (required for EKF data fusion)
         covariance_matrix = [
             0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
             0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
@@ -136,7 +144,7 @@ class OdometrySwerve(Node):
         self.odom_pub.publish(odom)
 
         # ==========================================================
-        # PUBLICATION TF (Optionnelle)
+        # TF PUBLICATION (optional)
         # ==========================================================
         if self.publish_odom_tf:
             t = TransformStamped()

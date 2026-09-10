@@ -1,3 +1,14 @@
+# 
+# Docking Math Utilities
+#
+# !! Work in progress !!, file used by the docking controller and docking test nodes.
+#
+# This module provides the kinematic and motor-command helpers used by the
+# docking controller. It converts velocity targets into steering angles and
+# wheel speeds, applies mechanical limits and friction compensation, manages
+# pulse timing and filtering, and publishes commands to the ROS 2 wheel topics.
+# 
+
 import math
 from std_msgs.msg import Float64MultiArray
 from rclpy.time import Time
@@ -22,8 +33,8 @@ def normalize_steering_angle_and_speed(raw_angle_deg, logical_speed_ms):
 
 def apply_stiction_mapping(logical_speed_ms, wheel_name):
     """
-    Modèle de friction Coulomb asymétrique.
-    Découple la position physique de la roue de son vecteur cinématique.
+    Asymmetric Coulomb friction model.
+    Decouples the physical wheel position from its kinematic velocity vector.
     """
     V_MAX_MS = 0.67
     V_MIN_NAV2_MS = 0.10
@@ -34,22 +45,26 @@ def apply_stiction_mapping(logical_speed_ms, wheel_name):
     
     sign = math.copysign(1.0, logical_speed_ms)
         
-    # Application de la stiction selon l'asymétrie mécanique réelle
+    # Apply stiction according to the actual mechanical asymmetry.
     if 'left' in wheel_name:
         if sign > 0:
-            # Le robot avance : le moteur gauche tourne en sens "matériel arrière" (moins performant)
-            v_min_motor_ms = 0.30  # Boost plus important pour compenser
+            # Robot moving forward: the left motor turns in the less efficient
+            # "rear hardware" direction.
+            v_min_motor_ms = 0.30  # Larger boost to compensate.
         else:
-            # Le robot recule : le moteur gauche tourne en sens "matériel avant" (performant)
-            v_min_motor_ms = 0.30  # Moins de friction à vaincre
+            # Robot moving backward: the left motor turns in the more efficient
+            # "front hardware" direction.
+            v_min_motor_ms = 0.30  # Less friction to overcome.
     else:
-        # Roues droites (montées à l'endroit)
+        # Right wheels (installed in the standard orientation).
         if sign > 0:
-            # Le robot avance : le moteur droit tourne en sens "matériel avant" (performant)
-            v_min_motor_ms = 0.30  # Valeur standard de référence
+            # Robot moving forward: the right motor turns in the more efficient
+            # "front hardware" direction.
+            v_min_motor_ms = 0.30  # Standard reference value.
         else:
-            # Le robot recule : le moteur droit tourne en sens "matériel arrière" (moins performant)
-            v_min_motor_ms = 0.30  # Légère compensation nécessaire
+            # Robot moving backward: the right motor turns in the less efficient
+            # "rear hardware" direction.
+            v_min_motor_ms = 0.30  # Slight compensation required.
         
     m = (V_MAX_MS - v_min_motor_ms) / (V_MAX_MS - V_MIN_NAV2_MS)
     A = (2.0 * (v_min_motor_ms - m * V_MIN_NAV2_MS)) / math.sqrt(V_MIN_NAV2_MS)
@@ -64,9 +79,9 @@ def apply_stiction_mapping(logical_speed_ms, wheel_name):
 
 def apply_steering_slew_rate(target_angle_deg, last_angle_deg, max_rate_deg_s=90.0, dt=0.05):
     """
-    Limite la vitesse de rotation des modules de direction.
-    max_rate_deg_s : Vitesse angulaire maximale tolérée (ex: 180°/s).
-    dt : Période de la boucle de contrôle (20 Hz = 0.05s).
+    Limits the rotation speed of the steering modules.
+    max_rate_deg_s: Maximum permitted angular speed (e.g. 180°/s).
+    dt: Control-loop period (20 Hz = 0.05s).
     """
     max_step = max_rate_deg_s * dt
     error = target_angle_deg - last_angle_deg
@@ -84,7 +99,7 @@ def send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel
     """
     
     for name, config in wheels_config.items():
-        # .get() : sécurité si la clé name n'existe pas dans le dictionnaire target_angles met 0.0 en vitesse
+        # Use a safe default if the wheel is missing from target_angles.
         raw_angle_deg = target_angles_deg.get(name, config.get('last_angle_deg', 0.0)) 
         cmd_angle_deg = clamp_steering_angle(raw_angle_deg)
         
@@ -92,13 +107,13 @@ def send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel
 
         raw_speed_ms = target_speeds_ms.get(name, 0.0)
 
-        # BYPASS CONDITIONNEL
+        # Conditional bypass.
         if apply_stiction:
             physical_speed_ms = apply_stiction_mapping(raw_speed_ms, name)
         else:
             physical_speed_ms = raw_speed_ms
         
-        # Conversion m/s vers RPM pour publication
+        # Convert m/s to RPM for publication.
         rpm_final = (physical_speed_ms * 60.0) / (2.0 * math.pi * wheel_radius_m) * config['dir']
         
         config['last_angle_deg'] = cmd_angle_deg
@@ -110,14 +125,13 @@ def send_hardware_command(wheel_pubs, target_angles_deg, target_speeds_ms, wheel
         
 def is_steering_aligned(wheels_config, target_angles_deg, tolerance_deg=5.0):
     """
-    Vérification linéaire simplifiée. Délègue la gestion circulaire et les limites 
-    au firmware des microcontrôleurs.
+    Simplified linear check. Circular handling and limit enforcement are delegated to the microcontroller firmware.
     """
     for name, config in wheels_config.items():
         target_ang_deg = clamp_steering_angle(target_angles_deg.get(name, 0.0))
         phys_angle_deg = config.get('current_angle_deg', 0.0)
         
-        # Conversion temporaire en rad uniquement pour trigonométrie
+        # Temporarily convert to radians for trigonometry only.
         delta_rad = math.radians(target_ang_deg - phys_angle_deg)
         delta_rad = math.atan2(math.sin(delta_rad), math.cos(delta_rad))
         delta_deg = math.degrees(delta_rad)
@@ -134,8 +148,8 @@ def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=Non
     """
     time_to_query = query_time if query_time else Time()
     
-    # --- LE WAIT : Vérifie si la transformation est physiquement possible ---
-    # Si les frames n'existent pas encore dans l'arbre, on n'appelle pas lookup_transform
+    # --- WAIT: Check whether the transform is physically available. ---
+    # Do not call lookup_transform if the frames are not yet in the tree.
     if not tf_buffer.can_transform(parent_frame, child_frame, time_to_query, timeout=Duration(seconds=0.0)):
         return None
         
@@ -144,7 +158,7 @@ def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=Non
             parent_frame, 
             child_frame, 
             time_to_query, 
-            timeout=Duration(seconds=0.0) # Immédiat car can_transform a validé la présence
+            timeout=Duration(seconds=0.0) # Immediate because can_transform validated it.
         )
         t = trans.transform.translation
         r = trans.transform.rotation
@@ -160,7 +174,7 @@ def get_universal_transform(tf_buffer, parent_frame, child_frame, query_time=Non
             'stamp': trans.header.stamp
         }
     except Exception as e:
-        # Ne s'exécutera que pour les vraies erreurs d'extrapolation temporelle
+        # This should only occur for genuine temporal extrapolation errors.
         print(f"[TF2 EXTRAPOLATION DEBUG] : {str(e)}")
         return None
 
@@ -180,7 +194,7 @@ def send_pulse(state, elapsed_s, pulse_duration_s, target_vx_ms, target_vy_ms, t
         #print(f"target_vx_ms={target_vx_ms:.1f}, target_vy_ms={target_vy_ms:.1f}, target_wz_rad_s={target_wz_rad_s:.1f}")
 
         if abs(target_wz_rad_s) > 0.0:
-            # Conversion temporaire post-trigonométrie
+            # Temporary conversion after trigonometry.
             raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
             wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
             logical_speed_ms = wheel_radius_from_center_m * target_wz_rad_s
@@ -218,12 +232,12 @@ def send_pulse(state, elapsed_s, pulse_duration_s, target_vx_ms, target_vy_ms, t
                 if abs(target_wz_rad_s) > 0.0:
                     wheel_radius_from_center_m = math.hypot(config['x'], config['y'])
                     raw_speed = wheel_radius_from_center_m * filtered_wz_rad_s
-                    # Conversion temporaire post-trigonométrie
+                    # Temporary conversion after trigonometry.
                     raw_angle_deg = math.degrees(math.atan2(config['x'], -config['y']))
                     _, ideal_speed = normalize_steering_angle_and_speed(raw_angle_deg, raw_speed)
                     target_speeds_ms[name] = ideal_speed
                 elif abs(target_vy_ms) > 0.0:
-                    # Le sens de la vitesse s'adapte à l'angle pour un vecteur de poussée unifié
+                    # Adapt the speed direction to the angle for a unified thrust vector.
                     target_speeds_ms[name] = filtered_vy_ms if target_angles_deg[name] > 0.0 else -filtered_vy_ms
                 else:
                     target_speeds_ms[name] = filtered_vx_ms

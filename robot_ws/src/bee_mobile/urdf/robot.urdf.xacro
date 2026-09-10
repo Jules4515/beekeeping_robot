@@ -349,12 +349,12 @@
     <joint name="camera_joint" type="fixed">
         <parent link="base_link"/>
         <child link="camera_link"/>
-        <origin xyz="0.7699 0.0 0.03" rpy="-2.0944 0.0 -1.5708"/> <!-- Rotation Roll (default : -pi/2 = -1.5708), Pitch, Yaw (caméra à -30 deg vers le bas -pi/2) en radians (REP-103) -->
+        <origin xyz="0.7699 0.0 0.03" rpy="-2.0944 0.0 -1.5708"/> <!-- Roll, pitch, yaw rotation (camera tilted down by 30 degrees, -pi/2) in radians (REP-103). -->
     </joint>
 
     <!-- Lidar -->
 
-    <!-- 1. Le capteur physique (Origine du nuage de points) -->
+    <!-- 1. Physical sensor (point-cloud origin). -->
     <link name="unilidar_lidar">
         <visual>
             <geometry><cylinder radius="0.07" length="0.05" /></geometry>
@@ -367,19 +367,19 @@
         </inertial>
     </link>
 
-    <!-- 2. Ancrage rigide du centre du Lidar sur le châssis -->
+    <!-- 2. Rigid mounting of the LiDAR center on the chassis. -->
     <joint name="lidar_joint" type="fixed">
         <parent link="base_link" />
         <child link="unilidar_lidar" />
-        <!-- Tes coordonnées de montage physique -->
+        <!-- Physical mounting coordinates. -->
         <origin xyz="0.6889 0 0.09" rpy="1.5708 1.1208 1.5708" />
     </joint>
 
-    <!-- 3. Déclaration du repère de l'IMU interne -->
+    <!-- 3. Internal IMU frame declaration. -->
     <link name="unilidar_imu" />
 
-    <!-- 4. Application stricte de la matrice de transformation Unitree -->
-    <!-- T_LI offset en mètres : X: -0.007698, Y: -0.014655, Z: 0.00667 -->
+    <!-- 4. Strict application of the Unitree transformation matrix. -->
+    <!-- T_LI offset in meters: X: -0.007698, Y: -0.014655, Z: 0.00667 -->
     <joint name="lidar_to_imu_joint" type="fixed">
         <parent link="unilidar_lidar" />
         <child link="unilidar_imu" />

@@ -54,10 +54,7 @@ setup(
 
             # GPS
             'custom_gps_driver = bee_mobile.custom_gps_driver:main',
-            'gps_health_monitor = bee_mobile.gps_health_monitor:main',
-            'previsualization_gps = bee_mobile.previsualization_gps:main',
             'gps_monitor = bee_mobile.gps_monitor:main',
-            'auto_gps_saver = bee_mobile.auto_gps_saver:main',
             'trajectory_recorder = bee_mobile.trajectory_recorder:main',
             'gps_mission = bee_mobile.gps_mission:main',            
         ],

@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# Ackermann Kinematics Controller for ROS2
+#
+# This node converts commanded linear and angular velocities into Ackermann
+# steering angles and wheel speeds. It applies deadband filtering, steering
+# limits, acceleration and deceleration slew rates, nonlinear motor-speed
+# mapping, encoder feedback, and publishes commands to the wheel controllers.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
@@ -10,7 +19,7 @@ class KinematicsAckermann(Node):
     def __init__(self):
         super().__init__('kinematics_ackermann')
         
-        # --- 1. INITIALISATION DES VARIABLES & PARAMÈTRES ---
+        # --- 1. VARIABLE AND PARAMETER INITIALIZATION ---
         self._init_parameters()
         self._init_kinematic_constants()
         self._init_wheel_hardware()
@@ -26,7 +35,7 @@ class KinematicsAckermann(Node):
         self.declare_parameter('deadband_vx', 0.05)
         self.declare_parameter('deadband_wz', 0.05)
         
-        # Paramètres du Slew Rate Linéaire
+        # Linear slew-rate parameters.
         self.declare_parameter('enable_speed_slew_rate', True)
         self.declare_parameter('accel_max', 0.50)
         self.declare_parameter('decel_max', 2.0)
@@ -92,20 +101,20 @@ class KinematicsAckermann(Node):
         vx = msg.linear.x
         wz = msg.angular.z
 
-        # Application de la zone morte (Deadband)
+        # Apply the deadband.
         if abs(vx) < self.deadband_vx: vx = 0.0
         if abs(wz) < self.deadband_wz: wz = 0.0
 
-        # On calcule les cibles et on les publie immédiatement
+        # Calculate the targets and publish them immediately.
         self._calculate_wheel_targets(vx, wz, dt)
         self._publish_hardware_commands(dt)
 
-    # --- 3. MÉTHODES CINÉMATIQUES INTERNES ---
+    # --- 3. INTERNAL KINEMATIC METHODS ---
     def _calculate_wheel_targets(self, vx, wz, dt):
         """Computes true Ackermann angles and speeds relative to the rear axle."""
         L_empattement = 0.96 
         
-        # Rayon de braquage minimum physique (ex: 0.96 / tan(50°) = 0.805 m)
+        # Minimum physical turning radius (e.g. 0.96 / tan(50°) = 0.805 m).
         R_min = L_empattement / math.tan(self.hard_limit_rad)
 
         for name, config in self.wheels.items():
@@ -114,42 +123,43 @@ class KinematicsAckermann(Node):
                 ideal_angle = config['last_target_angle'] 
                 
             elif vx == 0.0 and wz != 0.0:
-                # --- DRY STEERING (Braquage à l'arrêt) ---
-                # A l'arrêt, le joystick droit agit comme un volant physique direct.
-                # Wz est normalisé (par rapport à une valeur arbitraire de joystick ex: 0.50)
-                # pour offrir une réactivité parfaite sans devoir pousser le stick à fond.
+                # --- DRY STEERING (Steering while stationary) ---
+                # When stationary, the right joystick acts as a direct physical
+                # steering wheel. Wz is normalized against an arbitrary joystick
+                # value (e.g. 0.50) for full responsiveness without pushing the
+                # stick all the way.
                 steer_ratio = max(min(wz / 0.50, 1.0), -1.0)
                 ideal_angle = steer_ratio * self.hard_limit_rad
                 ideal_speed = 0.0
                 
             else:
-                # --- ACKERMANN DYNAMIQUE ---
-                # Protection : On bride Wz pour ne jamais demander un rayon < R_min
+                # --- DYNAMIC ACKERMANN ---
+                # Protection: clamp Wz so the requested radius is never < R_min.
                 max_wz_allowed = abs(vx) / R_min
                 clamped_wz = max(min(wz, max_wz_allowed), -max_wz_allowed)
 
-                # Calcul strict de l'angle d'Ackermann pour la roue intérieure/extérieure
+                # Strict Ackermann angle calculation for the inner/outer wheel.
                 denom = vx - config['y'] * clamped_wz
                 
-                # Sécurité mathématique (division par zéro)
+                # Mathematical safety check (division by zero).
                 if abs(denom) < 0.001:
                     denom = math.copysign(0.001, denom)
                     
-                # L'utilisation de math.atan gère nativement la marche arrière
-                # car un vx négatif inversera logiquement l'angle de braquage.
+                # math.atan naturally handles reverse motion because a negative
+                # vx logically reverses the steering angle.
                 ideal_angle = math.atan( (L_empattement * clamped_wz) / denom )
                 
-                # La vitesse est la norme du vecteur tangentiel
+                # Speed is the magnitude of the tangential velocity vector.
                 vy_w = L_empattement * clamped_wz
                 vx_w = vx - config['y'] * clamped_wz
                 ideal_speed = math.hypot(vx_w, vy_w)
                 
-                # On applique le sens de la marche (Marche Avant / Marche Arrière)
+                # Apply the direction of travel (forward/reverse).
                 ideal_speed = math.copysign(ideal_speed, vx)
 
             config['last_target_angle'] = ideal_angle
 
-            # Steer Slew Rate Limiter (Limitation matérielle de la vitesse de braquage)
+            # Steering slew-rate limiter (hardware steering-speed limit).
             angle_diff = ideal_angle - config['last_angle']
             angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))
             max_step_angle = self.max_steer_rad_s * dt
@@ -161,7 +171,7 @@ class KinematicsAckermann(Node):
             else:
                 cmd_angle = ideal_angle
 
-            # Saturation de sécurité (Hard Limit)
+            # Safety saturation (hard limit).
             cmd_angle = max(min(cmd_angle, self.hard_limit_rad), -self.hard_limit_rad)
             
             config['temp_cmd_angle'] = cmd_angle
@@ -174,13 +184,13 @@ class KinematicsAckermann(Node):
         for name, config in self.wheels.items():
             cmd_angle = config['temp_cmd_angle']
             
-            # Application directe de la vitesse (sans bridage d'alignement)
+            # Apply speed directly without an alignment clamp.
             ideal_speed = config['temp_ideal_speed']
 
             logical_target_speed = max(min(ideal_speed, self.v_max_physical), -self.v_max_physical)
 
             # ============================================================
-            # Linar Speed Slew Rate Limiter
+            # Linear speed slew-rate limiter.
             # ============================================================
             last_logical_spd = config['last_logical_speed']
             speed_diff = logical_target_speed - last_logical_spd
@@ -216,7 +226,7 @@ class KinematicsAckermann(Node):
             # Publish
             rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']   
             
-            # Sauvegarde dans le dictionnaire local
+            # Store the command in the local dictionary.
             precalculated_commands[name] = {
                 'rpm': rpm_final,
                 'angle_deg': math.degrees(cmd_angle),
