@@ -1,6 +1,10 @@
 # Bee Mobile Robot
 
-![Bee Mobile Robot](robot.jpg)
+![ROS 2 Jazzy](https://img.shields.io/badge/ROS_2-Jazzy-34302F?style=flat&logo=ros)
+![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=flat&logo=ubuntu&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat&logo=python&logoColor=white)
+
+<img src="robot.jpg" alt="Bee Mobile Robot" width="50%">
 
 ## Introduction
 
@@ -68,7 +72,7 @@ source install/setup.bash
 
 ## Launching the Project
 
-The robot is operated from the robot computer, normally through SSH. RViz is run on a separate local computer when visualization is required.
+The robot's onboard computer is accessed remotely via SSH. When visualization is required, RViz is run directly on your local computer.
 
 **Note**: An alias `start_ros` is installed on the robot computer in `~/.bashrc`. This alias automatically sources the ROS 2 environment and both workspaces. You must begin every new terminal on the robot by running `start_ros` to source the ROS 2 environment.
 
@@ -247,7 +251,7 @@ Project name: Beekeeping Robot
 
 Author: Jules GUIGNARD
 
-Supervisor: Mourad Bouzit
+Supervisor: Mourad BOUZIT
 
 Internship period: April 23 to July 18, 2026
 

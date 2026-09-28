@@ -1,7 +1,6 @@
 robot_ws/build
 robot_ws/install
 robot_ws/log
-robot_ws/interp_env
 microros_ws/build
 microros_ws/install
 microros_ws/log
