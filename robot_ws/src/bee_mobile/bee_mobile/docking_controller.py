@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+
+# 
+# Docking Controller node for ROS2
+#
+# !! Work in progress !!, not working as intended, may need to rewrite the whole node.
+# 
+# This node implements a docking controller for a mobile robot using ROS2. It subscribes to wheel encoder 
+# data and ArUco marker detections, processes the information to determine the robot's position and orientation 
+# relative to a docking target, and publishes motor speed commands to align and move the robot towards the target. 
+# The controller operates in a state machine with defined states for waiting, evaluating errors, sending pulses, 
+# and rolling back if necessary.
+#
+
 import math
 import time
 import threading
@@ -21,17 +34,17 @@ class DockingController(Node):
         self.aruco_frame = 'aruco_marker_91'
         self.camera_frame = 'camera_link'
         
-        # --- Limites Logiques Strictes ---
+        # --- Strict Logic Limits ---
         self.v_pulse = 0.30
         self.w_pulse = 0.30
         self.wheel_radius_m = 0.215
         
-        # --- Tolérances de la Machine d'États ---
+        # --- State Machine Tolerances ---
         self.tol_theta_deg = 0.5
         self.tol_y_m     = 0.05
         self.tol_x_m     = 0.05
         
-        # --- Configuration des Pulses & Filtres ---
+        # --- Pulse & Filter Configuration ---
         self.pulse_duration_s = 0.60
         self.wait_duration_s = 1.0
         
@@ -42,18 +55,18 @@ class DockingController(Node):
         self.filtered_vy_ms = 0.0
         self.filtered_wz_rad_s = 0.0
         
-        # --- État du Séquenceur ---
-        self._state = 'WAITING'  # Variable privée, utiliser set_state() pour modifier
+        # --- Sequencer State ---
+        self._state = 'WAITING'  # Private variable; use set_state() to modify it
         self.wait_start_time_s = time.time()
         self.pulse_start_time_s = 0.0
         
-        # Cibles logiques mémorisées
+        # Latched logic targets
         self.latched_target_vx = 0.0
         self.latched_target_vy = 0.0
         self.latched_target_wz = 0.0
         self.last_pulse_cmd = [0.0, 0.0, 0.0]
         
-        # --- Variables d'Historique et Perception ---
+        # --- History and Perception Variables ---
         self.target_odom = None
         self.last_tag_time_s = time.time()
         self.tag_lost_recently = False
@@ -97,14 +110,14 @@ class DockingController(Node):
 
     def perception_loop(self):
         """
-        Process A: Interrogation directe de l'arbre TF2.
-        STRICT SAMPLING: Mis à jour uniquement quand le robot est immobile.
+        Process A: Direct interrogation of the TF2 tree.
+        STRICT SAMPLING: Updated only when the robot is stationary.
         """
         with self.lock:
             if self._state != 'WAITING':
                 return
 
-        # 1. Interrogation de TF2 depuis le centre du châssis.
+        # 1. Query TF2 from the center of the chassis.
         tf_base_to_tag = get_universal_transform(self.tf_buffer, self.base_frame, self.aruco_frame)
         
         if not tf_base_to_tag:
@@ -119,28 +132,28 @@ class DockingController(Node):
             with self.lock:
                 robot_yaw = tf_odom_to_base['yaw_rad']
                 
-                # 2. Projection cartésienne (X = Avant, Y = Gauche)
+                # 2. Cartesian projection (X = Forward, Y = Left)
                 local_x = tf_base_to_tag['x_m']
                 local_y = tf_base_to_tag['y_m']
                 
                 target_x_m = tf_odom_to_base['x_m'] + (local_x * math.cos(robot_yaw) - local_y * math.sin(robot_yaw))
                 target_y_m = tf_odom_to_base['y_m'] + (local_x * math.sin(robot_yaw) + local_y * math.cos(robot_yaw))
 
-                # 3. FIX VECTORIEL: Calcul du cap via la normale de la ruche
+                # 3. VECTOR FIX: Calculate the heading from the hive normal
                 qx = tf_base_to_tag['qx']
                 qy = tf_base_to_tag['qy']
                 qz = tf_base_to_tag['qz']
                 qw = tf_base_to_tag['qw']
 
-                # Le vecteur Z du tag correspond à 2*(qx*qz + qw*qy) pour X et 2*(qy*qz - qw*qx) pour Y
+                # The tag's Z vector is 2*(qx*qz + qw*qy) for X and 2*(qy*qz - qw*qx) for Y
                 nx = 2.0 * (qx * qz + qw * qy)
                 ny = 2.0 * (qy * qz - qw * qx)
 
-                # La ruche regarde vers l'extérieur (nx, ny). Le robot doit lui faire face (-nx, -ny).
+                # The hive faces outward (nx, ny). The robot must face it (-nx, -ny).
                 tag_yaw_local = math.atan2(-ny, -nx)
                 
                 target_yaw_rad = robot_yaw + tag_yaw_local
-                target_yaw_rad = math.atan2(math.sin(target_yaw_rad), math.cos(target_yaw_rad)) # Normalisation
+                target_yaw_rad = math.atan2(math.sin(target_yaw_rad), math.cos(target_yaw_rad)) # Normalization
 
                 if self.target_odom is None or self.tag_lost_recently:
                     self.get_logger().info(f"[PERCEPTION] Target Acquired (Abs Odom): X={target_x_m:.2f}, Y={target_y_m:.2f}, Yaw={math.degrees(target_yaw_rad):.2f}°")
@@ -157,12 +170,12 @@ class DockingController(Node):
 
     def control_loop(self):
         with self.lock:
-            # Sécurité prioritaire absolue
+            # Absolute priority safety check
             if self.tag_lost_recently and self.rollback_allowed and self._state not in ['ROLLBACK', 'SENDING_PULSE']:
                 self.get_logger().error("[CONTROL] Triggering Rollback due to recent tag loss.")
                 self.set_state('ROLLBACK')
 
-            # Routage vers le bon handler d'état
+            # Route to the appropriate state handler
             if self._state == 'WAITING':
                 self._handle_waiting_state()
             
@@ -176,7 +189,7 @@ class DockingController(Node):
                 self._handle_rollback()
 
     def _handle_waiting_state(self):
-        # Immobilisation des moteurs
+        # Stop the motors
         send_pulse(
             self._state, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
             self.alpha_v, self.alpha_wz, self.wheels, self.wheel_pubs, self.wheel_radius_m
@@ -204,7 +217,7 @@ class DockingController(Node):
         err_x_local = dx * math.cos(theta) + dy * math.sin(theta)
         err_y_local = -dx * math.sin(theta) + dy * math.cos(theta)
         
-        # Le robot cherche à s'aligner parallèlement à la normale de la ruche
+        # The robot aligns itself parallel to the hive normal
         diff = self.target_odom['yaw_rad'] - theta
         err_theta_rad = math.atan2(math.sin(diff), math.cos(diff))
         err_theta_deg = math.degrees(err_theta_rad)

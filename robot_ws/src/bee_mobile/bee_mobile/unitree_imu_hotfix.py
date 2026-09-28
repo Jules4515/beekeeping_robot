@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# Unitree IMU Hotfix node for ROS2
+#
+# This node corrects the Unitree LiDAR IMU coordinate mapping before republishing
+# the data. It remaps and inverts the raw roll orientation and X-axis angular
+# velocity into yaw and Z-axis angular velocity, while clearing the unused
+# roll, pitch, X, and Y components.
+# 
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Imu
@@ -49,7 +58,7 @@ class UnitreeImuHotfix(Node):
         corrected_msg.header = msg.header
         corrected_msg.header.frame_id = 'unilidar_imu'
 
-        # 1. Extraction du Roulis (X) erroné
+        # 1. Extract the incorrect roll (X).
         old_roll = self.euler_from_quaternion(
             msg.orientation.x,
             msg.orientation.y,
@@ -57,8 +66,8 @@ class UnitreeImuHotfix(Node):
             msg.orientation.w
         )
 
-        # 2. Transfert et INVERSION : Roulis -> Lacet
-        new_yaw = -old_roll   # <-- INVERSION DE L'ANGLE
+        # 2. Transfer and invert: roll -> yaw.
+        new_yaw = -old_roll   # <-- ANGLE INVERSION
         new_roll = 0.0
         new_pitch = 0.0
 
@@ -69,13 +78,13 @@ class UnitreeImuHotfix(Node):
         corrected_msg.orientation.w = q[3]
         corrected_msg.orientation_covariance = msg.orientation_covariance
 
-        # 3. Transfert et INVERSION de la vitesse angulaire : wx -> wz
+        # 3. Transfer and invert angular velocity: wx -> wz.
         corrected_msg.angular_velocity.x = 0.0
         corrected_msg.angular_velocity.y = 0.0
-        corrected_msg.angular_velocity.z = -msg.angular_velocity.x  # <-- INVERSION DE LA VITESSE
+        corrected_msg.angular_velocity.z = -msg.angular_velocity.x  # <-- VELOCITY INVERSION
         corrected_msg.angular_velocity_covariance = msg.angular_velocity_covariance
         
-        # 4. Passage des accélérations linéaires sans modification
+        # 4. Pass linear acceleration through unchanged.
         corrected_msg.linear_acceleration = msg.linear_acceleration
         corrected_msg.linear_acceleration_covariance = msg.linear_acceleration_covariance
 

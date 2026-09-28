@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# Wheel State Converter node for ROS2
+#
+# This node converts wheel encoder messages into a unified JointState message
+# for RViz and other consumers. It converts rolling velocity from RPM to rad/s,
+# converts steering angles from degrees to radians, integrates wheel positions,
+# and publishes the eight wheel and steering joint states.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException

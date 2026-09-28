@@ -33,14 +33,18 @@ setup(
         'console_scripts': [
             # General
             'pid_tuner = bee_mobile.pid_tuner:main',
-            'odometry = bee_mobile.odometry:main',
             'wheel_state_converter = bee_mobile.wheel_state_converter:main',
-            'mux_joystick = bee_mobile.mux_joystick:main',
             'unitree_imu_hotfix = bee_mobile.unitree_imu_hotfix:main',
             
+            'joystick_swerve = bee_mobile.joystick_swerve:main',
+            'joystick_ackermann = bee_mobile.joystick_ackermann:main',
+            
             # Nav2
-            'swerve_kinematics = bee_mobile.swerve_kinematics:main',
-            'goal_manager = bee_mobile.goal_manager:main',
+            'kinematics_swerve = bee_mobile.kinematics_swerve:main',
+            'kinematics_ackermann = bee_mobile.kinematics_ackermann:main',
+
+            'odometry_swerve = bee_mobile.odometry_swerve:main',
+            'odometry_ackermann = bee_mobile.odometry_ackermann:main',
 
             # Docking
             'aruco_tag_detector = bee_mobile.aruco_tag_detector:main',
@@ -50,11 +54,7 @@ setup(
 
             # GPS
             'custom_gps_driver = bee_mobile.custom_gps_driver:main',
-            'robot_footprint_publisher = bee_mobile.robot_footprint_publisher:main',
-            'gps_health_monitor = bee_mobile.gps_health_monitor:main',
-            'previsualization_gps = bee_mobile.previsualization_gps:main',
             'gps_monitor = bee_mobile.gps_monitor:main',
-            'auto_gps_saver = bee_mobile.auto_gps_saver:main',
             'trajectory_recorder = bee_mobile.trajectory_recorder:main',
             'gps_mission = bee_mobile.gps_mission:main',            
         ],

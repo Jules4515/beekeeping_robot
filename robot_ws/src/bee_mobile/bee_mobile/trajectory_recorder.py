@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# 
+# GPS Trajectory Recorder for ROS2
+#
+# This node records GPS and IMU poses into timestamped YAML trajectory files.
+# It saves an initial waypoint, adds spatial waypoints when distance or heading
+# thresholds are exceeded, and supports manually recorded TASK waypoints from
+# the joystick controller.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
@@ -13,9 +22,9 @@ class TrajectoryRecorder(Node):
     def __init__(self):
         super().__init__('trajectory_recorder')
 
-        # Paramètres ROS 2 dynamiques (valeurs par défaut : 2.0m et 15.0°)
+        # Dynamic ROS 2 parameters
         self.declare_parameter('delta_d', 3.0)
-        self.declare_parameter('delta_theta', 30.0)
+        self.declare_parameter('delta_theta', 50.0)
         
         self.delta_d = self.get_parameter('delta_d').value
         self.delta_theta = self.get_parameter('delta_theta').value
@@ -25,7 +34,7 @@ class TrajectoryRecorder(Node):
         self.latest_fix = None
         self.latest_imu = None
         
-        # État interne de la mémoire RAM
+        # Internal in-memory state.
         self.last_saved_lat = None
         self.last_saved_lon = None
         self.last_saved_alt = None
@@ -35,19 +44,19 @@ class TrajectoryRecorder(Node):
         self.waypoint_counter = 1
         self.task_waypoint_counter = 1
         
-        # Écoute du signal de la manette
+        # Listen for the joystick signal.
         self.task_sub = self.create_subscription(Empty, '/save_task_waypoint', self.task_callback, 10)
 
-        # Configuration du fichier de sortie
+        # Configure the output file.
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"trajectory_{timestamp}.yaml"
         
-        # Pointe vers l'espace source du workspace pour un accès hors-compilation
+        # Use the workspace source directory for access outside the build tree.
         ws_path = os.path.expanduser('~/dev/robot_ws/src/bee_mobile/trajectories')
         os.makedirs(ws_path, exist_ok=True)
         self.yaml_path = os.path.join(ws_path, filename)
 
-        # Initialisation du fichier YAML
+        # Initialize the YAML file.
         with open(self.yaml_path, 'w') as f:
             f.write("waypoints_GPS:\n\n")
 
@@ -55,11 +64,11 @@ class TrajectoryRecorder(Node):
         self.fix_sub = self.create_subscription(NavSatFix, '/fix', self.fix_callback, 10)
         self.heading_sub = self.create_subscription(Imu, '/heading_imu', self.imu_callback, 10)
 
-        # Boucle de traitement à 20 Hz pour évaluer la trajectoire en continu
+        # Process the trajectory continuously at 20 Hz.
         self.timer = self.create_timer(0.05, self.process_trajectory)
         
         self.get_logger().info("=== SPATIAL TRAJECTORY RECORDER INITIALIZED ===")
-        self.get_logger().info(f"Paramètres : Delta D = {self.delta_d}m | Delta Theta = {self.delta_theta}°")
+        self.get_logger().info(f"Parameters: Delta D = {self.delta_d} m | Delta Theta = {self.delta_theta}°")
 
     def fix_callback(self, msg):
         with self.gps_lock:
@@ -88,8 +97,8 @@ class TrajectoryRecorder(Node):
 
     @staticmethod
     def calculate_haversine_distance(lat1, lon1, lat2, lon2):
-        """Calcule la distance absolue en mètres entre deux points GPS."""
-        R = 6371000.0  # Rayon terrestre en mètres
+        """Calculate the absolute distance in meters between two GPS points."""
+        R = 6371000.0  # Earth radius in meters.
         phi1, phi2 = math.radians(lat1), math.radians(lat2)
         dphi = math.radians(lat2 - lat1)
         dlambda = math.radians(lon2 - lon1)
@@ -99,12 +108,12 @@ class TrajectoryRecorder(Node):
 
     @staticmethod
     def calculate_angular_difference(yaw1, yaw2):
-        """Calcule la différence d'angle minimale en gérant le franchissement -180/180."""
+        """Calculate the minimum angular difference across the -180/180 boundary."""
         diff = yaw1 - yaw2
         return (diff + 180) % 360 - 180
 
     def process_trajectory(self):
-        """Logique de filtrage spatial exécutée à haute fréquence."""
+        """Run the high-frequency spatial filtering logic."""
         with self.gps_lock:
             if not self.latest_fix or not self.latest_imu:
                 return
@@ -113,24 +122,24 @@ class TrajectoryRecorder(Node):
             current_lon = self.latest_fix.longitude
             current_alt = self.latest_fix.altitude
             
-            # Extraction complète de l'attitude 6DoF
+            # Extract the complete 6-DoF orientation.
             current_roll, current_pitch, current_yaw = self.euler_from_quaternion(self.latest_imu.orientation)
 
-        # 1. Sauvegarde inconditionnelle du premier point (Origine)
+        # 1. Unconditionally save the first point (origin).
         if self.last_saved_lat is None:
             self.save_to_disk(current_lat, current_lon, current_alt, current_roll, current_pitch, current_yaw)
             return
 
-        # 2. Calcul des deltas physiques (Reste inchangé)
+        # 2. Calculate the physical deltas.
         dist = self.calculate_haversine_distance(self.last_saved_lat, self.last_saved_lon, current_lat, current_lon)
         angle_diff = abs(self.calculate_angular_difference(self.last_saved_yaw, current_yaw))
 
-        # 3. Évaluation conditionnelle (Filtre Spatial)
+        # 3. Conditional evaluation (spatial filter).
         if dist >= self.delta_d or angle_diff >= self.delta_theta:
             self.save_to_disk(current_lat, current_lon, current_alt, current_roll, current_pitch, current_yaw)
 
     def save_to_disk(self, lat, lon, alt, roll, pitch, yaw, custom_name=None):
-        """Écriture asynchrone sur le disque de la Pose 6DoF."""
+        """Write the 6-DoF pose to disk."""
         wp_name = custom_name if custom_name else f"WP_{self.waypoint_counter}"
         
         try:
@@ -143,7 +152,7 @@ class TrajectoryRecorder(Node):
                 f.write(f"  pitch     : {pitch:.2f}\n")
                 f.write(f"  yaw       : {yaw:.2f}\n\n")
 
-            # Mise à jour du cache RAM (uniquement pour la trajectoire spatiale standard)
+            # Update the in-memory cache for the standard spatial trajectory only.
             if not custom_name:
                 self.last_saved_lat = lat
                 self.last_saved_lon = lon
@@ -152,16 +161,16 @@ class TrajectoryRecorder(Node):
                 self.last_saved_pitch = pitch
                 self.last_saved_yaw = yaw
                 self.waypoint_counter += 1
-                self.get_logger().info(f"[{wp_name}] Enregistré | Dist: {self.delta_d}m ou Cap: {self.delta_theta}° franchi.")
+                self.get_logger().info(f"[{wp_name}] Saved | Distance: {self.delta_d} m or heading: {self.delta_theta}° threshold reached.")
 
         except IOError as e:
             self.get_logger().error(f"YAML Write Error: {e}")
 
     def task_callback(self, msg):
-        """Déclenché par la manette pour sauvegarder un waypoint de tâche spécifique."""
+        """Handle the joystick request to save a specific TASK waypoint."""
         with self.gps_lock:
             if not self.latest_fix or not self.latest_imu:
-                self.get_logger().warn("Impossible d'enregistrer WP_TASK : GPS ou IMU manquant.")
+                self.get_logger().warn("Unable to save WP_TASK: GPS or IMU data is missing.")
                 return
             
             lat = self.latest_fix.latitude
@@ -172,7 +181,7 @@ class TrajectoryRecorder(Node):
         wp_name = f"WP_TASK_{self.task_waypoint_counter}"
         self.save_to_disk(lat, lon, alt, roll, pitch, yaw, custom_name=wp_name)
         
-        self.get_logger().info(f"[{wp_name}] Sauvegarde manuelle exécutée.")
+        self.get_logger().info(f"[{wp_name}] Manual waypoint saved.")
         self.task_waypoint_counter += 1
 
 def main(args=None):
@@ -181,7 +190,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        # Utilisation stricte de print() pour éviter le crash du contexte /rosout
+        # Use print() strictly to avoid a /rosout context crash.
         print(f"[INFO] [trajectory_recorder]: Trajectory saved to {node.yaml_path}")
         print("[INFO] [trajectory_recorder]: Stopping")
     finally:

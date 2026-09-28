@@ -4,47 +4,78 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, LaunchConfiguration, PythonExpression
-from launch.conditions import IfCondition
+from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     pkg_share = get_package_share_directory('bee_mobile')
 
+    # ========================================================================
+    # 1. LAUNCH ARGUMENTS (Outdoor first, Swerve first)
+    # ========================================================================
+    
+    # Declare environment argument (outdoor or indoor)
+    environment_arg = DeclareLaunchArgument(
+        'environment', 
+        default_value='outdoor', 
+        choices=['outdoor', 'indoor'],
+        description='Navigation environment: outdoor or indoor'
+    )
+
+    # Declare kinematics argument (swerve or ackermann)
+    kinematics_arg = DeclareLaunchArgument(
+        'kinematics', 
+        default_value='swerve', 
+        choices=['swerve', 'ackermann'],
+        description='Kinematics model: swerve or ackermann'
+    )
+
+    # Extract the configurations to use them in dynamic paths
+    environment_mode = LaunchConfiguration('environment')
+    kinematics_mode = LaunchConfiguration('kinematics')
+
+    # ========================================================================
+    # 2. DYNAMIC PATHS (PathJoinSubstitution)
+    # ========================================================================
+    
+    # Dynamically build the Nav2 parameters path 
+    # Example result: config/nav2_params_outdoor_swerve.yaml
+    nav2_params_file = PathJoinSubstitution([
+        pkg_share, 
+        'config', 
+        ['nav2_params_', environment_mode, '_', kinematics_mode, '.yaml']
+    ])
+
+    # Dynamically build the navigation launch file path
+    # Example result: launch/navigation_outdoor.launch.py
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([
+                pkg_share, 
+                'launch', 
+                ['navigation_', environment_mode, '.launch.py']
+            ])
+        ),
+        launch_arguments={
+            'use_sim_time': 'false',
+            'params_file': nav2_params_file  # Passing the dynamically resolved YAML
+        }.items()
+    )
+
+    # ========================================================================
+    # 3. NODES DEFINITION
+    # ========================================================================
+
     # --- URDF & Robot State (Always On) ---
     xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
-
-    # Declare mode launch argument (indoor or outdoor)
-    declare_mode = DeclareLaunchArgument(
-        'mode', default_value='outdoor', description='Navigation mode: indoor or outdoor'
-    )
-
-    mode = LaunchConfiguration('mode')
-
-    # Navigation launch include (outdoor)
-    navigation_outdoor = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_outdoor.launch.py')),
-        condition=IfCondition(PythonExpression(["'", mode, "' == 'outdoor'"])),
-        launch_arguments={'use_sim_time': 'false'}.items()
-    )
-
-    # Navigation launch include (indoor)
-    navigation_indoor = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_share, 'launch', 'navigation_indoor.launch.py')),
-        condition=IfCondition(PythonExpression(["'", mode, "' == 'indoor'"])),
-        launch_arguments={'use_sim_time': 'false'}.items()
-    )
-
-    # Caméra
-    camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
-        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 15.0,}]
+        parameters=[{'robot_description': robot_description, 'use_sim_time': False, 'publish_frequency': 15.0}]
     )
 
     # --- Hardware Nodes (Real World Only) ---
@@ -95,6 +126,8 @@ def generate_launch_description():
         }]
     )
 
+    camera_info_yaml = os.path.join(pkg_share, 'config', 'camera_info.yaml')
+    
     camera_node = Node(
         package='usb_cam',
         executable='usb_cam_node_exe',
@@ -109,7 +142,7 @@ def generate_launch_description():
             'image_height': 480,
             'camera_frame_id': 'camera_link',
             'camera_info_url': 'file://' + camera_info_yaml,
-            'exposure_auto': 1,       # 1 correspond souvent à un mode manuel ou priorité vitesse selon le pilote
+            'exposure_auto': 1,       
             'exposure_absolute': 20,
             'gain': 10,
             'qos_reliability': 'best_effort',
@@ -118,7 +151,7 @@ def generate_launch_description():
         }]
     )
 
-    pid_tuner = Node(
+    pid_tuner_node = Node(
         package='bee_mobile',
         executable='pid_tuner',
         output='screen',
@@ -136,7 +169,7 @@ def generate_launch_description():
         parameters=[{
             'marker_size': 0.068,
             'image_topic': '/camera/image_raw/compressed',
-            'enable_debug': False,  # Force la désactivation complète du traitement d'image inutile
+            'enable_debug': False,  
             'publish_pose_array': False
         }]
     )
@@ -154,25 +187,28 @@ def generate_launch_description():
         output='screen'
     )
 
-    mux_joystick_node = Node(
+    # Dynamic Executable: Resolves to 'joystick_swerve' or 'joystick_ackermann'
+    joystick_node = Node(
         package='bee_mobile',
-        executable='mux_joystick',
+        executable=['joystick_', kinematics_mode],
         output='screen'
     )
 
-    swerve_kinematics_node = Node(
+    # Dynamic Executable: Resolves to 'kinematics_swerve' or 'kinematics_ackermann'
+    kinematics_node = Node(
         package='bee_mobile',
-        executable='swerve_kinematics',
+        executable=['kinematics_', kinematics_mode],
         output='screen'
     )
 
+    # Dynamic Executable: Resolves to 'odometry_swerve' or 'odometry_ackermann'
     odometry_node = Node(
         package='bee_mobile',
-        executable='odometry',
+        executable=['odometry_', kinematics_mode],
         output='screen'
     )
 
-    unitree_imu_hotfix = Node(
+    unitree_imu_hotfix_node = Node(
         package='bee_mobile',
         executable='unitree_imu_hotfix',
         output='screen'
@@ -185,26 +221,34 @@ def generate_launch_description():
         parameters=[os.path.join(pkg_share, 'config', 'twist_mux_topics.yaml')]
     )
 
-    # navigation_outdoor or navigation_indoor will be included based on `mode`
-    navigation_launch = (navigation_outdoor, navigation_indoor)
-
+    # ========================================================================
+    # 4. RETURN LAUNCH DESCRIPTION
+    # ========================================================================
+    
     return LaunchDescription([
-        declare_mode,
+        # Arguments
+        environment_arg,
+        kinematics_arg,
+        
+        # Static Nodes
         robot_state_publisher_node,
+        
         #micro_ros_node,
         unitree_lidar_node,
         pointcloud_to_scan_node,
         #camera_node,
         aruco_tag_detector_node,
-        pid_tuner,
+        pid_tuner_node,
+        
+        # Control & Dynamic Nodes
         joy_node,
-        mux_joystick_node,
-        swerve_kinematics_node,
+        joystick_node,
+        kinematics_node,
         odometry_node,
-        unitree_imu_hotfix,
+        unitree_imu_hotfix_node,
         twist_mux_node,
         #docking_controller_node,
-        # include chosen navigation launch(s)
-        navigation_outdoor,
-        navigation_indoor,
+
+        # Included Launch Files
+        navigation_launch,
     ])

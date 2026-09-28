@@ -1,57 +1,65 @@
 #!/usr/bin/env python3
+
+#
+# Custom GPS Driver node for ROS2
+#
+# This node reads GPS data from a specific serial port, parses the NMEA sentences, and publishes the GPS position, 
+# status and heading on specific ROS2 topics. 
+#
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from sensor_msgs.msg import NavSatFix, Imu
-from geometry_msgs.msg import QuaternionStamped
 from std_msgs.msg import String
 import serial
 import math
 import threading
 import time
-from datetime import datetime, timezone
 
 class CustomGpsDriver(Node):
     def __init__(self):
         super().__init__('custom_gps_driver')
-        
+
+        # ROS 2 serial port parameters
         self.declare_parameter('port', '/dev/ttyUSB_GPS')
         self.declare_parameter('baud', 115200)
-        
+
         self.port_name = self.get_parameter('port').value
         self.baud_rate = self.get_parameter('baud').value
-        
-        # Publishers
+
+        # GPS position publisher
         self.fix_pub = self.create_publisher(NavSatFix, '/fix', 10)
+
+        # GPS heading publisher
         self.heading_pub = self.create_publisher(Imu, '/heading_imu', 10)
+
+        # GPS status publisher
         self.status_pub = self.create_publisher(String, '/gps/status', 10)
-        # self.fix_pub = self.create_publisher(NavSatFix, '/gps/fix', 10)
-        # self.heading_pub = self.create_publisher(Imu, '/gps/heading_imu', 10)
-        # self.status_pub = self.create_publisher(String, '/gps/status', 10)
-        
+
         self.serial_port = None
 
         self.current_status = -1
         self.status_start_time = time.time()
-        
-        # Thread dédié pour la lecture série (Annule la latence du Timer ROS)
+
+        # Read serial data in a dedicated thread
         self.read_thread = threading.Thread(target=self.serial_thread_loop, daemon=True)
         self.read_thread.start()
 
     def connect_serial(self):
-        """Tente de connecter ou reconnecter le port série sans crasher le noeud."""
+        """Connect or reconnect the serial port without stopping the node"""
         try:
             if self.serial_port and self.serial_port.is_open:
                 self.serial_port.close()
             self.serial_port = serial.Serial(self.port_name, self.baud_rate, timeout=1.0)
-            self.get_logger().info(f"✅ Port {self.port_name} connecté à {self.baud_rate} bauds.")
+            self.get_logger().info(f"✅ Serial port {self.port_name} connected at {self.baud_rate} baud")
             return True
         except serial.SerialException as e:
-            self.get_logger().warn(f"⏳ En attente du port {self.port_name}... ({e})")
+            self.get_logger().warn(f"⏳ Waiting for serial port {self.port_name}: {e}")
             return False
 
     def validate_checksum(self, line):
-        """Vérifie l'intégrité de la trame via un XOR (OU exclusif)."""
+        """Validate the sentence checksum using XOR"""
         if '*' not in line or not line.startswith('$'):
             return False
         try:
@@ -63,11 +71,8 @@ class CustomGpsDriver(Node):
         except Exception:
             return False
 
-    def extract_ros_time(self, reception_time):
-        return reception_time.to_msg()
-
     def serial_thread_loop(self):
-        """Boucle infinie bloquante s'exécutant dans son propre thread."""
+        """Read and dispatch GPS sentences in the serial thread"""
         while rclpy.ok():
             if self.serial_port is None or not self.serial_port.is_open:
                 if not self.connect_serial():
@@ -75,41 +80,42 @@ class CustomGpsDriver(Node):
                     continue
             
             try:
-                # readline() bloque jusqu'à recevoir un '\n'. Zéro trame coupée. Zéro CPU gaspillé.
+                # Read one complete sentence from the serial port
                 line = self.serial_port.readline()
                 
                 if line:
-                    reception_time = self.get_clock().now() # Latence quasi-nulle
+                    reception_time = self.get_clock().now()
                     decoded_line = line.decode('ascii', errors='ignore').strip()
                     
                     if not decoded_line:
                         continue
                         
-                    # Filtrage strict de la donnée
+                    # Ignore sentences with an invalid checksum
                     if not self.validate_checksum(decoded_line):
                         continue
                     
-                    # Aiguillage (Agnostique du Talker ID: GP, GN, GL...)
+                    # Dispatch supported sentence types
                     if 'GGA,' in decoded_line:
                         self.parse_gga(decoded_line, reception_time)
                     elif 'HPR,' in decoded_line:
                         self.parse_hpr(decoded_line, reception_time)
                         
             except serial.SerialException as e:
-                self.get_logger().error(f"❌ Déconnexion série : {e}")
+                self.get_logger().error(f"❌ Serial connection lost: {e}")
                 self.serial_port.close()
                 self.serial_port = None
             except Exception as e:
-                self.get_logger().error(f"Erreur thread : {e}")
+                self.get_logger().error(f"Serial thread error: {e}")
 
     def parse_gga(self, line, reception_time):
+        """Parse a GGA sentence and publish the GPS position"""
         parts = line.split(',')
         if len(parts) < 10 or not parts[2] or not parts[4]:
             return
             
         try:
             msg = NavSatFix()
-            msg.header.stamp = self.extract_ros_time(parts[1], reception_time)
+            msg.header.stamp = reception_time.to_msg()
             msg.header.frame_id = 'gps_link'
             
             status = int(parts[6]) if parts[6] else 0
@@ -128,8 +134,8 @@ class CustomGpsDriver(Node):
             
             msg.altitude = float(parts[9])
             
-            # Covariance Dynamique
-            if status == 4:     # RTK Fixed (~2cm)
+            # Set covariance values based on the GPS fix quality
+            if status == 4:     # RTK Fixed (~2cm precision)
                 var_h, var_v = 0.0004, 0.0016
                 status_str = 'RTK_FIXED'
             elif status == 5:   # RTK Float (~20cm)
@@ -149,10 +155,10 @@ class CustomGpsDriver(Node):
             
             self.fix_pub.publish(msg)
             
-            # 1. Extraction du nombre de satellites (Index 7 dans la trame GGA)
+            # Extract the number of satellites from the GGA sentence (index 7)
             satellites = int(parts[7]) if len(parts) > 7 and parts[7] else 0
             
-            # 2. Logique du chronomètre de statut
+            # Track how long the current status has been active (used in gps_monitor node)
             current_time = time.time()
             if self.current_status != status:
                 self.current_status = status
@@ -160,15 +166,16 @@ class CustomGpsDriver(Node):
             
             duration = int(current_time - self.status_start_time)
             
-            # 3. Formatage de la chaîne (Sans crochets)
+            # Publish the current GPS status
             status_msg = String()
-            status_msg.data = f"{status} {status_str} | {satellites} Sats | Depuis {duration}s"
+            status_msg.data = f"{status} {status_str} | {satellites} satellites | For {duration}s"
             self.status_pub.publish(status_msg)
             
         except Exception as e:
-            self.get_logger().error(f"Erreur parsing GGA: {e} | Ligne: {line}")
+            self.get_logger().error(f"GGA parsing error: {e} | Sentence: {line}")
 
     def parse_hpr(self, line, reception_time):
+        """Parse an HPR sentence and publish the GPS heading"""
         parts = line.split(',')
         if len(parts) < 4 or not parts[2]:
             return
@@ -177,21 +184,21 @@ class CustomGpsDriver(Node):
             heading_deg = float(parts[2])
             pitch_deg = float(parts[3]) if len(parts) > 3 and parts[3] else 0.0
             
-            # Extraction propre du roll (en ignorant le checksum attaché au dernier élément si présent sans virgule)
+            # Extract roll and remove an attached checksum when present
             roll_str = parts[4].split('*')[0] if len(parts) > 4 and parts[4] else "0.0"
             roll_deg = float(roll_str)
             
-            # NED → ENU (ROS)
+            # Convert heading from NED to ROS ENU coordinates
             heading_rad = math.radians(heading_deg)
             yaw_rad = math.pi / 2.0 - heading_rad
             
-            # Normalisation [-pi, pi]
+            # Normalize yaw to the range [-pi, pi]
             yaw_rad = (yaw_rad + math.pi) % (2 * math.pi) - math.pi
             
             pitch_rad = math.radians(pitch_deg)
             roll_rad = math.radians(roll_deg)
             
-            # Euler → Quaternion (ZYX)
+            # Convert Euler angles to a quaternion using ZYX order
             cy = math.cos(yaw_rad * 0.5)
             sy = math.sin(yaw_rad * 0.5)
             cp = math.cos(pitch_rad * 0.5)
@@ -200,7 +207,7 @@ class CustomGpsDriver(Node):
             sr = math.sin(roll_rad * 0.5)
             
             msg = Imu()
-            msg.header.stamp = self.extract_ros_time(parts[1], reception_time)
+            msg.header.stamp = reception_time.to_msg()
             msg.header.frame_id = 'gps_link'
             
             msg.orientation.w = cr * cp * cy + sr * sp * sy
@@ -208,7 +215,7 @@ class CustomGpsDriver(Node):
             msg.orientation.y = cr * sp * cy + sr * cp * sy
             msg.orientation.z = cr * cp * sy - sr * sp * cy
             
-            # Très haute confiance sur le cap double antenne (0.001 rad^2)
+            # Set the covariance for the dual antenna heading
             msg.orientation_covariance[0] = 0.001
             msg.orientation_covariance[4] = 0.001
             msg.orientation_covariance[8] = 0.001
@@ -216,17 +223,16 @@ class CustomGpsDriver(Node):
             self.heading_pub.publish(msg)
             
         except Exception as e:
-            self.get_logger().error(f"Erreur parsing HPR: {e} | Ligne: {line}")
+            self.get_logger().error(f"HPR parsing error: {e} | Sentence: {line}")
 
 
 def main(args=None):
     rclpy.init(args=args)
     node = CustomGpsDriver()
-    
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
-        print("[INFO] Arrêt du noeud GPS demandé.")
+        print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
         node.destroy_node()
         if rclpy.ok():

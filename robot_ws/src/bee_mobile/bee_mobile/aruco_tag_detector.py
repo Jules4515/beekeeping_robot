@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+
+#
+# Aruco Tag Detector node for ROS2
+#
+# This node detects a specific ArUco marker from the original ArUco dictionary (DICT_ARUCO_ORIGINAL) in a camera
+# feed. It publishes the marker's pose as a TransformStamped message (TF) and optionally as a PoseArray (on a 
+# specific topic). It can also publish a debug image with the detected marker and its axes drawn on it.
+# The node uses OpenCV's ArUco module for detection and pose estimation. 
+# It requires camera calibration parameters to be provided via a CameraInfo topic.
+#
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
@@ -12,30 +23,42 @@ import numpy as np
 class ArucoTagDetector(Node):
     def __init__(self):
         super().__init__('aruco_tag_detector')
-        
-        # 1. Paramètres ROS 2
+
+        # --- ROS 2 parameters ---
+
+        # Image and camera info topics
         self.declare_parameter('image_topic', '/camera/image_raw/compressed')
         self.declare_parameter('camera_info_topic', '/camera/camera_info')
+
+        # ArUco marker side length in meters (on the physical marker)
         self.declare_parameter('marker_size', 0.068)
+
+        # Frame in which the marker pose is published
         self.declare_parameter('parent_frame', 'camera_link')
-        self.declare_parameter('enable_debug', False) # Désactivé par défaut pour les performances
+
+        # Debug image mode, disabled by default to reduce CPU usage
+        self.declare_parameter('enable_debug_image', False)
+
+        # ArUco ID to detect
         self.declare_parameter('target_id', 91)
+
+        # Whether to publish a PoseArray of detected markers
         self.declare_parameter('publish_pose_array', False)
 
         self.image_topic = self.get_parameter('image_topic').get_parameter_value().string_value
         self.info_topic = self.get_parameter('camera_info_topic').get_parameter_value().string_value
         self.marker_size = self.get_parameter('marker_size').get_parameter_value().double_value
         self.parent_frame = self.get_parameter('parent_frame').get_parameter_value().string_value
-        self.enable_debug = self.get_parameter('enable_debug').get_parameter_value().bool_value
+        self.enable_debug_image = self.get_parameter('enable_debug_image').get_parameter_value().bool_value
         self.target_id = self.get_parameter('target_id').get_parameter_value().integer_value
         self.publish_pose_array = self.get_parameter('publish_pose_array').get_parameter_value().bool_value
 
-        # 2. Outils OpenCV et TF
+        # --- OpenCV and ROS 2 initialization ---
         self.bridge = CvBridge()
         self.tf_broadcaster = TransformBroadcaster(self)
         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)
 
-        # Configuration du détecteur
+        # --- ArUco detection parameters ---
         self.parameters = cv2.aruco.DetectorParameters_create()
         self.parameters.adaptiveThreshWinSizeMin = 3
         self.parameters.adaptiveThreshWinSizeMax = 23
@@ -45,72 +68,70 @@ class ArucoTagDetector(Node):
         self.camera_matrix = None
         self.dist_coeffs = None
         
-        # 3. Souscriptions et Publishers
+        # --- Subscriptions and publishers ---
         self.info_sub = self.create_subscription(
             CameraInfo, self.info_topic, self.camera_info_callback, 10
         )
         
         self.pose_array_pub = self.create_publisher(PoseArray, '/aruco_marker_poses', 10)
         
-        # Instanciation conditionnelle du publisher d'image
-        if self.enable_debug:
+        if self.enable_debug_image:
             self.image_pub = self.create_publisher(Image, '~/debug_image', 10)
-            self.get_logger().info("⚠️ Mode DEBUG actif (consommation CPU supérieure).")
+            self.get_logger().info("⚠️ DEBUG mode enabled (higher CPU usage).")
 
         self.image_sub = self.create_subscription(
             CompressedImage, self.image_topic, self.compressed_image_callback, 10
         )
         
-        self.get_logger().info(f"⚡ Nœud ArUco actif. Mode pure performance. Parent : {self.parent_frame}")
+        self.get_logger().info(f"ArUco detector active. Parent: {self.parent_frame}")
 
+    # Load camera calibration parameters
     def camera_info_callback(self, msg):
         self.camera_matrix = np.array(msg.k).reshape((3, 3))
         self.dist_coeffs = np.array(msg.d)
-        self.get_logger().info("✅ Calibration chargée. Fermeture du souscripteur info.")
+        self.get_logger().info("✅ Camera calibration loaded. Shutting down the camera info subscription.")
         self.destroy_subscription(self.info_sub)
 
+    # Process compressed image messages
     def compressed_image_callback(self, msg):
         if self.camera_matrix is None:
             return
 
         try:
-            # Décodage de l'image (requis pour la détection dans tous les cas)
+            # Decode the compressed image
             np_arr = np.frombuffer(msg.data, np.uint8)
-            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR) # Force le format BGR 3 canaux
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # Force 3-channel BGR format
             
             if frame is None:
-                self.get_logger().error("Échec critique du décodage de l'image compressée")
+                self.get_logger().error("Failed to decode the compressed image.")
                 return
             
-            #frame = self.bridge.compressed_imgmsg_to_cv2(msg, desired_encoding='bgr8')
-
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
-            # Égalisation d'histogramme
+            # Equalize the grayscale histogram
             gray = cv2.equalizeHist(gray)
 
             corners, ids, rejected = cv2.aruco.detectMarkers(gray, self.dictionary, parameters=self.parameters)
             
             if ids is not None and len(ids) > 0:
-                # --- FILTRAGE PAR TARGET ID ---
+                # --- Filter by target ID ---
                 target_idx = None
                 for i in range(len(ids)):
                     if int(ids[i][0]) == self.target_id:
                         target_idx = i
                         break
                 
-                # Si le tag cible n'est pas dans la frame, on arrête le traitement ici
+                # Stop processing if the target marker is not in the frame
                 if target_idx is None:
-                    # On publie quand même le debug si activé pour voir le flux vide
-                    if self.enable_debug:
+                    # Publish the debug image anyway when debug mode is enabled
+                    if self.enable_debug_image:
                         debug_msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
                         self.image_pub.publish(debug_msg)
                     return
                 
-                # Isolation unique de la cible détectée
+                # Keep only the target marker
                 corners = (corners[target_idx],)
                 ids = np.array([ids[target_idx]], dtype=np.int32)
-                # ------------------------------
 
                 if self.publish_pose_array:
                     pose_array_msg = PoseArray()
@@ -121,23 +142,23 @@ class ArucoTagDetector(Node):
                     corners, self.marker_size, self.camera_matrix, self.dist_coeffs
                 )
 
-                # Le dessin sur l'image n'est exécuté que si le débug est actif
-                if self.enable_debug:
+                # Draw annotations only in debug mode
+                if self.enable_debug_image:
                     cv2.aruco.drawDetectedMarkers(frame, corners, ids)
 
                 for i in range(len(ids)):
                     marker_id = int(ids[i][0])
                     
-                    if self.enable_debug:
+                    if self.enable_debug_image:
                         cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvecs[i], tvecs[i], 0.05)
 
-                    # Extraction de la Pose
+                    # Extract the marker pose
                     pose = Pose()
                     pose.position.x = float(tvecs[i][0][0])
                     pose.position.y = float(tvecs[i][0][1])
                     pose.position.z = float(tvecs[i][0][2])
 
-                    # Conversion Rodrigues -> Quaternion
+                    # Convert the Rodrigues rotation vector to a quaternion
                     r_matrix, _ = cv2.Rodrigues(rvecs[i])
                     t = np.trace(r_matrix)
                     if t > 0:
@@ -169,7 +190,7 @@ class ArucoTagDetector(Node):
                     if self.publish_pose_array:
                         pose_array_msg.poses.append(pose)
 
-                    # Diffusion de la TF
+                    # Broadcast the transform
                     tf_msg = TransformStamped()
                     tf_msg.header.stamp = msg.header.stamp
                     tf_msg.header.frame_id = self.parent_frame
@@ -180,17 +201,15 @@ class ArucoTagDetector(Node):
                     tf_msg.transform.rotation = pose.orientation
                     self.tf_broadcaster.sendTransform(tf_msg)
 
-                # Publication des Poses (Léger)
                 if self.publish_pose_array:
                     self.pose_array_pub.publish(pose_array_msg)
                 
-                # Publication de la vidéo uniquement si demandée
-                if self.enable_debug:
+                if self.enable_debug_image:
                     debug_msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
                     self.image_pub.publish(debug_msg)
 
         except CvBridgeError as e:
-            self.get_logger().error(f"Erreur callback : {e}")
+            self.get_logger().error(f"Callback error: {e}")
 
 def main(args=None):
     rclpy.init(args=args)
@@ -198,12 +217,9 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
-        # Capture silencieuse du Ctrl+C et de l'arrêt externe
         print(f"[INFO] [{node.get_name()}]: Shutdown requested by user.")
     finally:
-        # Bloc exécuté dans 100% des cas, même en cas de crash interne
         node.destroy_node()
-        # Vérification cruciale pour éviter l'erreur "Context is already shutdown"
         if rclpy.ok():
             rclpy.shutdown()
 

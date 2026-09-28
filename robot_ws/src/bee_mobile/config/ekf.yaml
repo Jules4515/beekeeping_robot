@@ -11,7 +11,7 @@ ekf_node:
     base_link_frame: base_footprint
     world_frame: odom
 
-    # --- ODOMÉTRIE ROUES (Vitesses locales) ---
+    # --- WHEEL ODOMETRY (Local velocities) ---
     odom0: /odom
     odom0_config: [false, false, false,
                    false, false, true,
@@ -19,19 +19,10 @@ ekf_node:
                    false, false, true,
                    false, false, false]
     odom0_relative: false
-
-    # --- IMU / GPS HEADING (Rotations locales) ---
-    # imu0: /heading_imu
-    # imu0_config: [false, false, false,
-    #               false, false, false,
-    #               false, false, false,
-    #               false, false, false,
-    #               false, false, false]
-    # imu0_relative: false
     
 ekf_node_global:
   ros__parameters:
-    frequency: 20.0 # <-- RESTAURÉ À 20 Hz
+    frequency: 20.0
     sensor_timeout: 0.1
     two_d_mode: true
     publish_tf: true
@@ -43,7 +34,7 @@ ekf_node_global:
     base_link_frame: base_footprint
     world_frame: map
 
-    # --- 1. POSITION GPS ABSOLUE ---
+    # --- 1. ABSOLUTE GPS POSITION ---
     odom0: /odometry/gps
     odom0_config: [true,  true,  false, 
                    false, false, false,
@@ -52,19 +43,19 @@ ekf_node_global:
                    false, false, false]
     odom0_relative: false
 
-    # --- 2. ODOMÉTRIE ROUES ---
+    # --- 2. WHEEL ODOMETRY ---
     odom1: /odom
     odom1_config: [false, false, false,
                    false, false, false,
                    true,  true,  false,
-                   false, false, true,  # <-- CORRECTIF 1 : V_yaw activé
+                   false, false, true,
                    false, false, false]
     odom1_relative: false
     
-    # --- 3. IMU ABSOLUE (Le Cap boussole) ---
+    # --- 3. ABSOLUTE IMU (Compass heading) ---
     imu0: /heading_imu
     imu0_config: [false, false, false,
-                  false, false, true,   # <-- CORRECTIF 2 : Roll et Pitch désactivés
+                  false, false, true,
                   false, false, false,
                   false, false, false,
                   false, false, false]
@@ -72,45 +63,41 @@ ekf_node_global:
 
 navsat_transform_node:
   ros__parameters:
-    # --- 1. Repères Spatiaux (TF) ---
+    # --- 1. Spatial Frames (TF) ---
     map_frame: map
     odom_frame: odom
     base_link_frame: base_footprint
 
-    # --- 2. Fonctionnement Général ---
+    # --- 2. General Operation ---
     use_sim_time: false
     frequency: 20.0
     delay: 0.0
 
-    # --- 3. Configuration Spécifique (Double Antenne / RTK) ---
-    # Un double GPS donne le Nord Vrai, on n'utilise pas l'odométrie pour deviner le cap
+    # --- 3. Specific Configuration (Dual Antenna / RTK) ---
+    # Dual GPS provides true north; odometry is not used to estimate heading.
     use_odometry_yaw: false 
     
-    # Force l'altitude à 0, très important pour un robot mobile 2D
     zero_altitude: true               
 
-    # --- 4. Paramètres Géographiques ---
-    # Déclinaison magnétique à 0 car on est sur le Nord Vrai (Double Antenne)
+    # --- 4. Geographic Parameters ---
+    # Magnetic declination is 0 because true north is provided by dual antennas.
     magnetic_declination_radians: 0.0 
     
-    # yaw_offset : Convertit le "Nord Capteur" en "Est ROS" (0° pointant vers l'Est)
-    # Puisque tu as un décalage de 180° combiné à la rotation Nord/Est, 
-    # configure l'offset géométrique approprié :
-    yaw_offset: 0.0 #3.141592653589793   # Applique un décalage de PI (180 degrés)
+    yaw_offset: 0.0
 
 
-    # --- 5. Sorties et Origine ---
+    # --- 5. Outputs and Origin ---
     publish_filtered_gps: true
     
-    # Publie la transformation (UTM/Local) vers la carte. 
+    # Publishes the transformation (UTM/local) to the map.
     broadcast_cartesian_transform: false 
     
-    # Utilise un repère cartésien local basé sur un point de référence (datum) plutôt que les immenses coordonnées UTM
+    # Uses a local Cartesian frame based on a reference point (datum) instead of large UTM coordinates.
     use_local_cartesian: true         
 
-    # On attend un datum fixe (origine de la carte) au lieu de prendre le premier signal GPS reçu.
+    # Waits for a fixed datum (map origin) instead of using the first received GPS signal.
     wait_for_datum: true
-    #base_link_offset: [0.64, 0.0, 1.3]  # x, y, z du GPS dans base_link
-    datum: [36.3058915, 120.4968436, 0.0] # Labo porte extérieure
-    #datum: [36.3068724, 120.4977261, 0.0] # Zone test arbres # TEMP
-    #datum: [36.3069306, 120.4974080, 0.0] # Zone test arbres
+    #base_link_offset: [0.64, 0.0, 1.3]  # x, y, z of the GPS antenna in base_link
+    
+    #datum: [36.3058915, 120.4968436, 0.0] # Laboratory exterior door
+    datum: [36.3069306, 120.4974080, 0.0] # Tree test area

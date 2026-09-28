@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# 
+# GPS Monitor node for ROS2
+#
+# This node monitors the GPS fix, IMU orientation, and GPS status topics. It
+# displays their latest values, publication frequencies, and timing deviation
+# in a terminal dashboard for real-time diagnosis of the navigation sensors.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
@@ -124,7 +132,7 @@ class GpsMonitorNode(Node):
             output.append(f"[FIX]   Stamp  : {stamp.sec}.{stamp.nanosec:09d}")
             output.append(f"        Coords : Lat {lat_str} | Lon {lon_str} | Alt {fix.altitude:.2f}m")
         else:
-            output.append("[FIX]   En attente de données...")
+            output.append("[FIX]   Waiting for data...")
         output.append(f"        Topic  : {fix_hz:>5.2f} Hz (std_dev: {fix_std:.4f}s)")
         output.append("------------------------------------------------------------------")
 
@@ -133,7 +141,7 @@ class GpsMonitorNode(Node):
             r, p, y = self.euler_from_quaternion(imu.orientation)
             output.append(f"[IMU]   Orient : Roll {r:>6.2f}° | Pitch {p:>6.2f}° | Yaw {y:>6.2f}°")
         else:
-            output.append("[IMU]   En attente de données...")
+            output.append("[IMU]   Waiting for data...")
         output.append(f"        Topic  : {imu_hz:>5.2f} Hz (std_dev: {imu_std:.4f}s)")
         output.append("------------------------------------------------------------------")
 
@@ -141,7 +149,7 @@ class GpsMonitorNode(Node):
         if status:
             output.append(f"[STAT]  Infos  : {status}")
         else:
-            output.append("[STAT]  En attente de données...")
+            output.append("[STAT]  Waiting for data...")
         output.append(f"        Topic  : {stat_hz:>5.2f} Hz (std_dev: {stat_std:.4f}s)")
         output.append("==================================================================")
 

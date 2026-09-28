@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
+# 
+# Swerve Kinematics Controller for ROS2
+#
+# This node converts commanded linear and angular velocities into steering
+# angles and wheel speeds for a four-wheel swerve drive. It applies deadband
+# filtering, kinematic mode transitions, steering alignment checks, geometric
+# limits, slew-rate limiting, nonlinear motor-speed mapping, and publishes
+# commands to the wheel controllers.
+# 
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64MultiArray, Float64, Int8
+from std_msgs.msg import Float64MultiArray, Int8
 import math
 
-class SwerveKinematics(Node):
+class KinematicsSwerve(Node):
     def __init__(self):
-        super().__init__('swerve_kinematics')
+        super().__init__('kinematics_swerve')
         
-        # --- 1. INITIALISATION DES VARIABLES & PARAMÈTRES ---
+        # --- 1. VARIABLE AND PARAMETER INITIALIZATION ---
         self._init_parameters()
         self._init_kinematic_constants()
         self._init_wheel_hardware()
@@ -27,10 +37,10 @@ class SwerveKinematics(Node):
         self.declare_parameter('deadband_wz', 0.05)
         self.declare_parameter('opposite_max_angle_deg', 40.0)
 
-        # Tolérance d'alignement
+        # Alignment tolerance.
         self.declare_parameter('align_tolerance_deg', 7.0)
         
-        # Paramètres du Slew Rate Linéaire
+        # Linear slew-rate parameters.
         self.declare_parameter('enable_speed_slew_rate', True)
         self.declare_parameter('accel_max', 2.0)
         self.declare_parameter('decel_max', 2.0)
@@ -73,7 +83,7 @@ class SwerveKinematics(Node):
         self.L_half = 0.48
         self.W_half = 0.4150
 
-        # Pré-calcul du Rayon CIR minimal absolu
+        # Precompute the absolute minimum CIR radius.
         self.R_min = (self.L_half / math.tan(self.opposite_max_angle_rad)) + self.W_half
 
     def _init_ros_interfaces(self):
@@ -114,24 +124,24 @@ class SwerveKinematics(Node):
 
         new_state, vx, wz, cir_radius = self._compute_fsm_state(msg.linear.x, msg.angular.z)
         
-        # --- LOGIQUE DE TRANSITION ---
+        # --- TRANSITION LOGIC ---
         if new_state != self.current_mode:
             if new_state == 'STOP':
-                self.waiting_for_alignment = False # Pas d'alignement requis pour s'arrêter
+                self.waiting_for_alignment = False # No alignment required to stop.
             elif self.current_mode in ['STRAIGHT', 'OPPOSITE'] and new_state in ['STRAIGHT', 'OPPOSITE']:
-                pass # Transition fluide : on maintient l'avancement
+                pass # Smooth transition: maintain forward motion.
             else:
-                self.waiting_for_alignment = True # PIVOT <-> Mouvement OU STOP -> Mouvement
+                self.waiting_for_alignment = True # PIVOT <-> motion or STOP -> motion.
                 
             self.current_mode = new_state
 
-        #self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
+        self.get_logger().info(f"Mode: {self.current_mode} | CIR: {cir_radius:.3f}m | Aligning: {self.waiting_for_alignment}")
 
         self._calculate_wheel_targets(self.current_mode, vx, wz, dt)
         is_aligned = self._check_alignment()
         self._publish_hardware_commands(is_aligned, dt)
 
-    # --- 3. MÉTHODES CINÉMATIQUES INTERNES ---
+    # --- 3. INTERNAL KINEMATIC METHODS ---
 
     def _compute_fsm_state(self, vx, wz):
         """Determines kinematic mode, applies Ackermann constraints, and calculates CIR radius."""
@@ -154,12 +164,12 @@ class SwerveKinematics(Node):
             wz = 0.0
             cir_radius = float('inf')
 
-        # Application de la saturation géométrique
+        # Apply geometric saturation.
         if current_state == 'OPPOSITE':
             R = vx / wz
             if abs(R) < self.R_min:
                 clamped_R = math.copysign(self.R_min, R)
-                wz = vx / clamped_R # Bridage de la rotation pour respecter l'angle max
+                wz = vx / clamped_R # Clamp rotation to respect the maximum angle.
                 cir_radius = abs(clamped_R)
             else:
                 cir_radius = abs(R)
@@ -183,7 +193,7 @@ class SwerveKinematics(Node):
                 raw_speed = math.hypot(vx_w, vy_w)
                 raw_angle = math.atan2(vy_w, vx_w)
 
-            # Phase Inversion for all states
+            # Phase inversion for all states.
             if raw_angle > (math.pi / 2.0):
                 ideal_angle = raw_angle - math.pi
                 ideal_speed = -raw_speed
@@ -214,17 +224,16 @@ class SwerveKinematics(Node):
             config['temp_ideal_speed'] = ideal_speed
 
             
-        # Si aucune tra
     def _check_alignment(self):
         """Verifies strict alignment only when the wait flag is triggered by a major transition."""
             
-        # Si aucune transition majeure n'a verrouillé le système, on autorise la traction
+        # Allow traction when no major transition has locked the system.
         if not self.waiting_for_alignment:
             return True
 
         is_aligned = True
 
-        # Mode de vérification stricte (Stop & Steer)
+        # Strict verification mode (Stop & Steer).
         for name, config in self.wheels.items():
             phys_angle = math.radians(config['current_angle'])
             target = config['last_target_angle'] 
@@ -232,12 +241,12 @@ class SwerveKinematics(Node):
             err = abs(math.atan2(math.sin(err), math.cos(err)))
             
             if err > self.align_tolerance_rad:
-                is_aligned = False # Toujours pas aligné, on bloque l'avancement
+                is_aligned = False # Not aligned yet; block forward motion.
         
         if not is_aligned:
             return False
         else:
-            # Si la boucle termine sans retourner False, les 4 roues sont parfaites
+            # If the loop completes without returning False, all four wheels are aligned.
             self.waiting_for_alignment = False
             return True
 
@@ -256,7 +265,7 @@ class SwerveKinematics(Node):
             logical_target_speed = max(min(ideal_speed, self.v_max_physical), -self.v_max_physical)
 
             # ============================================================
-            # Linar Speed Slew Rate Limiter
+            # Linear speed slew-rate limiter.
             # ============================================================
             last_logical_spd = config['last_logical_speed']
             speed_diff = logical_target_speed - last_logical_spd
@@ -292,7 +301,7 @@ class SwerveKinematics(Node):
             # Publish
             rpm_final = (cmd_speed_hardware * 60.0) / (2.0 * math.pi * self.wheel_radius) * config['dir']   
             
-            # Sauvegarde dans le dictionnaire local
+            # Store the command in the local dictionary.
             precalculated_commands[name] = {
                 'rpm': rpm_final,
                 'angle_deg': math.degrees(cmd_angle),
@@ -303,7 +312,7 @@ class SwerveKinematics(Node):
             
 def main(args=None):
     rclpy.init(args=args)
-    node = SwerveKinematics()
+    node = KinematicsSwerve()
     try:
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
