@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat&logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> **Funding:** This project was funded by **Qingdao City University (QCU)**.
+> This project was funded by **Qingdao City University (QCU), China**.
 
 <img src="robot.jpg" alt="Bee Mobile Robot" width="50%">
 
