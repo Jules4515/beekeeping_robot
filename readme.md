@@ -1,8 +1,11 @@
-# Bee Mobile Robot
+# Beekeeping Mobile Robot
 
 ![ROS 2 Jazzy](https://img.shields.io/badge/ROS_2-Jazzy-34302F?style=flat&logo=ros)
 ![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=flat&logo=ubuntu&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat&logo=python&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+> **Funding:** This project was funded by **Qingdao City University (QCU)**.
 
 <img src="robot.jpg" alt="Bee Mobile Robot" width="50%">
 
